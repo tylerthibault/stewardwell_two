@@ -1,0 +1,49 @@
+{% extends "bases/public.html" %}
+
+{% block title %}Welcome to Stewardwell{% endblock %}
+
+{% block nav %}
+    <a href="{{ url_for('auth.login') }}">Login</a>
+    <a href="{{ url_for('auth.register') }}">Sign Up</a>
+{% endblock %}
+
+{% block content %}
+<div class="landing-container">
+    <section class="hero">
+        <h1>Welcome to Stewardwell</h1>
+        <p class="tagline">Stewarding Your Family Well</p>
+        <p class="description">
+            Empower your family with a fun and engaging way to manage chores, 
+            earn rewards, and work together towards shared goals.
+        </p>
+    </section>
+
+    <section class="features">
+        <h2>How It Works</h2>
+        <div class="feature-grid">
+            <div class="feature">
+                <h3>👨‍👩‍👧‍👦 Family Management</h3>
+                <p>Parents create and manage their family, add kids, and set up chores.</p>
+            </div>
+            <div class="feature">
+                <h3>🧹 Chore System</h3>
+                <p>Kids pick and complete chores to earn coins and family points.</p>
+            </div>
+            <div class="feature">
+                <h3>🪙 Rewards</h3>
+                <p>Kids save coins for personal rewards. Parents confirm completed chores.</p>
+            </div>
+            <div class="feature">
+                <h3>🎯 Easy Access</h3>
+                <p>Kids login with a simple PIN code. Parents manage everything from their dashboard.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <h2>Get Started Today</h2>
+        <p>Sign up as a parent and start building better habits with your family.</p>
+        <a href="{{ url_for('auth.register') }}" class="btn-primary">Create Your Family</a>
+    </section>
+</div>
+{% endblock %}
