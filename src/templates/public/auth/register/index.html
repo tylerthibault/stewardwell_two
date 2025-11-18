@@ -19,15 +19,45 @@
         
         <form method="POST" action="{{ url_for('auth.register') }}">
             <div class="form-group">
-                <label for="family_name">Family Name</label>
-                <input 
-                    type="text" 
-                    id="family_name" 
-                    name="family_name" 
-                    required 
-                    placeholder="e.g., The Smith Family"
-                    autofocus
-                >
+                <label>Account Type</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="account_type" value="new_family" checked onchange="toggleFamilyFields()">
+                        Create New Family
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="account_type" value="join_family" onchange="toggleFamilyFields()">
+                        Join Existing Family
+                    </label>
+                </div>
+            </div>
+
+            <div id="new-family-fields">
+                <div class="form-group">
+                    <label for="family_name">Family Name</label>
+                    <input 
+                        type="text" 
+                        id="family_name" 
+                        name="family_name" 
+                        placeholder="e.g., The Smith Family"
+                        autofocus
+                    >
+                </div>
+            </div>
+
+            <div id="join-family-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="family_code">Family Code</label>
+                    <input 
+                        type="text" 
+                        id="family_code" 
+                        name="family_code" 
+                        placeholder="Enter 6-character family code"
+                        maxlength="6"
+                        style="text-transform: uppercase;"
+                    >
+                    <small>Ask your partner for the family code from the dashboard</small>
+                </div>
             </div>
             
             <div class="form-group">
@@ -64,4 +94,40 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleFamilyFields() {
+    const accountType = document.querySelector('input[name="account_type"]:checked').value;
+    const newFamilyFields = document.getElementById('new-family-fields');
+    const joinFamilyFields = document.getElementById('join-family-fields');
+    const familyNameInput = document.getElementById('family_name');
+    const familyCodeInput = document.getElementById('family_code');
+    
+    if (accountType === 'new_family') {
+        newFamilyFields.style.display = 'block';
+        joinFamilyFields.style.display = 'none';
+        familyNameInput.required = true;
+        familyCodeInput.required = false;
+        familyCodeInput.value = '';
+    } else {
+        newFamilyFields.style.display = 'none';
+        joinFamilyFields.style.display = 'block';
+        familyNameInput.required = false;
+        familyNameInput.value = '';
+        familyCodeInput.required = true;
+    }
+}
+
+// Auto-uppercase family code input
+document.addEventListener('DOMContentLoaded', function() {
+    const familyCodeInput = document.getElementById('family_code');
+    if (familyCodeInput) {
+        familyCodeInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    }
+});
+</script>
 {% endblock %}

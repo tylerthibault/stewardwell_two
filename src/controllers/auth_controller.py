@@ -11,11 +11,13 @@ def register():
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        account_type = request.form.get('account_type', 'new_family')
         family_name = request.form.get('family_name', '').strip()
+        family_code = request.form.get('family_code', '').strip().upper()
         
         # Validation
-        if not email or not password or not family_name:
-            flash('All fields are required.', 'error')
+        if not email or not password:
+            flash('Email and password are required.', 'error')
             return render_template('public/auth/register/index.html')
         
         if len(password) < 6:
@@ -28,36 +30,77 @@ def register():
             flash('Email already registered. Please login.', 'error')
             return redirect(url_for('auth.login'))
         
-        # Create family
-        new_family = Family(
-            name=family_name,
-            family_code=Family.generate_family_code()
-        )
-        db.session.add(new_family)
-        db.session.flush()  # Get family ID before committing
-        
-        # Create parent (as head of family)
-        new_parent = Parent(
-            family_id=new_family.id,
-            email=email,
-            is_head=True
-        )
-        new_parent.set_password(password)
-        db.session.add(new_parent)
-        
-        try:
-            db.session.commit()
+        # Handle account type
+        if account_type == 'join_family':
+            # Joining existing family
+            if not family_code:
+                flash('Family code is required to join a family.', 'error')
+                return render_template('public/auth/register/index.html')
             
-            # Auto-login after registration
-            session['parent_id'] = new_parent.id
-            session['family_id'] = new_family.id
+            # Find family by code
+            existing_family = Family.query.filter_by(family_code=family_code).first()
+            if not existing_family:
+                flash('Invalid family code. Please check and try again.', 'error')
+                return render_template('public/auth/register/index.html')
             
-            flash(f'Welcome to Stewardwell, {family_name} family!', 'success')
-            return redirect(url_for('parent.dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Registration failed. Please try again.', 'error')
-            return render_template('public/auth/register/index.html')
+            # Create parent (not head of family)
+            new_parent = Parent(
+                family_id=existing_family.id,
+                email=email,
+                is_head=False
+            )
+            new_parent.set_password(password)
+            db.session.add(new_parent)
+            
+            try:
+                db.session.commit()
+                
+                # Auto-login after registration
+                session['parent_id'] = new_parent.id
+                session['family_id'] = existing_family.id
+                
+                flash(f'Welcome to the {existing_family.name} family!', 'success')
+                return redirect(url_for('parent.dashboard'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Registration failed. Please try again.', 'error')
+                return render_template('public/auth/register/index.html')
+        else:
+            # Creating new family
+            if not family_name:
+                flash('Family name is required to create a new family.', 'error')
+                return render_template('public/auth/register/index.html')
+            
+            # Create family
+            new_family = Family(
+                name=family_name,
+                family_code=Family.generate_family_code()
+            )
+            db.session.add(new_family)
+            db.session.flush()  # Get family ID before committing
+            
+            # Create parent (as head of family)
+            new_parent = Parent(
+                family_id=new_family.id,
+                email=email,
+                is_head=True
+            )
+            new_parent.set_password(password)
+            db.session.add(new_parent)
+            
+            try:
+                db.session.commit()
+                
+                # Auto-login after registration
+                session['parent_id'] = new_parent.id
+                session['family_id'] = new_family.id
+                
+                flash(f'Welcome to Stewardwell, {family_name} family!', 'success')
+                return redirect(url_for('parent.dashboard'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Registration failed. Please try again.', 'error')
+                return render_template('public/auth/register/index.html')
     
     return render_template('public/auth/register/index.html')
 
