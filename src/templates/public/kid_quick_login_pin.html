@@ -1,18 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enter PIN - Stewardwell</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-</head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-</head>
-<body>
-    <div class="pin-container">
+{% extends "bases/public.html" %}
+
+{% block title %}Enter PIN - Stewardwell{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="pin-container">
         <h1 class="kid-name">👋 Hi {{ kid.name }}!</h1>
         <p class="pin-prompt">Enter your PIN to continue</p>
         
@@ -35,12 +32,13 @@
                    required>
             <button type="submit" class="btn-verify">Go! 🚀</button>
         </form>
-    </div>
-    
-    <script>
-        document.querySelector('input[name="pin"]').addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        });
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelector('input[name="pin"]').addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    });
+</script>
+{% endblock %}

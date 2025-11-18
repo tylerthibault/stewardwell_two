@@ -201,3 +201,153 @@
 .kid-login-container .form-group input:focus {
     border-color: #3498db;
 }
+
+/* Responsive Design - Mobile */
+@media (max-width: 768px) {
+    /* Auth Container */
+    .auth-container {
+        padding: 1rem;
+        min-height: 50vh;
+    }
+
+    .auth-card {
+        padding: 1.5rem;
+    }
+
+    .auth-card h2 {
+        font-size: 1.5rem;
+    }
+
+    .auth-card > p {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Kid Login */
+    .kid-login-container {
+        max-width: 100%;
+        margin: 2rem auto;
+        padding: 2rem;
+    }
+
+    .kid-login-title {
+        font-size: 2rem;
+    }
+
+    .kid-login-subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pin-input {
+        font-size: 1.5rem !important;
+        letter-spacing: 0.3rem;
+    }
+
+    .btn-kid-login {
+        padding: 1rem;
+        font-size: 1.15rem;
+    }
+
+    .remembered-kids {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+    }
+
+    .remembered-kids h3 {
+        font-size: 1.1rem;
+    }
+
+    .kid-quick-login {
+        gap: 0.75rem;
+    }
+
+    .kid-quick-login-btn {
+        padding: 0.85rem 1.75rem;
+        font-size: 1rem;
+    }
+
+    /* Kid PIN Login */
+    .pin-container {
+        max-width: 100%;
+        margin: 3rem auto;
+        padding: 2rem;
+    }
+
+    .kid-name {
+        font-size: 1.75rem;
+    }
+
+    .pin-prompt {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pin-input-large {
+        padding: 1.25rem;
+        font-size: 2.5rem;
+        letter-spacing: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-verify {
+        padding: 1rem;
+        font-size: 1.15rem;
+    }
+
+    /* Form Group Overrides */
+    .kid-login-container .form-group label {
+        font-size: 1rem;
+    }
+
+    .kid-login-container .form-group input {
+        padding: 0.875rem;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 1.25rem;
+    }
+
+    .auth-card h2 {
+        font-size: 1.35rem;
+    }
+
+    .kid-login-container {
+        margin: 1.5rem auto;
+        padding: 1.5rem;
+    }
+
+    .kid-login-title {
+        font-size: 1.75rem;
+    }
+
+    .btn-kid-login {
+        font-size: 1.1rem;
+    }
+
+    .kid-quick-login-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+    }
+
+    .pin-container {
+        margin: 2rem auto;
+        padding: 1.5rem;
+    }
+
+    .kid-name {
+        font-size: 1.5rem;
+    }
+
+    .pin-input-large {
+        font-size: 2rem;
+        letter-spacing: 0.5rem;
+    }
+
+    .btn-verify {
+        font-size: 1.1rem;
+    }
+}

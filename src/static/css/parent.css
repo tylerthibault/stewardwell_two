@@ -457,3 +457,224 @@
     padding-top: 0.5rem;
     border-top: 1px solid #e0e0e0;
 }
+
+/* Responsive Design - Mobile */
+@media (max-width: 768px) {
+    /* Dashboard */
+    .dashboard-container {
+        padding: 0 0.5rem;
+        margin: 1rem auto;
+    }
+
+    .dashboard-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    /* Parent Navigation */
+    .parent-nav {
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        flex-direction: column;
+    }
+
+    .parent-nav .nav-btn {
+        width: 100%;
+    }
+
+    /* Kids List */
+    .kids-list {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .kid-item {
+        padding: 1.25rem;
+    }
+
+    .kid-info strong {
+        font-size: 1.3rem;
+    }
+
+    .kid-info .coin-badge {
+        font-size: 1rem;
+        padding: 0.4rem 0.9rem;
+    }
+
+    .kid-actions .btn {
+        font-size: 0.875rem;
+        padding: 0.6rem 1rem;
+    }
+
+    /* Chores */
+    .chores-list {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .chore-item {
+        padding: 1.25rem;
+    }
+
+    .chore-info strong {
+        font-size: 1.2rem;
+    }
+
+    .chore-values {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .chore-values .badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.75rem;
+    }
+
+    /* Assignments */
+    .assignment-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .assignment-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .assignment-actions .btn {
+        width: 100%;
+    }
+
+    .assignment-actions form {
+        width: 100%;
+    }
+
+    /* Family Code */
+    .family-code-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .family-code {
+        font-size: 1.3rem;
+    }
+
+    /* Chores Page */
+    .page-actions {
+        margin-bottom: 1.5rem;
+    }
+
+    .chores-container {
+        padding: 1.5rem;
+    }
+
+    .chores-grid-full {
+        gap: 1.25rem;
+    }
+
+    .chore-card-full {
+        padding: 1.25rem;
+    }
+
+    .chore-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .chore-details {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .chore-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .chore-actions .btn {
+        width: 100%;
+    }
+
+    .chore-actions form {
+        width: 100%;
+    }
+
+    /* Store Page */
+    .store-page-container {
+        padding: 1.5rem;
+    }
+
+    .store-items-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .store-items-grid-full {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .store-item-card-full {
+        padding: 1.25rem;
+    }
+
+    .item-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .item-actions {
+        width: 100%;
+        flex-direction: column;
+        border-top: none;
+        padding-top: 0;
+        gap: 0.75rem;
+    }
+
+    .item-actions .btn {
+        width: 100%;
+    }
+
+    .item-actions form {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .kid-item {
+        padding: 1rem;
+    }
+
+    .kid-info strong {
+        font-size: 1.15rem;
+    }
+
+    .chore-item {
+        padding: 1rem;
+    }
+
+    .chore-info strong {
+        font-size: 1.1rem;
+    }
+
+    .family-code {
+        font-size: 1.15rem;
+    }
+}

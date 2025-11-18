@@ -194,3 +194,100 @@ footer {
 footer p {
     margin: 0;
 }
+
+/* Responsive Design - Mobile First */
+@media (max-width: 768px) {
+    /* Navigation */
+    nav {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    nav .logo h1 {
+        font-size: 1.5rem;
+    }
+
+    nav .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        text-align: center;
+    }
+
+    nav .nav-links a {
+        margin-left: 0;
+        display: block;
+    }
+
+    /* Main Content */
+    main {
+        padding: 1rem;
+    }
+
+    /* Hero Section */
+    .hero {
+        padding: 2rem 1rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero .tagline {
+        font-size: 1.2rem;
+    }
+
+    .hero .description {
+        font-size: 1rem;
+    }
+
+    /* Features */
+    .features {
+        padding: 2rem 1rem;
+    }
+
+    .features h2 {
+        font-size: 2rem;
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    /* CTA */
+    .cta {
+        padding: 2rem 1rem;
+    }
+
+    .cta h2 {
+        font-size: 2rem;
+    }
+
+    .cta p {
+        font-size: 1rem;
+    }
+
+    /* Footer */
+    footer {
+        padding: 1.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    nav .logo h1 {
+        font-size: 1.3rem;
+    }
+
+    .hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .features h2,
+    .cta h2 {
+        font-size: 1.75rem;
+    }
+}

@@ -1,18 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ kid.name }}'s Dashboard - Stewardwell</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/kid.css') }}">
-</head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/kid.css') }}">
-</head>
-<body>
-    <div class="kid-dashboard">
+{% extends "bases/private.html" %}
+
+{% block title %}{{ kid.name }}'s Dashboard - Stewardwell{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/kid.css') }}">
+{% endblock %}
+
+{% block nav %}
+<a href="{{ url_for('kid.logout') }}">Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="kid-dashboard">
         <div class="kid-header">
             <div class="kid-welcome">
                 <h1>👋 Hi {{ kid.name }}!</h1>
@@ -124,11 +123,5 @@
             {% endif %}
         </div>
         
-        <div class="text-center">
-            <form method="GET" action="{{ url_for('kid.logout') }}">
-                <button type="submit" class="logout-btn">Logout</button>
-            </form>
-        </div>
-    </div>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -1,18 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kid Login - Stewardwell</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-</head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-</head>
-<body>
-    <div class="kid-login-container">
+{% extends "bases/public.html" %}
+
+{% block title %}Kid Login - Stewardwell{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="kid-login-container">
         <h1 class="kid-login-title">👋 Hey Kids!</h1>
         <p class="kid-login-subtitle">Log in to see your chores and earn coins!</p>
         
@@ -67,18 +64,19 @@
         <div class="parent-link">
             <p>Are you a parent? <a href="{{ url_for('auth.login') }}">Login here</a></p>
         </div>
-    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-uppercase family code
+    document.getElementById('family_code').addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+    });
     
-    <script>
-        // Auto-uppercase family code
-        document.getElementById('family_code').addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-        
-        // Only allow numbers in PIN
-        document.getElementById('pin').addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        });
-    </script>
-</body>
-</html>
+    // Only allow numbers in PIN
+    document.getElementById('pin').addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    });
+</script>
+{% endblock %}

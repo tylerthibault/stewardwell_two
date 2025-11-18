@@ -228,3 +228,179 @@
     background: #95a5a6;
     cursor: not-allowed;
 }
+
+/* Responsive Design - Mobile */
+@media (max-width: 768px) {
+    /* Kid Dashboard */
+    .kid-dashboard {
+        padding: 0 1rem;
+        margin: 1rem auto;
+    }
+
+    .kid-header {
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .kid-welcome h1 {
+        font-size: 2rem;
+    }
+
+    .kid-coins {
+        text-align: center;
+    }
+
+    .coin-display {
+        font-size: 2.5rem;
+    }
+
+    .coin-label {
+        font-size: 1rem;
+    }
+
+    /* Kid Navigation */
+    .kid-nav {
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        flex-direction: column;
+    }
+
+    .kid-nav .nav-btn {
+        width: 100%;
+    }
+
+    /* Chore Section */
+    .chore-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .chore-section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .chore-grid {
+        gap: 1rem;
+    }
+
+    .chore-card {
+        padding: 1.25rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .chore-info h3 {
+        font-size: 1.2rem;
+    }
+
+    .chore-rewards {
+        font-size: 0.9rem;
+    }
+
+    .frequency-tag {
+        font-size: 0.8rem;
+    }
+
+    /* Kid Chore Buttons */
+    .btn-chore {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.95rem;
+        width: 100%;
+    }
+
+    .pending-badge {
+        padding: 0.4rem 0.85rem;
+        font-size: 0.85rem;
+    }
+
+    .logout-btn {
+        padding: 0.75rem 1.75rem;
+        font-size: 0.95rem;
+    }
+
+    /* Kid Store */
+    .store-container {
+        padding: 1.5rem;
+    }
+
+    .store-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        margin-top: 1.25rem;
+    }
+
+    .store-item {
+        padding: 1.25rem;
+    }
+
+    .item-name {
+        font-size: 1.15rem;
+    }
+
+    .item-description {
+        font-size: 0.875rem;
+    }
+
+    .item-price {
+        font-size: 1.35rem;
+    }
+
+    .purchase-btn {
+        padding: 0.65rem;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .kid-dashboard {
+        padding: 0 0.75rem;
+    }
+
+    .kid-header {
+        padding: 1.25rem;
+    }
+
+    .kid-welcome h1 {
+        font-size: 1.75rem;
+    }
+
+    .coin-display {
+        font-size: 2.25rem;
+    }
+
+    .chore-section {
+        padding: 1.25rem;
+    }
+
+    .chore-section h2 {
+        font-size: 1.35rem;
+    }
+
+    .chore-card {
+        padding: 1rem;
+    }
+
+    .chore-info h3 {
+        font-size: 1.1rem;
+    }
+
+    .store-container {
+        padding: 1.25rem;
+    }
+
+    .store-item {
+        padding: 1rem;
+    }
+
+    .item-name {
+        font-size: 1.1rem;
+    }
+
+    .item-price {
+        font-size: 1.25rem;
+    }
+}
