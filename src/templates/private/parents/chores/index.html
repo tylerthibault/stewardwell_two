@@ -1,0 +1,144 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Manage Chores - Stewardwell{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Manage Chores</h1>
+        <p>Create and manage family chores</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="parent-nav">
+        <a href="{{ url_for('parent.dashboard') }}" class="nav-btn">
+            📊 Dashboard
+        </a>
+        <a href="{{ url_for('parent.chores') }}" class="nav-btn active">
+            📋 Chores
+        </a>
+        <a href="{{ url_for('parent.store') }}" class="nav-btn">
+            🛒 Store
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="page-actions">
+        <button class="btn btn-primary" onclick="toggleModal('createChoreModal')">+ Create New Chore</button>
+    </div>
+
+    <div class="chores-container">
+        {% if chores %}
+            <div class="chores-grid-full">
+                {% for chore in chores %}
+                <div class="chore-card-full">
+                    <div class="chore-header">
+                        <h3>{{ chore.name }}</h3>
+                        {% if not chore.is_active %}
+                            <span class="badge badge-inactive">Inactive</span>
+                        {% else %}
+                            <span class="badge badge-active">Active</span>
+                        {% endif %}
+                    </div>
+                    <div class="chore-details">
+                        <div class="chore-rewards">
+                            <span class="badge badge-coin">🪙 {{ chore.coin_value }} coins</span>
+                            <span class="badge badge-point">⭐ {{ chore.point_value }} points</span>
+                        </div>
+                        <div class="chore-frequency">
+                            {% if chore.frequency == 'unlimited' %}
+                                <span class="badge badge-frequency">♾️ Unlimited</span>
+                            {% elif chore.frequency == 'daily' %}
+                                <span class="badge badge-frequency">📅 Daily</span>
+                            {% elif chore.frequency == 'weekly' %}
+                                <span class="badge badge-frequency">📆 Weekly</span>
+                            {% elif chore.frequency == 'monthly' %}
+                                <span class="badge badge-frequency">🗓️ Monthly</span>
+                            {% elif chore.frequency == 'one_time' %}
+                                <span class="badge badge-frequency">🔒 One Time</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="chore-actions">
+                        <form method="POST" action="{{ url_for('parent.toggle_chore', chore_id=chore.id) }}" class="inline-form">
+                            <button type="submit" class="btn btn-secondary btn-small">
+                                {% if chore.is_active %}Hide{% else %}Show{% endif %}
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-danger btn-small" onclick="if(confirm('Delete {{ chore.name }}?')) document.getElementById('delete-form-{{ chore.id }}').submit();">
+                            Delete
+                        </button>
+                        <form id="delete-form-{{ chore.id }}" method="POST" action="{{ url_for('parent.delete_chore', chore_id=chore.id) }}" class="hidden"></form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state-large">
+                <div class="empty-icon">📋</div>
+                <h3>No Chores Yet</h3>
+                <p>Create your first chore to get started!</p>
+                <button class="btn btn-primary" onclick="toggleModal('createChoreModal')">+ Create Chore</button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Chore Modal -->
+<div id="createChoreModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Create Chore</h3>
+            <span class="close" onclick="toggleModal('createChoreModal')">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('parent.create_chore') }}">
+            <div class="form-group">
+                <label for="chore_name">Chore Name</label>
+                <input type="text" id="chore_name" name="name" required placeholder="e.g., Clean room">
+            </div>
+            <div class="form-group">
+                <label for="coin_value">Coin Value</label>
+                <input type="number" id="coin_value" name="coin_value" min="0" value="10" required>
+            </div>
+            <div class="form-group">
+                <label for="point_value">Point Value</label>
+                <input type="number" id="point_value" name="point_value" min="0" value="1" required>
+            </div>
+            <div class="form-group">
+                <label for="frequency">Frequency</label>
+                <select id="frequency" name="frequency" required>
+                    <option value="unlimited">Unlimited (anytime)</option>
+                    <option value="daily">Daily (once per day)</option>
+                    <option value="weekly">Weekly (once per week)</option>
+                    <option value="monthly">Monthly (once per month)</option>
+                    <option value="one_time">One Time Only</option>
+                </select>
+                <small class="help-text">How often can this chore be done?</small>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="is_active" name="is_active" checked>
+                    Active (visible to kids)
+                </label>
+                <small class="help-text">Uncheck to hide this chore from kids</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="toggleModal('createChoreModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Chore</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

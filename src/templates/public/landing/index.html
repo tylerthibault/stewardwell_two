@@ -3,7 +3,8 @@
 {% block title %}Welcome to Stewardwell{% endblock %}
 
 {% block nav %}
-    <a href="{{ url_for('auth.login') }}">Login</a>
+    <a href="{{ url_for('kid.kid_login_page') }}">Kids Login</a>
+    <a href="{{ url_for('auth.login') }}">Parent Login</a>
     <a href="{{ url_for('auth.register') }}">Sign Up</a>
 {% endblock %}
 

@@ -93,17 +93,51 @@
 ## Phase 3: Kid Flow
 **Goal:** Kids can login with PIN, pick chores, complete them
 
-5. **Kid Auth**
-   - Kid login endpoint (family code + PIN)
-   - Device memory (cookie/local storage for remembered kids)
+### 3.1 Kid Login Page
+- Create kid-friendly login interface
+- Family code input field
+- PIN code input (4-digit numeric)
+- Remember device functionality (cookie-based)
+- Display previously logged-in kids on device
+- Quick login for remembered kids
 
-6. **Kid Dashboard**
-   - View available chores
-   - Pick/start chore (creates ChoreAssignment)
-   - Mark chore complete (status → pending)
-   - View coin balance
+### 3.2 Kid Authentication
+- Validate family code exists
+- Validate PIN against kid record in that family
+- Hash comparison for PIN verification
+- Create kid session (separate from parent session)
+- Set remember-me cookie with kid ID
+- Redirect to kid dashboard on success
 
-**Deliverable:** Kids can login, pick chores, complete them.
+### 3.3 Kid Dashboard
+- Display kid's name and coin balance prominently
+- Show available chores (not assigned or available for picking)
+- List kid's active chore assignments (in-progress)
+- List kid's completed chores (pending parent confirmation)
+- Display coin balance with fun visual indicator
+- Logout button
+
+### 3.4 Pick Chore Functionality
+- Display available chores with coin/point values
+- "Pick This Chore" button for each chore
+- Create ChoreAssignment record (status: 'in-progress')
+- Remove from available list, add to active list
+- Success message with encouragement
+
+### 3.5 Complete Chore Functionality
+- Display active chores with "Mark Complete" button
+- Update ChoreAssignment status to 'pending'
+- Set completed_at timestamp
+- Move to pending confirmation list
+- Success message ("Great job! Waiting for parent approval")
+
+### 3.6 Kid Session Management
+- Login required decorator for kid routes
+- Check if logged in as kid (not parent)
+- Prevent kids from accessing other kids' data
+- Auto-logout on inactivity (optional)
+
+**Deliverable:** Kids can login with PIN/family code, pick chores, mark complete, see coin balance.
 
 ---
 
@@ -144,10 +178,10 @@
 ---
 
 ## Manager Approval Checklist
-- [ ] **Phase 1:** Foundation (models + app structure)
-- [ ] **Phase 2:** Parent flow (auth + family management)
+- [✅] **Phase 1:** Foundation (models + app structure) - COMPLETE
+- [✅] **Phase 2:** Parent flow (auth + family management) - COMPLETE
 - [ ] **Phase 3:** Kid flow (login + chore picking)
-- [ ] **Phase 4:** Chore lifecycle (confirmation + coins)
+- [ ] **Phase 4:** Chore lifecycle (confirmation + coins) - PARTIALLY COMPLETE (confirm/reject already implemented)
 - [ ] **Phase 5:** Polish & testing
 
 ---

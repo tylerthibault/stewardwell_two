@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ kid.name }}'s Dashboard - Stewardwell</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kid.css') }}">
+</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kid.css') }}">
+</head>
+<body>
+    <div class="kid-dashboard">
+        <div class="kid-header">
+            <div class="kid-welcome">
+                <h1>👋 Hi {{ kid.name }}!</h1>
+                <p>Let's get some chores done!</p>
+            </div>
+            <div class="kid-coins">
+                <div class="coin-display">🪙 {{ kid.coin_balance }}</div>
+                <div class="coin-label">Coins</div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="kid-nav">
+            <a href="{{ url_for('kid.dashboard') }}" class="nav-btn active">
+                📋 Chores
+            </a>
+            <a href="{{ url_for('kid.store') }}" class="nav-btn">
+                🛒 Store
+            </a>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Available Chores -->
+        <div class="chore-section">
+            <h2>📋 Available Chores</h2>
+            {% if available_chores %}
+                <div class="chore-grid">
+                    {% for chore in available_chores %}
+                    <div class="chore-card">
+                        <div class="chore-info">
+                            <h3>{{ chore.name }}</h3>
+                            <div class="chore-rewards">
+                                <span>🪙 {{ chore.coin_value }} coins</span>
+                                <span>⭐ {{ chore.point_value }} points</span>
+                                {% if chore.frequency != 'unlimited' %}
+                                    <span class="frequency-tag">
+                                        {% if chore.frequency == 'daily' %}📅 Daily
+                                        {% elif chore.frequency == 'weekly' %}📆 Weekly
+                                        {% elif chore.frequency == 'monthly' %}🗓️ Monthly
+                                        {% elif chore.frequency == 'one_time' %}🔒 One Time
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ url_for('kid.pick_chore', chore_id=chore.id) }}">
+                            <button type="submit" class="btn-chore btn-pick">Pick This!</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">No chores available right now. Check back later! 🌟</div>
+            {% endif %}
+        </div>
+        
+        <!-- Active Chores -->
+        <div class="chore-section">
+            <h2>🔄 Your Active Chores</h2>
+            {% if active_assignments %}
+                <div class="chore-grid">
+                    {% for assignment in active_assignments %}
+                    <div class="chore-card">
+                        <div class="chore-info">
+                            <h3>{{ assignment.chore.name }}</h3>
+                            <div class="chore-rewards">
+                                <span>🪙 {{ assignment.chore.coin_value }} coins</span>
+                                <span>⭐ {{ assignment.chore.point_value }} points</span>
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ url_for('kid.complete_chore', assignment_id=assignment.id) }}">
+                            <button type="submit" class="btn-chore btn-complete">Mark Complete!</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">No active chores. Pick one above! 💪</div>
+            {% endif %}
+        </div>
+        
+        <!-- Pending Approval -->
+        <div class="chore-section">
+            <h2>⏳ Waiting for Parent Approval</h2>
+            {% if pending_assignments %}
+                <div class="chore-grid">
+                    {% for assignment in pending_assignments %}
+                    <div class="chore-card">
+                        <div class="chore-info">
+                            <h3>{{ assignment.chore.name }}</h3>
+                            <div class="chore-rewards">
+                                <span>🪙 {{ assignment.chore.coin_value }} coins</span>
+                                <span>⭐ {{ assignment.chore.point_value }} points</span>
+                            </div>
+                        </div>
+                        <span class="pending-badge">Pending ⏳</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">No chores waiting for approval. 👍</div>
+            {% endif %}
+        </div>
+        
+        <div class="text-center">
+            <form method="GET" action="{{ url_for('kid.logout') }}">
+                <button type="submit" class="logout-btn">Logout</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

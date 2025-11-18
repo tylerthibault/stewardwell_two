@@ -1,0 +1,292 @@
+/* Parent Dashboard Styles */
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.dashboard-header p {
+    color: #666;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Parent Navigation */
+.parent-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* Kids List */
+.kids-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.kid-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.kid-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+}
+
+.kid-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Chores */
+.chores-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.chore-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chore-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+}
+
+.chore-values {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Assignments */
+.assignments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.assignment-item {
+    padding: 1rem;
+    background: #fff3cd;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.assignment-info {
+    flex: 1;
+}
+
+.assignment-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.timestamp {
+    display: block;
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+/* Purchases */
+.purchase-cost {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #e67e22;
+    font-weight: 600;
+}
+
+/* Family Code */
+.family-code-display {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.family-code {
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2196F3;
+    letter-spacing: 0.1em;
+}
+
+/* Chores Page */
+.page-actions {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.chores-container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.chores-grid-full {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.chore-card-full {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.chore-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.chore-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.chore-details {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.chore-rewards {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chore-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Store Page */
+.store-page-container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.store-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.store-items-grid-full {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.store-item-card {
+    padding: 1rem;
+    background: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.store-item-card-full {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.item-header h3 {
+    margin: 0;
+    color: #333;
+    flex: 1;
+}
+
+.item-description-inline {
+    font-style: italic;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.item-description-full {
+    color: #666;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.item-details {
+    display: flex;
+    gap: 1rem;
+}
+
+.item-cost {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e0e0e0;
+}

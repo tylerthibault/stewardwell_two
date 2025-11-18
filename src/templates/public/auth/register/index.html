@@ -1,0 +1,67 @@
+{% extends "bases/public.html" %}
+
+{% block title %}Register - Stewardwell{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block nav %}
+<a href="{{ url_for('main.landing') }}">Home</a>
+<a href="{{ url_for('auth.login') }}">Login</a>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create Your Family Account</h2>
+        <p>Start stewarding your family well today</p>
+        
+        <form method="POST" action="{{ url_for('auth.register') }}">
+            <div class="form-group">
+                <label for="family_name">Family Name</label>
+                <input 
+                    type="text" 
+                    id="family_name" 
+                    name="family_name" 
+                    required 
+                    placeholder="e.g., The Smith Family"
+                    autofocus
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required 
+                    placeholder="parent@example.com"
+                >
+                <small>This will be your login email</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required 
+                    placeholder="Minimum 6 characters"
+                    minlength="6"
+                >
+                <small>Must be at least 6 characters</small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Create Account</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,8 +1,8 @@
-"""Initial migration: Family, Parent, Kid, Chore, ChoreAssignment
+"""Initial schema with is_active
 
-Revision ID: d2970f74607a
+Revision ID: bf7f8719e106
 Revises: 
-Create Date: 2025-11-17 21:44:21.386137
+Create Date: 2025-11-17 22:40:46.217967
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd2970f74607a'
+revision = 'bf7f8719e106'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,8 +21,10 @@ def upgrade():
     op.create_table('family',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('family_code', sa.String(length=6), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('family_code')
     )
     op.create_table('kid',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -52,6 +54,8 @@ def upgrade():
     sa.Column('coin_value', sa.Integer(), nullable=False),
     sa.Column('point_value', sa.Integer(), nullable=False),
     sa.Column('created_by_parent_id', sa.Integer(), nullable=False),
+    sa.Column('frequency', sa.String(length=20), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['created_by_parent_id'], ['parent.id'], ),
     sa.ForeignKeyConstraint(['family_id'], ['family.id'], ),

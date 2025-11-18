@@ -19,7 +19,7 @@ def create_app():
     migrate.init_app(app, db)
     
     # Import models for migration
-    from src.models import family, parent, kid, chore, chore_assignment
+    from src.models import family, parent, kid, chore, chore_assignment, store_item, purchase
     
     # Register blueprints
     from src.controllers.routes import main_bp
