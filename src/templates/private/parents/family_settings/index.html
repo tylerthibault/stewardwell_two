@@ -1,0 +1,249 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Family Settings - Stewardwell{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Settings</h1>
+        <p>Manage your account and family membership</p>
+    </div>
+
+    <!-- Settings Tabs -->
+    <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchTab('account')">
+            👤 Account Settings
+        </button>
+        <button class="settings-tab" onclick="switchTab('family')">
+            👨‍👩‍👧‍👦 Family Information
+        </button>
+    </div>
+
+    <!-- Account Settings Tab -->
+    <div id="account-tab" class="tab-content active">
+        <div class="dashboard-grid">
+        <!-- Account Settings -->
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h2>Account Settings</h2>
+            </div>
+            <div class="card-body">
+                <div class="settings-section">
+                    <h4>Change Email Address</h4>
+                    <p class="section-description">Current email: <strong>{{ parent.email }}</strong></p>
+                    <form method="POST" action="{{ url_for('parent.change_email') }}">
+                        <div class="form-group">
+                            <label for="new_email">New Email Address</label>
+                            <input 
+                                type="email" 
+                                id="new_email" 
+                                name="new_email" 
+                                required 
+                                placeholder="Enter new email address"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_password_email">Confirm Password</label>
+                            <input 
+                                type="password" 
+                                id="confirm_password_email" 
+                                name="confirm_password" 
+                                required 
+                                placeholder="Enter your current password"
+                            >
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Email</button>
+                    </form>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Change Password</h4>
+                    <form method="POST" action="{{ url_for('parent.change_password') }}">
+                        <div class="form-group">
+                            <label for="current_password">Current Password</label>
+                            <input 
+                                type="password" 
+                                id="current_password" 
+                                name="current_password" 
+                                required 
+                                placeholder="Enter current password"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="new_password">New Password</label>
+                            <input 
+                                type="password" 
+                                id="new_password" 
+                                name="new_password" 
+                                required 
+                                minlength="6"
+                                placeholder="Enter new password (min 6 characters)"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_new_password">Confirm New Password</label>
+                            <input 
+                                type="password" 
+                                id="confirm_new_password" 
+                                name="confirm_new_password" 
+                                required 
+                                minlength="6"
+                                placeholder="Confirm new password"
+                            >
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Family Information Tab -->
+    <div id="family-tab" class="tab-content">
+        <div class="dashboard-grid">
+        <!-- Current Family Info -->
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h2>Family Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="family-info-section">
+                    <div class="info-row">
+                        <strong>Family Name:</strong>
+                        <span>{{ family.name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Family Code:</strong>
+                        <span class="family-code">{{ family.family_code }}</span>
+                        <button class="btn btn-small btn-secondary" onclick="copyFamilyCode('{{ family.family_code }}')">📋 Copy</button>
+                    </div>
+                    <div class="info-row">
+                        <strong>Your Role:</strong>
+                        <span>{% if parent.is_head %}Head of Family{% else %}Family Member{% endif %}</span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Parents in Family:</strong>
+                        <span>{{ family_parents|length }}</span>
+                    </div>
+                </div>
+
+                {% if family_parents|length > 1 %}
+                <div class="family-members-list">
+                    <h4>Family Parents:</h4>
+                    <ul>
+                        {% for fp in family_parents %}
+                        <li>
+                            {{ fp.email }}
+                            {% if fp.is_head %}<span class="badge badge-active">Head</span>{% endif %}
+                            {% if fp.id == parent.id %}<span class="badge badge-frequency">You</span>{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Join Different Family -->
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h2>Switch to Different Family</h2>
+            </div>
+            <div class="card-body">
+                <p class="section-description">
+                    Enter a family code to leave your current family and join a different one.
+                    {% if family_parents|length == 1 %}
+                    <strong class="warning-text">Warning: You are the only parent. Switching families will delete your current family and all its data (kids, chores, store items).</strong>
+                    {% else %}
+                    Your current family will continue to exist with the remaining parents.
+                    {% endif %}
+                </p>
+                
+                <form method="POST" action="{{ url_for('parent.join_new_family') }}" onsubmit="return confirm('Are you sure you want to switch families? {% if family_parents|length == 1 %}This will DELETE your current family and all data.{% endif %}');">
+                    <div class="form-group">
+                        <label for="family_code">Enter New Family Code</label>
+                        <input 
+                            type="text" 
+                            id="family_code" 
+                            name="family_code" 
+                            required 
+                            maxlength="6" 
+                            placeholder="6-character code"
+                            style="text-transform: uppercase;"
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-primary">Switch Family</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Leave Family -->
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h2 style="color: #e74c3c;">Danger Zone</h2>
+            </div>
+            <div class="card-body">
+                <p class="section-description">
+                    Leave your current family account.
+                    {% if family_parents|length == 1 %}
+                    <strong class="warning-text">Warning: You are the only parent. Leaving will permanently delete the entire family and all its data (kids, chores, store items, purchases).</strong>
+                    {% else %}
+                    You will be removed from the family, but the family will continue to exist with the remaining parents.
+                    {% endif %}
+                </p>
+                
+                <form method="POST" action="{{ url_for('parent.leave_family') }}" onsubmit="return confirm('Are you ABSOLUTELY SURE you want to leave this family? {% if family_parents|length == 1 %}This will PERMANENTLY DELETE all family data!{% endif %} This action cannot be undone.');">
+                    <button type="submit" class="btn btn-danger">Leave Family</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active from all tab buttons
+    document.querySelectorAll('.settings-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.add('active');
+    
+    // Set active button
+    event.target.classList.add('active');
+}
+
+function copyFamilyCode(code) {
+    navigator.clipboard.writeText(code).then(function() {
+        alert('Family code copied to clipboard!');
+    }, function() {
+        alert('Failed to copy. Family code: ' + code);
+    });
+}
+
+// Auto-uppercase family code input
+document.addEventListener('DOMContentLoaded', function() {
+    const familyCodeInput = document.getElementById('family_code');
+    if (familyCodeInput) {
+        familyCodeInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    }
+});
+</script>
+{% endblock %}

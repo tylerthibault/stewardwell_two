@@ -415,6 +415,140 @@
     letter-spacing: 0.1em;
 }
 
+/* Family Settings Page */
+.settings-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.settings-tab {
+    padding: 1rem 2rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+    position: relative;
+    bottom: -2px;
+}
+
+.settings-tab:hover {
+    color: #4CAF50;
+    background: #f8f9fa;
+}
+
+.settings-tab.active {
+    color: #4CAF50;
+    border-bottom-color: #4CAF50;
+    background: #f0f8f0;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.family-info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.settings-section {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.settings-section form {
+    max-width: 500px;
+}
+
+.settings-section .form-group {
+    margin-bottom: 1rem;
+}
+
+.settings-section .btn {
+    margin-top: 0.5rem;
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.info-row strong {
+    min-width: 150px;
+    color: #555;
+}
+
+.info-row .family-code {
+    font-size: 1.25rem;
+}
+
+.family-members-list {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.family-members-list h4 {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.family-members-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.family-members-list li {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-description {
+    margin-bottom: 1.5rem;
+    color: #666;
+    line-height: 1.6;
+}
+
+.warning-text {
+    display: block;
+    margin-top: 0.75rem;
+    color: #e74c3c;
+    font-weight: 600;
+}
+
 /* Chores Page */
 .page-actions {
     margin-bottom: 2rem;
@@ -777,6 +911,28 @@
 
     .parent-nav .nav-btn {
         width: 100%;
+    }
+
+    /* Settings Tabs */
+    .settings-tabs {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .settings-tab {
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+        border-right: 3px solid transparent;
+    }
+
+    .settings-tab.active {
+        border-bottom: 1px solid #e0e0e0;
+        border-right-color: #4CAF50;
+    }
+
+    .settings-section form {
+        max-width: 100%;
     }
 
     /* Kids List */

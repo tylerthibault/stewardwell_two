@@ -585,3 +585,239 @@ def cancel_purchase(purchase_id):
         flash('Failed to cancel purchase. Please try again.', 'error')
     
     return redirect(url_for('parent.dashboard'))
+
+
+@parent_bp.route('/family-settings')
+@login_required
+def family_settings():
+    parent_id = session.get('parent_id')
+    family_id = session.get('family_id')
+    
+    parent = Parent.query.get(parent_id)
+    family = Family.query.get(family_id)
+    
+    if not parent or not family:
+        flash('Session expired. Please login again.', 'error')
+        return redirect(url_for('auth.login'))
+    
+    # Get all parents in the family
+    family_parents = Parent.query.filter_by(family_id=family_id).all()
+    
+    return render_template('private/parents/family_settings/index.html',
+                         parent=parent,
+                         family=family,
+                         family_parents=family_parents)
+
+
+@parent_bp.route('/leave-family', methods=['POST'])
+@login_required
+def leave_family():
+    parent_id = session.get('parent_id')
+    family_id = session.get('family_id')
+    
+    parent = Parent.query.get(parent_id)
+    family = Family.query.get(family_id)
+    
+    if not parent or not family:
+        flash('Session expired. Please login again.', 'error')
+        return redirect(url_for('auth.login'))
+    
+    # Check if this is the only parent
+    family_parents = Parent.query.filter_by(family_id=family_id).all()
+    
+    if len(family_parents) == 1:
+        # Last parent - delete the entire family and all related data
+        flash('You are the last parent. Leaving will delete the entire family and all data.', 'warning')
+        
+        # The cascade delete will handle kids, chores, assignments, store items, purchases
+        db.session.delete(family)
+        db.session.delete(parent)
+        
+        try:
+            db.session.commit()
+            session.clear()
+            flash('Family deleted. You can create a new family or join an existing one.', 'info')
+            return redirect(url_for('auth.register'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Failed to leave family. Please try again.', 'error')
+            return redirect(url_for('parent.family_settings'))
+    else:
+        # Multiple parents - just remove this parent
+        # If this parent is the head, transfer head status to another parent
+        if parent.is_head:
+            other_parent = next((p for p in family_parents if p.id != parent_id), None)
+            if other_parent:
+                other_parent.is_head = True
+        
+        db.session.delete(parent)
+        
+        try:
+            db.session.commit()
+            session.clear()
+            flash('You have left the family. You can create a new family or join a different one.', 'info')
+            return redirect(url_for('auth.register'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Failed to leave family. Please try again.', 'error')
+            return redirect(url_for('parent.family_settings'))
+
+
+@parent_bp.route('/join-new-family', methods=['POST'])
+@login_required
+def join_new_family():
+    parent_id = session.get('parent_id')
+    family_code = request.form.get('family_code', '').strip().upper()
+    
+    if not family_code:
+        flash('Family code is required.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    parent = Parent.query.get(parent_id)
+    current_family_id = parent.family_id
+    
+    # Find the new family
+    new_family = Family.query.filter_by(family_code=family_code).first()
+    
+    if not new_family:
+        flash('Invalid family code. Please check and try again.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    if new_family.id == current_family_id:
+        flash('You are already in this family.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Check if this is the only parent in current family
+    current_family_parents = Parent.query.filter_by(family_id=current_family_id).all()
+    
+    if len(current_family_parents) == 1:
+        # Last parent - need to delete the old family
+        old_family = Family.query.get(current_family_id)
+        
+        # Transfer parent to new family
+        parent.family_id = new_family.id
+        parent.is_head = False  # Not head of the new family
+        
+        # Delete old family (cascade will handle related data)
+        db.session.delete(old_family)
+    else:
+        # Multiple parents in old family
+        # If this parent was head, transfer head status
+        if parent.is_head:
+            other_parent = next((p for p in current_family_parents if p.id != parent_id), None)
+            if other_parent:
+                other_parent.is_head = True
+        
+        # Transfer parent to new family
+        parent.family_id = new_family.id
+        parent.is_head = False  # Not head of the new family
+    
+    try:
+        db.session.commit()
+        
+        # Update session
+        session['family_id'] = new_family.id
+        
+        flash(f'Successfully joined the {new_family.name} family!', 'success')
+        return redirect(url_for('parent.dashboard'))
+    except Exception as e:
+        db.session.rollback()
+        flash('Failed to join new family. Please try again.', 'error')
+        return redirect(url_for('parent.family_settings'))
+
+
+@parent_bp.route('/change-email', methods=['POST'])
+@login_required
+def change_email():
+    parent_id = session.get('parent_id')
+    new_email = request.form.get('new_email', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
+    
+    if not new_email or not confirm_password:
+        flash('Email and password are required.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    parent = Parent.query.get(parent_id)
+    
+    if not parent:
+        flash('Session expired. Please login again.', 'error')
+        return redirect(url_for('auth.login'))
+    
+    # Verify current password
+    if not parent.check_password(confirm_password):
+        flash('Incorrect password.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Check if new email is already in use
+    existing_parent = Parent.query.filter_by(email=new_email).first()
+    if existing_parent and existing_parent.id != parent_id:
+        flash('Email address already in use.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Check if email is the same
+    if parent.email == new_email:
+        flash('New email is the same as current email.', 'info')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Update email
+    parent.email = new_email
+    
+    try:
+        db.session.commit()
+        flash('Email address updated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Failed to update email. Please try again.', 'error')
+    
+    return redirect(url_for('parent.family_settings'))
+
+
+@parent_bp.route('/change-password', methods=['POST'])
+@login_required
+def change_password():
+    parent_id = session.get('parent_id')
+    current_password = request.form.get('current_password', '').strip()
+    new_password = request.form.get('new_password', '').strip()
+    confirm_new_password = request.form.get('confirm_new_password', '').strip()
+    
+    if not current_password or not new_password or not confirm_new_password:
+        flash('All password fields are required.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    parent = Parent.query.get(parent_id)
+    
+    if not parent:
+        flash('Session expired. Please login again.', 'error')
+        return redirect(url_for('auth.login'))
+    
+    # Verify current password
+    if not parent.check_password(current_password):
+        flash('Current password is incorrect.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Check password length
+    if len(new_password) < 6:
+        flash('New password must be at least 6 characters.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Check passwords match
+    if new_password != confirm_new_password:
+        flash('New passwords do not match.', 'error')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Check if new password is same as current
+    if parent.check_password(new_password):
+        flash('New password cannot be the same as current password.', 'info')
+        return redirect(url_for('parent.family_settings'))
+    
+    # Update password
+    parent.set_password(new_password)
+    
+    try:
+        db.session.commit()
+        flash('Password updated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Failed to update password. Please try again.', 'error')
+    
+    return redirect(url_for('parent.family_settings'))

@@ -20,6 +20,7 @@
             <div class="nav-links">
                 {% block nav %}
                 <a href="{{ url_for('parent.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('parent.family_settings') }}">⚙️ Settings</a>
                 <a href="{{ url_for('auth.logout') }}">Logout</a>
                 {% endblock %}
             </div>
