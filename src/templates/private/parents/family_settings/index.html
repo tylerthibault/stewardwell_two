@@ -158,7 +158,7 @@
                 <p class="section-description">
                     Enter a family code to leave your current family and join a different one.
                     {% if family_parents|length == 1 %}
-                    <div class="alert" style="background: var(--danger-light, #ffe5e5); border: 3px solid var(--danger-primary); padding: 1rem; margin-top: 0.5rem;">
+                    <div class="alert" style="background: var(--danger-light, #ffe5e5); border: 0.1875rem solid var(--danger-primary); padding: 1rem; margin-top: 0.5rem;">
                         <strong>⚠️ Warning:</strong> You are the only parent. Switching families will delete your current family and all its data (kids, chores, store items).
                     </div>
                     {% else %}
@@ -193,7 +193,7 @@
                 <p class="section-description">
                     Leave your current family account.
                     {% if family_parents|length == 1 %}
-                    <div class="alert" style="background: var(--danger-light, #ffe5e5); border: 3px solid var(--danger-primary); padding: 1rem; margin-top: 0.5rem;">
+                    <div class="alert" style="background: var(--danger-light, #ffe5e5); border: 0.1875rem solid var(--danger-primary); padding: 1rem; margin-top: 0.5rem;">
                         <strong>⚠️ Warning:</strong> You are the only parent. Leaving will permanently delete the entire family and all its data (kids, chores, store items, purchases).
                     </div>
                     {% else %}

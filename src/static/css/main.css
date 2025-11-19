@@ -29,7 +29,7 @@ nav .logo h1 {
     font-size: 1.8rem;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 nav .nav-links a {
@@ -40,7 +40,7 @@ nav .nav-links a {
     font-weight: 700;
     text-transform: uppercase;
     font-size: 0.9rem;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 nav .nav-links a:hover {
@@ -67,7 +67,7 @@ main {
     border: var(--border-sm) solid;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     font-size: 0.9rem;
 }
 
@@ -102,7 +102,7 @@ footer p {
     margin: 0;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     font-size: 0.875rem;
 }
 
@@ -146,6 +146,26 @@ footer p {
     footer {
         padding: 1.5rem 1rem;
         font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Tighter padding on small mobile */
+    nav {
+        padding: 0.75rem;
+    }
+
+    main {
+        padding: 0.75rem;
+    }
+
+    .flash-messages {
+        padding: 0 0.75rem;
+    }
+
+    /* Reduce flash message padding */
+    .flash {
+        padding: var(--space-md);
     }
 }
 

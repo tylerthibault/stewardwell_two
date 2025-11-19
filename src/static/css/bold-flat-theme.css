@@ -160,7 +160,7 @@ body {
     color: var(--text-secondary);
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.0625em;
 }
 
 .family-code {
@@ -168,7 +168,7 @@ body {
     font-size: 1.25rem;
     font-weight: 800;
     color: var(--text-primary);
-    letter-spacing: 2px;
+    letter-spacing: 0.125em;
 }
 
 .family-code-display button {
@@ -180,7 +180,7 @@ body {
     font-size: 0.875rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     transition: all 0.2s;
     box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark);
 }
@@ -222,7 +222,7 @@ body {
     border: var(--border-md) solid var(--border-primary);
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--border-primary);
 }
 
@@ -272,7 +272,7 @@ body {
     font-weight: 900;
     color: #ffffff;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 .card-header button {
@@ -285,7 +285,7 @@ body {
     font-weight: 800;
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-sm) var(--shadow-sm) 0 #ffffff;
 }
 
@@ -343,7 +343,7 @@ body {
     color: #ffffff;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
 }
 
@@ -364,7 +364,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary);
 }
 
@@ -430,7 +430,7 @@ body {
     font-weight: 800;
     box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 .assignment-actions {
@@ -448,7 +448,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary);
 }
 
@@ -466,7 +466,7 @@ body {
     font-size: 1rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     transition: all 0.2s;
     text-decoration: none;
     display: inline-block;
@@ -623,7 +623,7 @@ body {
     font-weight: 900;
     color: #ffffff;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 .close {
@@ -659,7 +659,7 @@ body {
     font-weight: 800;
     color: var(--text-primary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 .form-group input,
@@ -738,7 +738,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary);
 }
 
@@ -795,7 +795,7 @@ body {
     font-weight: 800;
     color: var(--text-primary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 .status-badge {
@@ -803,7 +803,7 @@ body {
     font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     border: var(--border-sm) solid var(--border-primary);
     box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
 }
@@ -834,7 +834,7 @@ body {
     color: #ffffff;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
 }
 
@@ -851,7 +851,7 @@ body {
     color: var(--text-primary);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
 }
 
@@ -871,7 +871,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary);
 }
 
@@ -923,7 +923,7 @@ body {
     font-weight: 800;
     color: var(--text-primary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     margin-bottom: var(--space-sm);
 }
 
@@ -967,7 +967,7 @@ body {
     font-weight: 800;
     color: var(--text-primary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
 }
 
 .store-item-description {
@@ -999,7 +999,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03em;
     box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary);
 }
 
@@ -1039,4 +1039,49 @@ body {
 .dark-theme .modal-header h3,
 .dark-theme .close {
     color: #000000;
+}
+
+/* =================================================================
+   Responsive Mobile Optimizations (<576px)
+   Reduce padding to maximize usable screen space on small devices
+   ================================================================= */
+
+@media (max-width: 576px) {
+    /* Reduce card body padding from 2rem to 1rem */
+    .card-body {
+        padding: var(--space-md);
+    }
+    
+    /* Reduce item card padding from 1.75rem to 1rem */
+    .kid-item,
+    .assignment-item,
+    .store-item {
+        padding: var(--space-md);
+    }
+    
+    /* Reduce modal padding */
+    .modal-header,
+    .modal-body {
+        padding: var(--space-md);
+    }
+    
+    /* Reduce flash message padding */
+    .flash {
+        padding: var(--space-md) var(--space-md);
+    }
+    
+    /* Tighter nav padding on very small screens */
+    nav {
+        padding: 0 var(--space-sm);
+    }
+    
+    /* Reduce card header padding */
+    .card-header {
+        padding: var(--space-md) var(--space-lg);
+    }
+    
+    /* Reduce navigation button padding */
+    .nav-btn {
+        padding: var(--space-md) var(--space-lg);
+    }
 }
