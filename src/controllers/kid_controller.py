@@ -239,7 +239,7 @@ def logout():
     kid_name = session.get('kid_name', 'Kid')
     session.clear()
     flash(f'Bye {kid_name}! See you soon! 👋', 'success')
-    return redirect(url_for('main.index'))
+    return redirect(url_for('main.landing'))
 
 
 @kid_bp.route('/store')

@@ -12,13 +12,13 @@
         <h1>Settings</h1>
         <p>Manage your account and family membership</p>
     </div>
-
+    
     <!-- Settings Tabs -->
-    <div class="settings-tabs">
-        <button class="settings-tab active" onclick="switchTab('account')">
+    <div class="d-flex gap-3 mb-4">
+        <button class="nav-btn flex-fill active" onclick="switchTab('account')">
             👤 Account Settings
         </button>
-        <button class="settings-tab" onclick="switchTab('family')">
+        <button class="nav-btn flex-fill" onclick="switchTab('family')">
             👨‍👩‍👧‍👦 Family Information
         </button>
     </div>
@@ -217,8 +217,10 @@ function switchTab(tabName) {
     });
     
     // Remove active from all tab buttons
-    document.querySelectorAll('.settings-tab').forEach(btn => {
-        btn.classList.remove('active');
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.hasAttribute('onclick') && btn.getAttribute('onclick').includes('switchTab')) {
+            btn.classList.remove('active');
+        }
     });
     
     // Show selected tab

@@ -15,8 +15,9 @@ parent_bp = Blueprint('parent', __name__)
 
 
 @parent_bp.route('/dashboard')
+@parent_bp.route('/dashboard/<int:num>')
 @login_required
-def dashboard():
+def dashboard(num=None):
     parent_id = session.get('parent_id')
     family_id = session.get('family_id')
     
@@ -49,7 +50,17 @@ def dashboard():
         Purchase.status == 'pending'
     ).order_by(Purchase.purchased_at.desc()).all()
     
-    return render_template('private/parents/dashboard/index.html',
+    if not num:
+        return render_template('private/parents/dashboard/index.html',
+                         parent=parent,
+                         family=family,
+                         kids=kids,
+                         chores=chores,
+                         pending_assignments=pending_assignments,
+                         store_items=store_items,
+                         pending_purchases=pending_purchases)
+    else:
+        return render_template(f'private/parents/dashboard/index{num}.html',
                          parent=parent,
                          family=family,
                          kids=kids,

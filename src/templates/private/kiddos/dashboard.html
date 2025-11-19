@@ -2,126 +2,150 @@
 
 {% block title %}{{ kid.name }}'s Dashboard - Stewardwell{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/kid.css') }}">
-{% endblock %}
-
 {% block nav %}
-<a href="{{ url_for('kid.logout') }}">Logout</a>
+<a href="{{ url_for('kid.logout') }}" class="nav-btn">Logout</a>
 {% endblock %}
 
 {% block content %}
-<div class="kid-dashboard">
-        <div class="kid-header">
-            <div class="kid-welcome">
-                <h1>👋 Hi {{ kid.name }}!</h1>
-                <p>Let's get some chores done!</p>
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="mb-1" style="font-size: 2.5rem;">👋 Hi {{ kid.name }}!</h1>
+                <p class="m-0">Let's get some chores done!</p>
             </div>
-            <div class="kid-coins">
-                <div class="coin-display">🪙 {{ kid.coin_balance }}</div>
-                <div class="coin-label">Coins</div>
+            <div class="text-end">
+                <div class="coin-badge d-inline-block" style="font-size: 2rem; padding: 1rem 1.5rem;">
+                    🪙 {{ kid.coin_balance }}
+                </div>
+                <div class="mt-2" style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 800; text-transform: uppercase;">
+                    Coins
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Navigation -->
-        <div class="kid-nav">
-            <a href="{{ url_for('kid.dashboard') }}" class="nav-btn active">
-                📋 Chores
-            </a>
-            <a href="{{ url_for('kid.store') }}" class="nav-btn">
-                🛒 Store
-            </a>
-        </div>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <!-- Available Chores -->
-        <div class="chore-section">
-            <h2>📋 Available Chores</h2>
-            {% if available_chores %}
-                <div class="chore-grid">
-                    {% for chore in available_chores %}
-                    <div class="chore-card">
-                        <div class="chore-info">
-                            <h3>{{ chore.name }}</h3>
-                            <div class="chore-rewards">
-                                <span>🪙 {{ chore.coin_value }} coins</span>
-                                <span>⭐ {{ chore.point_value }} points</span>
-                                {% if chore.frequency != 'unlimited' %}
-                                    <span class="frequency-tag">
-                                        {% if chore.frequency == 'daily' %}📅 Daily
-                                        {% elif chore.frequency == 'weekly' %}📆 Weekly
-                                        {% elif chore.frequency == 'monthly' %}🗓️ Monthly
-                                        {% elif chore.frequency == 'one_time' %}🔒 One Time
+    <!-- Navigation -->
+    <div class="parent-nav d-flex gap-3 mb-4">
+        <a href="{{ url_for('kid.dashboard') }}" class="nav-btn active flex-fill">
+            📋 Chores
+        </a>
+        <a href="{{ url_for('kid.store') }}" class="nav-btn flex-fill">
+            🛒 Store
+        </a>
+    </div>
+    
+    <!-- Available Chores -->
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2>📋 Available Chores</h2>
+            </div>
+            <div class="card-body">
+                {% if available_chores %}
+                    <div class="row g-3">
+                        {% for chore in available_chores %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="chore-item">
+                                <div class="chore-main">
+                                    <div class="chore-name-section">
+                                        <strong>{{ chore.name }}</strong>
+                                    </div>
+                                    <div class="chore-rewards-section">
+                                        <span class="coin-badge" style="display: inline-block;">🪙 {{ chore.coin_value }}</span>
+                                        <span class="point-badge">⭐ {{ chore.point_value }}</span>
+                                        {% if chore.frequency != 'unlimited' %}
+                                            <span class="frequency-badge">
+                                                {% if chore.frequency == 'daily' %}📅 Daily
+                                                {% elif chore.frequency == 'weekly' %}📆 Weekly
+                                                {% elif chore.frequency == 'monthly' %}🗓️ Monthly
+                                                {% elif chore.frequency == 'one_time' %}🔒 One Time
+                                                {% endif %}
+                                            </span>
                                         {% endif %}
-                                    </span>
-                                {% endif %}
+                                    </div>
+                                </div>
+                                <form method="POST" action="{{ url_for('kid.pick_chore', chore_id=chore.id) }}" class="w-100">
+                                    <button type="submit" class="btn-success w-100">Pick This! 🎯</button>
+                                </form>
                             </div>
                         </div>
-                        <form method="POST" action="{{ url_for('kid.pick_chore', chore_id=chore.id) }}">
-                            <button type="submit" class="btn-chore btn-pick">Pick This!</button>
-                        </form>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty-state">No chores available right now. Check back later! 🌟</div>
-            {% endif %}
+                {% else %}
+                    <div class="empty-state">No chores available right now. Check back later! 🌟</div>
+                {% endif %}
+            </div>
         </div>
-        
-        <!-- Active Chores -->
-        <div class="chore-section">
-            <h2>🔄 Your Active Chores</h2>
-            {% if active_assignments %}
-                <div class="chore-grid">
-                    {% for assignment in active_assignments %}
-                    <div class="chore-card">
-                        <div class="chore-info">
-                            <h3>{{ assignment.chore.name }}</h3>
-                            <div class="chore-rewards">
-                                <span>🪙 {{ assignment.chore.coin_value }} coins</span>
-                                <span>⭐ {{ assignment.chore.point_value }} points</span>
+    </div>
+    
+    <!-- Active Chores -->
+    <div class="dashboard-grid">
+        <div class="dashboard-card my-3">
+            <div class="card-header" style="background: var(--coin-primary); border-bottom-color: var(--coin-dark);">
+                <h2>🔄 Your Active Chores</h2>
+            </div>
+            <div class="card-body">
+                {% if active_assignments %}
+                    <div class="row g-3">
+                        {% for assignment in active_assignments %}
+                        <div class="col-12">
+                            <div class="chore-item">
+                                <div class="chore-main">
+                                    <div class="chore-name-section">
+                                        <strong>{{ assignment.chore.name }}</strong>
+                                    </div>
+                                    <div class="chore-rewards-section">
+                                        <span class="coin-badge" style="display: inline-block;">🪙 {{ assignment.chore.coin_value }}</span>
+                                        <span class="point-badge">⭐ {{ assignment.chore.point_value }}</span>
+                                    </div>
+                                </div>
+                                <form method="POST" action="{{ url_for('kid.complete_chore', assignment_id=assignment.id) }}" class="w-100">
+                                    <button type="submit" class="btn-primary w-100">Mark Complete! ✅</button>
+                                </form>
                             </div>
                         </div>
-                        <form method="POST" action="{{ url_for('kid.complete_chore', assignment_id=assignment.id) }}">
-                            <button type="submit" class="btn-chore btn-complete">Mark Complete!</button>
-                        </form>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty-state">No active chores. Pick one above! 💪</div>
-            {% endif %}
+                {% else %}
+                    <div class="empty-state">No active chores. Pick one above! 💪</div>
+                {% endif %}
+            </div>
         </div>
-        
-        <!-- Pending Approval -->
-        <div class="chore-section">
-            <h2>⏳ Waiting for Parent Approval</h2>
-            {% if pending_assignments %}
-                <div class="chore-grid">
-                    {% for assignment in pending_assignments %}
-                    <div class="chore-card">
-                        <div class="chore-info">
-                            <h3>{{ assignment.chore.name }}</h3>
-                            <div class="chore-rewards">
-                                <span>🪙 {{ assignment.chore.coin_value }} coins</span>
-                                <span>⭐ {{ assignment.chore.point_value }} points</span>
+    </div>
+    
+    <!-- Pending Approval -->
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-header" style="background: #9b59b6; border-bottom-color: #8e44ad;">
+                <h2>⏳ Waiting for Parent Approval</h2>
+            </div>
+            <div class="card-body">
+                {% if pending_assignments %}
+                    <div class="row g-3">
+                        {% for assignment in pending_assignments %}
+                        <div class="col-12">
+                            <div class="chore-item" style="opacity: 0.8;">
+                                <div class="chore-main">
+                                    <div class="chore-name-section">
+                                        <strong>{{ assignment.chore.name }}</strong>
+                                        <span class="status-badge" style="background: #9b59b6; border-color: #9b59b6;">Pending ⏳</span>
+                                    </div>
+                                    <div class="chore-rewards-section">
+                                        <span class="coin-badge" style="display: inline-block;">🪙 {{ assignment.chore.coin_value }}</span>
+                                        <span class="point-badge">⭐ {{ assignment.chore.point_value }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <span class="pending-badge">Pending ⏳</span>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty-state">No chores waiting for approval. 👍</div>
-            {% endif %}
+                {% else %}
+                    <div class="empty-state">No chores waiting for approval. 👍</div>
+                {% endif %}
+            </div>
         </div>
-        
+    </div>
+    
 </div>
 {% endblock %}

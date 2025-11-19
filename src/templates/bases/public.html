@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Stewardwell{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bold-flat-theme.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -20,17 +22,9 @@
         </nav>
     </header>
     
+    {% include 'app_components/flash_messages.html' %}
+    
     <main>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-        
         {% block content %}{% endblock %}
     </main>
     
@@ -38,7 +32,9 @@
         <p>&copy; 2025 Stewardwell - Stewarding Your Family Well</p>
     </footer>
     
+    <script src="{{ url_for('static', filename='js/bootstrap/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bold-flat-theme.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

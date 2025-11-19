@@ -2,84 +2,98 @@
 
 {% block title %}{{ kid.name }}'s Store - Stewardwell{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/kid.css') }}">
-{% endblock %}
-
 {% block nav %}
-<a href="{{ url_for('kid.logout') }}">Logout</a>
+<a href="{{ url_for('kid.logout') }}" class="nav-btn">Logout</a>
 {% endblock %}
 
 {% block content %}
-<div class="kid-dashboard">
-        <div class="kid-header">
-            <div class="kid-welcome">
-                <h1>🛒 Store</h1>
-                <p>Spend your coins on rewards!</p>
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="mb-1" style="font-size: 2.5rem;">🛒 Store</h1>
+                <p class="m-0">Spend your coins on rewards!</p>
             </div>
-            <div class="kid-coins">
-                <div class="coin-display">🪙 {{ kid.coin_balance }}</div>
-                <div class="coin-label">Coins</div>
+            <div class="text-end">
+                <div class="coin-badge d-inline-block" style="font-size: 2rem; padding: 1rem 1.5rem;">
+                    🪙 {{ kid.coin_balance }}
+                </div>
+                <div class="mt-2" style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 800; text-transform: uppercase;">
+                    Coins
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Navigation -->
-        <div class="kid-nav">
-            <a href="{{ url_for('kid.dashboard') }}" class="nav-btn">
-                📋 Chores
-            </a>
-            <a href="{{ url_for('kid.store') }}" class="nav-btn active">
-                🛒 Store
-            </a>
-        </div>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+    <!-- Navigation -->
+    <div class="parent-nav d-flex gap-3 mb-4">
+        <a href="{{ url_for('kid.dashboard') }}" class="nav-btn flex-fill">
+            📋 Chores
+        </a>
+        <a href="{{ url_for('kid.store') }}" class="nav-btn active flex-fill">
+            🛒 Store
+        </a>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages mb-4">
                 {% for category, message in messages %}
                     <div class="flash {{ category }}">{{ message }}</div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="store-container">
-            <h2>Available Items</h2>
-            
-            {% if store_items %}
-                <div class="store-grid">
-                    {% for item in store_items %}
-                    <div class="store-item">
-                        <h3 class="item-name">{{ item.name }}</h3>
-                        {% if item.description %}
-                            <p class="item-description">{{ item.description }}</p>
-                        {% endif %}
-                        <div class="item-price">
-                            🪙 {{ item.coin_cost }}
-                        </div>
-                        <form method="POST" action="{{ url_for('kid.purchase_item', item_id=item.id) }}">
-                            <button 
-                                type="submit" 
-                                class="purchase-btn"
-                                {% if kid.coin_balance < item.coin_cost %}disabled{% endif %}
-                                onclick="return confirm('Purchase {{ item.name }} for {{ item.coin_cost }} coins?');"
-                            >
-                                {% if kid.coin_balance < item.coin_cost %}
-                                    Not Enough Coins
-                                {% else %}
-                                    Purchase
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Store Items -->
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2>🏪 Available Items</h2>
+            </div>
+            <div class="card-body">
+                {% if store_items %}
+                    <div class="row g-3">
+                        {% for item in store_items %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="store-item">
+                                <div class="store-item-header">
+                                    <strong>{{ item.name }}</strong>
+                                </div>
+                                {% if item.description %}
+                                    <p class="store-item-description">{{ item.description }}</p>
                                 {% endif %}
-                            </button>
-                        </form>
+                                <div class="store-item-cost mb-3">
+                                    <span class="coin-badge d-inline-block">🪙 {{ item.coin_cost }}</span>
+                                </div>
+                                <form method="POST" action="{{ url_for('kid.purchase_item', item_id=item.id) }}" class="w-100">
+                                    <button 
+                                        type="submit" 
+                                        class="{% if kid.coin_balance < item.coin_cost %}btn-secondary{% else %}btn-success{% endif %} w-100"
+                                        {% if kid.coin_balance < item.coin_cost %}disabled{% endif %}
+                                        onclick="return confirm('Purchase {{ item.name }} for {{ item.coin_cost }} coins?');"
+                                    >
+                                        {% if kid.coin_balance < item.coin_cost %}
+                                            Not Enough Coins 😔
+                                        {% else %}
+                                            Purchase! 🎁
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty-state">
-                    <div class="empty-state-icon">🏪</div>
-                    <p>No items available in the store yet.</p>
-                    <p>Check back later!</p>
-                </div>
-            {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">🏪</div>
+                        <p>No items available in the store yet.</p>
+                        <p>Check back later!</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
+    </div>
 
 </div>
 {% endblock %}

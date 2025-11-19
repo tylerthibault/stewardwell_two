@@ -1,75 +1,62 @@
 {% extends "bases/private.html" %}
 
-{% block title %}Parent Dashboard - Stewardwell{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
-{% endblock %}
+{% block title %}Parent Dashboard - Bold Flat{% endblock %}
 
 {% block content %}
+
 <div class="dashboard-container">
     <div class="dashboard-header">
-        <h1>Welcome, {{ family.name }}!</h1>
-        <p>Manage your family's chores and rewards</p>
+        <h1>{{ family.name }} Dashboard</h1>
+        <p>Simple. Bold. Effective.</p>
         <div class="family-code-display">
             <strong>Family Code:</strong> <span class="family-code">{{ family.family_code }}</span>
-            <button class="btn btn-small btn-secondary" onclick="copyFamilyCode('{{ family.family_code }}')">📋 Copy</button>
+            <button onclick="copyFamilyCode('{{ family.family_code }}')">📋 Copy</button>
         </div>
     </div>
 
-    <!-- Navigation -->
-    <div class="parent-nav">
-        <a href="{{ url_for('parent.dashboard') }}" class="nav-btn active">
-            📊 Dashboard
-        </a>
-        <a href="{{ url_for('parent.chores') }}" class="nav-btn">
-            📋 Chores
-        </a>
-        <a href="{{ url_for('parent.store') }}" class="nav-btn">
-            🛒 Store
-        </a>
-    </div>
+    {% include 'private/parents/components/navbar.html' %}
 
     <div class="dashboard-grid">
-        <!-- Kids Section -->
         <div class="dashboard-card full-width">
             <div class="card-header">
                 <h2>Kids</h2>
-                <button class="btn btn-small" onclick="toggleModal('addKidModal')">+ Add Kid</button>
+                <button onclick="toggleModal('addKidModal')">+ Add Kid</button>
             </div>
             <div class="card-body">
                 {% if kids %}
-                    <div class="kids-list">
+                    <div class="row g-3">
                         {% for kid in kids %}
+                        <div class="col-12 col-md-6 col-lg-4">
                         <div class="kid-item">
                             <div class="kid-info">
                                 <strong>{{ kid.name }}</strong>
-                                <span class="coin-badge">{{ kid.coin_balance }} coins</span>
+                                <span class="coin-badge">{{ kid.coin_balance }} Coins</span>
                             </div>
                             <div class="kid-actions">
-                                <button type="button" class="btn btn-success btn-small" onclick="toggleModal('adjustCoinsModal{{ kid.id }}')">💰 Adjust Coins</button>
-                                <form method="POST" action="{{ url_for('parent.reset_pin', kid_id=kid.id) }}" class="inline-form" onsubmit="return confirm('Reset PIN for {{ kid.name }}? The new PIN will be displayed once.');">
-                                    <button type="submit" class="btn btn-secondary btn-small">🔑 Reset PIN</button>
+                                <button type="button" onclick="toggleModal('adjustCoinsModal{{ kid.id }}')">💰 Adjust Coins</button>
+                                <form method="POST" action="{{ url_for('parent.reset_pin', kid_id=kid.id) }}" class="inline-form" onsubmit="return confirm('Reset PIN for {{ kid.name }}?');">
+                                    <button type="submit">🔑 Reset PIN</button>
                                 </form>
                             </div>
+                        </div>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="empty-state">No kids added yet. Add your first kid to get started!</p>
+                    <p class="empty-state">No kids added yet</p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Pending Chore Approvals Section -->
         <div class="dashboard-card full-width">
             <div class="card-header">
                 <h2>Pending Chore Approvals</h2>
             </div>
             <div class="card-body">
                 {% if pending_assignments %}
-                    <div class="assignments-list">
+                    <div class="row g-3">
                         {% for assignment in pending_assignments %}
+                        <div class="col-12 col-md-6 col-lg-4">
                         <div class="assignment-item">
                             <div class="assignment-info">
                                 <strong>{{ assignment.kid.name }}</strong> completed 
@@ -79,64 +66,64 @@
                             <div class="assignment-actions">
                                 <form method="POST" action="{{ url_for('parent.confirm_chore', assignment_id=assignment.id) }}" class="inline-form">
                                     <input type="hidden" name="coin_adjustment" value="{{ assignment.chore.coin_value }}">
-                                    <button type="submit" class="btn btn-success btn-small">
-                                        Approve ({{ assignment.chore.coin_value }} coins)
+                                    <button type="submit" class="btn-success">
+                                        ✓ Approve (+{{ assignment.chore.coin_value }} coins)
                                     </button>
                                 </form>
                                 <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" class="inline-form">
-                                    <button type="submit" class="btn btn-danger btn-small">Reject</button>
+                                    <button type="submit" class="btn-danger">✗ Reject</button>
                                 </form>
                             </div>
+                        </div>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="empty-state">No pending chores to approve.</p>
+                    <p class="empty-state">No pending chores</p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Pending Purchase Requests Section -->
         <div class="dashboard-card full-width">
             <div class="card-header">
                 <h2>Pending Purchase Requests</h2>
             </div>
             <div class="card-body">
                 {% if pending_purchases %}
-                    <div class="assignments-list">
+                    <div class="row g-3">
                         {% for purchase in pending_purchases %}
+                        <div class="col-12 col-md-6 col-lg-4">
                         <div class="assignment-item">
                             <div class="assignment-info">
                                 <strong>{{ purchase.kid.name }}</strong> wants to purchase 
                                 <strong>{{ purchase.item.name }}</strong>
                                 {% if purchase.item.description %}
-                                    <span class="item-description-inline">- {{ purchase.item.description }}</span>
+                                    <span>- {{ purchase.item.description }}</span>
                                 {% endif %}
                                 <span class="timestamp">{{ purchase.purchased_at.strftime('%Y-%m-%d %H:%M') if purchase.purchased_at else 'Just now' }}</span>
-                                <div class="purchase-cost">Cost: {{ purchase.coin_cost }} coins (already deducted)</div>
+                                <div class="purchase-cost">{{ purchase.coin_cost }} coins</div>
                             </div>
                             <div class="assignment-actions">
                                 <form method="POST" action="{{ url_for('parent.fulfill_purchase', purchase_id=purchase.id) }}" class="inline-form">
-                                    <button type="submit" class="btn btn-success btn-small">
-                                        ✓ Fulfill
-                                    </button>
+                                    <button type="submit" class="btn-success">✓ Fulfill</button>
                                 </form>
                                 <form method="POST" action="{{ url_for('parent.cancel_purchase', purchase_id=purchase.id) }}" class="inline-form">
-                                    <button type="submit" class="btn btn-danger btn-small">✗ Cancel & Refund</button>
+                                    <button type="submit" class="btn-danger">✗ Cancel & Refund</button>
                                 </form>
                             </div>
+                        </div>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="empty-state">No pending purchase requests.</p>
+                    <p class="empty-state">No pending purchases</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Add Kid Modal -->
+<!-- Modals -->
 <div id="addKidModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -149,19 +136,18 @@
                 <input type="text" id="kid_name" name="name" required placeholder="Enter kid's name">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="toggleModal('addKidModal')">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Kid</button>
+                <button type="button" class="btn-secondary" onclick="toggleModal('addKidModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Add Kid</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Adjust Coins Modals (one per kid) -->
 {% for kid in kids %}
 <div id="adjustCoinsModal{{ kid.id }}" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Adjust Coins for {{ kid.name }}</h3>
+            <h3>Adjust Coins: {{ kid.name }}</h3>
             <span class="close" onclick="toggleModal('adjustCoinsModal{{ kid.id }}')">&times;</span>
         </div>
         <form method="POST" action="{{ url_for('parent.adjust_coins', kid_id=kid.id) }}">
@@ -170,11 +156,11 @@
                 <div class="radio-group">
                     <label class="radio-label">
                         <input type="radio" name="action" value="add" checked>
-                        ➕ Add Coins (Reward)
+                        ➕ Add Coins
                     </label>
                     <label class="radio-label">
                         <input type="radio" name="action" value="subtract">
-                        ➖ Subtract Coins (Consequence)
+                        ➖ Subtract Coins
                     </label>
                 </div>
             </div>
@@ -184,12 +170,12 @@
             </div>
             <div class="form-group">
                 <label for="reason{{ kid.id }}">Reason (optional)</label>
-                <input type="text" id="reason{{ kid.id }}" name="reason" placeholder="e.g., Good behavior, Helped sibling">
-                <small class="help-text">This will be shown to {{ kid.name }}</small>
+                <input type="text" id="reason{{ kid.id }}" name="reason" placeholder="e.g., Good behavior">
+                <small class="help-text">Shown to {{ kid.name }}</small>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="toggleModal('adjustCoinsModal{{ kid.id }}')">Cancel</button>
-                <button type="submit" class="btn btn-primary">Adjust Coins</button>
+                <button type="button" class="btn-secondary" onclick="toggleModal('adjustCoinsModal{{ kid.id }}')" >Cancel</button>
+                <button type="submit" class="btn-primary">Confirm</button>
             </div>
         </form>
     </div>
@@ -201,11 +187,13 @@
 {% block scripts %}
 <script>
 function copyFamilyCode(code) {
-    navigator.clipboard.writeText(code).then(function() {
-        alert('Family code copied to clipboard!');
-    }, function() {
-        alert('Failed to copy. Family code: ' + code);
+    navigator.clipboard.writeText(code).then(() => {
+        alert('Family code copied!');
     });
+}
+
+function toggleModal(modalId) {
+    document.getElementById(modalId).classList.toggle('active');
 }
 </script>
 {% endblock %}

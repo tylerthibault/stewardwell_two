@@ -2,36 +2,49 @@
 
 {% block title %}Enter PIN - Stewardwell{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-{% endblock %}
-
 {% block nav %}{% endblock %}
 
 {% block content %}
-<div class="pin-container">
-        <h1 class="kid-name">👋 Hi {{ kid.name }}!</h1>
-        <p class="pin-prompt">Enter your PIN to continue</p>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+<div class="dashboard-container">
+    <div class="dashboard-header" style="text-align: center;">
+        <h1 style="font-size: 3rem;">👋 Hi {{ kid.name }}!</h1>
+        <p style="font-size: 1.25rem;">Enter your PIN to continue</p>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
                 {% for category, message in messages %}
                     <div class="flash {{ category }}">{{ message }}</div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <form method="POST" action="{{ url_for('kid.quick_login_verify') }}">
-            <input type="password" 
-                   name="pin" 
-                   class="pin-input-large"
-                   maxlength="4" 
-                   placeholder="••••"
-                   pattern="[0-9]{4}"
-                   autofocus
-                   required>
-            <button type="submit" class="btn-verify">Go! 🚀</button>
-        </form>
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('kid.quick_login_verify') }}">
+                    <div class="form-group">
+                        <label for="pin" style="text-align: center;">Your PIN</label>
+                        <input type="password" 
+                               id="pin"
+                               name="pin" 
+                               maxlength="4" 
+                               placeholder="••••"
+                               pattern="[0-9]{4}"
+                               style="text-align: center; font-size: 3rem; letter-spacing: 1rem; padding: 1.5rem;"
+                               autofocus
+                               required>
+                    </div>
+                    
+                    <div class="modal-footer" style="margin-top: 2rem; justify-content: center;">
+                        <button type="submit" class="btn-success" style="font-size: 1.5rem; padding: 1.5rem 3rem;">Go! 🚀</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 

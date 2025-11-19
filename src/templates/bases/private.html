@@ -9,35 +9,28 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bold-flat-theme.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header>
-        <nav>
+        <nav class="d-flex justify-content-between align-items-center">
             <div class="logo">
                 <h1>Stewardwell</h1>
             </div>
-            <div class="nav-links">
+            <div class="nav-links d-flex gap-3">
                 {% block nav %}
-                <a href="{{ url_for('parent.dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('parent.family_settings') }}">⚙️ Settings</a>
-                <a href="{{ url_for('auth.logout') }}">Logout</a>
+                <a href="{{ url_for('parent.dashboard') }}" class="nav-btn" style="flex: none; padding: 0.875rem 1.25rem; font-size: 0.9rem;">🏠 Dashboard</a>
+                <a href="{{ url_for('parent.family_settings') }}" class="nav-btn" style="flex: none; padding: 0.875rem 1.25rem; font-size: 0.9rem;">⚙️ Settings</a>
+                <a href="{{ url_for('auth.logout') }}" class="nav-btn" style="flex: none; padding: 0.875rem 1.25rem; font-size: 0.9rem; background: var(--danger-primary); border-color: var(--danger-primary); color: #ffffff; box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--danger-dark);">Logout</a>
                 {% endblock %}
             </div>
         </nav>
     </header>
     
+    {% include 'app_components/flash_messages.html' %}
+    
     <main>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-        
         {% block content %}{% endblock %}
     </main>
     
@@ -47,6 +40,7 @@
 
     <script src="{{ url_for('static', filename='js/bootstrap/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bold-flat-theme.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
