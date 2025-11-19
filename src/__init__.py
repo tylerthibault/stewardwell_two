@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote_plus
 from flask import Flask
 from flask_migrate import Migrate
 from src.models.base_model import db
@@ -23,7 +24,27 @@ def create_app():
         mysql_port = os.environ.get('MYSQL_PORT', '3306')
         mysql_database = os.environ.get('MYSQL_DATABASE', 'stewardwell')
         
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_database}'
+        # URL-encode password to handle special characters
+        encoded_password = quote_plus(mysql_password)
+        
+        # First, create the database if it doesn't exist
+        try:
+            import pymysql
+            connection = pymysql.connect(
+                host=mysql_host,
+                port=int(mysql_port),
+                user=mysql_user,
+                password=mysql_password
+            )
+            with connection.cursor() as cursor:
+                cursor.execute(f"CREATE DATABASE IF NOT EXISTS {mysql_database}")
+            connection.commit()
+            connection.close()
+            print(f"[DATABASE] Ensured database '{mysql_database}' exists")
+        except Exception as e:
+            print(f"[DATABASE] Warning: Could not create database: {e}")
+        
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{mysql_user}:{encoded_password}@{mysql_host}:{mysql_port}/{mysql_database}'
         
         # MySQL connection pool settings
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
