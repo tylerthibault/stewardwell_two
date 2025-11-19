@@ -11,7 +11,30 @@ def create_app():
     
     # Configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///stewardwell.db')
+    
+    # Database configuration - use MySQL in production, SQLite locally
+    deployment_env = os.environ.get('DEPLOYMENT_ENV', 'development')
+    
+    if deployment_env == 'production':
+        # Production MySQL database on CapRover
+        mysql_user = os.environ.get('MYSQL_USER', 'root')
+        mysql_password = os.environ.get('MYSQL_PASSWORD', '')
+        mysql_host = os.environ.get('MYSQL_HOST', 'srv-captain--stewardwell-db')
+        mysql_port = os.environ.get('MYSQL_PORT', '3306')
+        mysql_database = os.environ.get('MYSQL_DATABASE', 'stewardwell')
+        
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_database}'
+        
+        # MySQL connection pool settings
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_size': 10,
+            'pool_recycle': 3600,
+            'pool_pre_ping': True,
+        }
+    else:
+        # Local development SQLite database
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stewardwell.db'
+    
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Initialize extensions
