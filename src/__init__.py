@@ -31,9 +31,13 @@ def create_app():
             'pool_recycle': 3600,
             'pool_pre_ping': True,
         }
+        
+        # Log database connection info (without password)
+        print(f"[DATABASE] Using MySQL: {mysql_user}@{mysql_host}:{mysql_port}/{mysql_database}")
     else:
         # Local development SQLite database
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stewardwell.db'
+        print(f"[DATABASE] Using SQLite: stewardwell.db")
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
@@ -43,6 +47,14 @@ def create_app():
     
     # Import models for migration
     from src.models import family, parent, kid, chore, chore_assignment, store_item, purchase
+    
+    # Auto-create tables on first request if they don't exist
+    with app.app_context():
+        try:
+            db.create_all()
+            print("[DATABASE] Tables initialized successfully")
+        except Exception as e:
+            print(f"[DATABASE] Warning: Could not auto-create tables: {e}")
     
     # Register blueprints
     from src.controllers.routes import main_bp
