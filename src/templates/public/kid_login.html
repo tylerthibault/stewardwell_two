@@ -6,37 +6,27 @@
 
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header" style="text-align: center;">
-        <h1 style="font-size: 3rem;">👋 Hey Kids!</h1>
-        <p style="font-size: 1.25rem;">Log in to see your chores and earn coins!</p>
+    <div class="dashboard-header text-center">
+        <h1 style="font-size: clamp(2rem, 7vw, 3rem);">👋 Hey Kids!</h1>
+        <p style="font-size: clamp(1rem, 3vw, 1.25rem);">Log in to see your chores and earn coins!</p>
     </div>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-messages">
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
     
     <div class="dashboard-grid">
         <div class="dashboard-card">
             <div class="card-body">
                 <form method="POST" action="{{ url_for('kid.kid_login') }}">
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="family_code">Family Code</label>
                         <input type="text" 
                                id="family_code" 
                                name="family_code" 
                                maxlength="6" 
                                placeholder="Enter your family code"
-                               style="text-transform: uppercase; text-align: center; font-size: 1.5rem; letter-spacing: 0.25rem;"
+                               style="text-transform: uppercase; text-align: center; font-size: clamp(1.25rem, 3vw, 1.5rem); letter-spacing: 0.25rem;"
                                required>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="pin">Your PIN</label>
                         <input type="password" 
                                id="pin" 
@@ -44,24 +34,24 @@
                                maxlength="4" 
                                placeholder="••••"
                                pattern="[0-9]{4}"
-                               style="text-align: center; font-size: 2rem; letter-spacing: 0.5rem;"
+                               style="text-align: center; font-size: clamp(1.5rem, 4vw, 2rem); letter-spacing: 0.5rem;"
                                required>
                     </div>
                     
-                    <div class="modal-footer" style="margin-top: 2rem; justify-content: center;">
-                        <button type="submit" class="btn-primary" style="font-size: 1.25rem; padding: 1.25rem 2.5rem;">Let's Go! 🚀</button>
+                    <div class="text-center" style="margin-top: 2rem;">
+                        <button type="submit" class="btn-primary" style="font-size: clamp(1.125rem, 3vw, 1.25rem);">Let's Go! 🚀</button>
                     </div>
                 </form>
                 
                 {% if remembered_kids %}
                 <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: var(--border-sm) solid var(--border-primary);">
-                    <h3 style="text-align: center; font-size: 1.25rem; font-weight: 800; text-transform: uppercase; margin-bottom: 1.5rem; color: var(--text-primary);">Quick Login</h3>
+                    <h3 style="text-align: center; font-size: clamp(1.125rem, 3vw, 1.25rem); font-weight: 800; text-transform: uppercase; margin-bottom: 1.5rem; color: var(--text-primary);">Quick Login</h3>
                     <div class="row g-3">
                         {% for kid in remembered_kids %}
                         <div class="col-12 col-md-6">
                             <form method="POST" action="{{ url_for('kid.quick_login') }}" class="full-width">
                                 <input type="hidden" name="kid_id" value="{{ kid.id }}">
-                                <button type="submit" class="btn-success" style="width: 100%; font-size: 1.125rem; padding: 1.25rem;">{{ kid.name }}</button>
+                                <button type="submit" class="btn-success w-100" style="font-size: clamp(1rem, 2.5vw, 1.125rem);">{{ kid.name }}</button>
                             </form>
                         </div>
                         {% endfor %}

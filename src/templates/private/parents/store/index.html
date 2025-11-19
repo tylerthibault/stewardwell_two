@@ -24,7 +24,7 @@
                         <div class="col-12 col-md-6 col-lg-4">
                         <div class="store-item">
                             <div class="store-item-header">
-                                <strong>{{ item.name }}</strong>
+                                <strong style="word-break: break-word;">{{ item.name }}</strong>
                                 {% if not item.is_available %}
                                     <span class="status-badge inactive">Hidden</span>
                                 {% else %}
@@ -32,19 +32,19 @@
                                 {% endif %}
                             </div>
                             {% if item.description %}
-                                <p class="store-item-description">{{ item.description }}</p>
+                                <p class="store-item-description" style="word-break: break-word;">{{ item.description }}</p>
                             {% endif %}
                             <div class="store-item-cost">
                                 <span class="coin-badge">{{ item.coin_cost }} Coins</span>
                             </div>
-                            <div class="store-item-actions">
-                                <form method="POST" action="{{ url_for('parent.toggle_store_item', item_id=item.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-secondary">
-                                        {% if item.is_available %}👁️ Hide{% else %}👁️ Show{% endif %}
+                            <div class="store-item-actions d-flex flex-wrap gap-2">-flex flex-wrap gap-2">
+                                <form method="POST" action="{{ url_for('parent.toggle_store_item', item_id=item.id) }}" class="inline-form flex-fill" style="min-width: fit-content;">
+                                    <button type="submit" class="btn-secondary w-100">
+                                        {% if item.is_available %}👁️ <span class="d-none d-sm-inline">Hide</span>{% else %}👁️ <span class="d-none d-sm-inline">Show</span>{% endif %}
                                     </button>
                                 </form>
-                                <button type="button" class="btn-danger" onclick="if(confirm('Delete {{ item.name }}? This cannot be undone.')) document.getElementById('delete-item-form-{{ item.id }}').submit();">
-                                    🗑️ Delete
+                                <button type="button" class="btn-danger flex-fill" onclick="if(confirm('Delete {{ item.name }}? This cannot be undone.')) document.getElementById('delete-item-form-{{ item.id }}').submit();" style="min-width: fit-content;">
+                                    🗑️ <span class="d-none d-sm-inline">Delete</span>
                                 </button>
                                 <form id="delete-item-form-{{ item.id }}" method="POST" action="{{ url_for('parent.delete_store_item', item_id=item.id) }}" style="display: none;"></form>
                             </div>
@@ -53,9 +53,9 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="empty-state">
-                        <p>No store items created yet</p>
-                        <button class="btn-primary" onclick="toggleModal('addStoreItemModal')" style="margin-top: var(--space-lg); padding: var(--space-md) var(--space-xl); border: var(--border-sm) solid; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary); background: var(--accent-primary); color: #ffffff; border-color: var(--accent-primary);">
+                    <div class="empty-state text-center">
+                        <p style="font-size: 1.1rem; color: var(--text-muted, #666);">No store items created yet</p>
+                        <button class="btn-primary" onclick="toggleModal('addStoreItemModal')" style="margin-top: 1.5rem;">
                             + Add First Item
                         </button>
                     </div>
@@ -73,20 +73,20 @@
             <span class="close" onclick="toggleModal('addStoreItemModal')">&times;</span>
         </div>
         <form method="POST" action="{{ url_for('parent.add_store_item') }}">
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label for="item_name">Item Name</label>
                 <input type="text" id="item_name" name="name" required placeholder="e.g., Extra TV time, Ice cream">
             </div>
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label for="item_description">Description (optional)</label>
                 <textarea id="item_description" name="description" rows="3" placeholder="Describe the reward..."></textarea>
                 <small class="help-text">Add details about this reward</small>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label for="item_coin_cost">Coin Cost</label>
                 <input type="number" id="item_coin_cost" name="coin_cost" min="0" value="50" required>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
                 <button type="button" class="btn-secondary" onclick="toggleModal('addStoreItemModal')">Cancel</button>
                 <button type="submit" class="btn-primary">Add Item</button>
             </div>

@@ -3,7 +3,7 @@
 {% block title %}Welcome to Stewardwell{% endblock %}
 
 {% block nav %}
-    <div class="text-dark d-flex gap-2">
+    <div class="text-dark d-flex flex-wrap gap-2 gap-md-3">
         <a href="{{ url_for('kid.kid_login_page') }}" class="nav-btn">Kids Login</a>
         <a href="{{ url_for('auth.login') }}" class="nav-btn">Parent Login</a>
         <a href="{{ url_for('auth.register') }}" class="nav-btn">Sign Up</a>
@@ -12,20 +12,20 @@
 
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header" style="text-align: center;">
-        <h1>Welcome to Stewardwell</h1>
-        <p>Stewarding Your Family Well</p>
+    <div class="dashboard-header text-center">
+        <h1 style="font-size: clamp(2rem, 6vw, 3rem);">Welcome to Stewardwell</h1>
+        <p style="font-size: clamp(1rem, 3vw, 1.25rem);">Stewarding Your Family Well</p>
     </div>
 
     <div class="dashboard-grid">
         <!-- Hero Section -->
         <div class="dashboard-card full-width">
-            <div class="card-body" style="text-align: center; padding: var(--space-2xl);">
-                <p style="font-size: 1.25rem; line-height: 1.8; color: var(--text-tertiary); font-weight: 500; margin-bottom: var(--space-xl);">
+            <div class="card-body text-center" style="padding: clamp(1.5rem, 4vw, 3rem);">
+                <p style="font-size: clamp(1rem, 3vw, 1.25rem); line-height: 1.8; color: var(--text-tertiary); font-weight: 500; margin-bottom: var(--space-xl); max-width: 800px; margin-left: auto; margin-right: auto;">
                     Empower your family with a fun and engaging way to manage chores, 
                     earn rewards, and work together towards shared goals.
                 </p>
-                <a href="{{ url_for('auth.register') }}" class="btn-primary" style="display: inline-block; padding: var(--space-lg) var(--space-2xl); border: var(--border-md) solid; font-size: 1.125rem; font-weight: 800; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: var(--shadow-xl) var(--shadow-xl) 0 var(--border-primary); background: var(--accent-primary); color: #ffffff; border-color: var(--accent-primary); text-decoration: none;">
+                <a href="{{ url_for('auth.register') }}" class="btn-primary" style="text-decoration: none; font-size: clamp(1rem, 2.5vw, 1.125rem);">
                     Create Your Family
                 </a>
             </div>
@@ -39,31 +39,31 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12 col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon">👨‍👩‍👧‍👦</div>
-                            <h3>Family Management</h3>
-                            <p>Parents create and manage their family, add kids, and set up chores.</p>
+                        <div class="feature-card" style="padding: clamp(1.25rem, 3vw, 1.5rem);">
+                            <div class="feature-icon" style="font-size: clamp(2.5rem, 8vw, 4rem);">👨‍👩‍👧‍👦</div>
+                            <h3 style="font-size: clamp(1.25rem, 3vw, 1.5rem);">Family Management</h3>
+                            <p style="font-size: clamp(0.95rem, 2.5vw, 1rem);">Parents create and manage their family, add kids, and set up chores.</p>
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon">🧹</div>
-                            <h3>Chore System</h3>
-                            <p>Kids pick and complete chores to earn coins and family points.</p>
+                        <div class="feature-card" style="padding: clamp(1.25rem, 3vw, 1.5rem);">
+                            <div class="feature-icon" style="font-size: clamp(2.5rem, 8vw, 4rem);">🧹</div>
+                            <h3 style="font-size: clamp(1.25rem, 3vw, 1.5rem);">Chore System</h3>
+                            <p style="font-size: clamp(0.95rem, 2.5vw, 1rem);">Kids pick and complete chores to earn coins and family points.</p>
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon">🪙</div>
-                            <h3>Rewards</h3>
-                            <p>Kids save coins for personal rewards. Parents confirm completed chores.</p>
+                        <div class="feature-card" style="padding: clamp(1.25rem, 3vw, 1.5rem);">
+                            <div class="feature-icon" style="font-size: clamp(2.5rem, 8vw, 4rem);">🪙</div>
+                            <h3 style="font-size: clamp(1.25rem, 3vw, 1.5rem);">Rewards</h3>
+                            <p style="font-size: clamp(0.95rem, 2.5vw, 1rem);">Kids save coins for personal rewards. Parents confirm completed chores.</p>
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
-                        <div class="feature-card">
-                            <div class="feature-icon">🎯</div>
-                            <h3>Easy Access</h3>
-                            <p>Kids login with a simple PIN code. Parents manage everything from their dashboard.</p>
+                        <div class="feature-card" style="padding: clamp(1.25rem, 3vw, 1.5rem);">
+                            <div class="feature-icon" style="font-size: clamp(2.5rem, 8vw, 4rem);">🎯</div>
+                            <h3 style="font-size: clamp(1.25rem, 3vw, 1.5rem);">Easy Access</h3>
+                            <p style="font-size: clamp(0.95rem, 2.5vw, 1rem);">Kids login with a simple PIN code. Parents manage everything from their dashboard.</p>
                         </div>
                     </div>
                 </div>
@@ -72,12 +72,12 @@
 
         <!-- Call to Action -->
         <div class="dashboard-card full-width">
-            <div class="card-body" style="text-align: center; padding: var(--space-2xl);">
-                <h2 style="font-size: 2rem; font-weight: 900; color: var(--accent-primary); margin-bottom: var(--space-md); text-transform: uppercase;">Get Started Today</h2>
-                <p style="font-size: 1.125rem; color: var(--text-tertiary); font-weight: 500; margin-bottom: var(--space-xl);">
+            <div class="card-body text-center" style="padding: clamp(1.5rem, 4vw, 3rem);">
+                <h2 style="font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 900; color: var(--accent-primary); margin-bottom: var(--space-md); text-transform: uppercase;">Get Started Today</h2>
+                <p style="font-size: clamp(1rem, 3vw, 1.125rem); color: var(--text-tertiary); font-weight: 500; margin-bottom: var(--space-xl); max-width: 600px; margin-left: auto; margin-right: auto;">
                     Sign up as a parent and start building better habits with your family.
                 </p>
-                <a href="{{ url_for('auth.register') }}" class="btn-primary" style="display: inline-block; padding: var(--space-lg) var(--space-2xl); border: var(--border-md) solid; font-size: 1.125rem; font-weight: 800; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: var(--shadow-xl) var(--shadow-xl) 0 var(--border-primary); background: var(--accent-primary); color: #ffffff; border-color: var(--accent-primary); text-decoration: none;">
+                <a href="{{ url_for('auth.register') }}" class="btn-primary" style="text-decoration: none; font-size: clamp(1rem, 2.5vw, 1.125rem);">
                     Sign Up Free
                 </a>
             </div>

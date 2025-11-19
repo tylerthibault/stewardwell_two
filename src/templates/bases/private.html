@@ -14,15 +14,15 @@
 </head>
 <body>
     <header>
-        <nav class="d-flex justify-content-between align-items-center">
+        <nav class="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div class="logo">
                 <h1>Stewardwell</h1>
             </div>
-            <div class="nav-links d-flex gap-3">
+            <div class="nav-links d-flex flex-wrap gap-2 gap-md-3">
                 {% block nav %}
-                <a href="{{ url_for('parent.dashboard') }}" class="nav-btn" style="flex: none; padding: 0.875rem 1.25rem; font-size: 0.9rem;">🏠 Dashboard</a>
-                <a href="{{ url_for('parent.family_settings') }}" class="nav-btn" style="flex: none; padding: 0.875rem 1.25rem; font-size: 0.9rem;">⚙️ Settings</a>
-                <a href="{{ url_for('auth.logout') }}" class="nav-btn" style="flex: none; padding: 0.875rem 1.25rem; font-size: 0.9rem; background: var(--danger-primary); border-color: var(--danger-primary); color: #ffffff; box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--danger-dark);">Logout</a>
+                <a href="{{ url_for('parent.dashboard') }}" class="nav-btn" style="flex: none; padding: 0.75rem 1rem; font-size: 0.85rem;">🏠 <span class="d-none d-sm-inline">Dashboard</span></a>
+                <a href="{{ url_for('parent.family_settings') }}" class="nav-btn" style="flex: none; padding: 0.75rem 1rem; font-size: 0.85rem;">⚙️ <span class="d-none d-sm-inline">Settings</span></a>
+                <a href="{{ url_for('auth.logout') }}" class="nav-btn" style="flex: none; padding: 0.75rem 1rem; font-size: 0.85rem; background: var(--danger-primary); border-color: var(--danger-primary); color: #ffffff; box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--danger-dark);"><span class="d-none d-sm-inline">Logout</span><span class="d-inline d-sm-none">🚪</span></a>
                 {% endblock %}
             </div>
         </nav>

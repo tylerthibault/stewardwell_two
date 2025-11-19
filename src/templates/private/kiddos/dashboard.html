@@ -11,11 +11,11 @@
     <div class="dashboard-header">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h1 class="mb-1" style="font-size: 2.5rem;">👋 Hi {{ kid.name }}!</h1>
+                <h1 class="mb-1" style="font-size: clamp(1.75rem, 5vw, 2.5rem);">👋 Hi {{ kid.name }}!</h1>
                 <p class="m-0">Let's get some chores done!</p>
             </div>
-            <div class="text-end">
-                <div class="coin-badge d-inline-block" style="font-size: 2rem; padding: 1rem 1.5rem;">
+            <div class="text-center text-md-end">r text-md-end">
+                <div class="coin-badge d-inline-block" style="font-size: clamp(1.5rem, 4vw, 2rem); padding: 0.75rem 1.25rem;">
                     🪙 {{ kid.coin_balance }}
                 </div>
                 <div class="mt-2" style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 800; text-transform: uppercase;">
@@ -26,12 +26,12 @@
     </div>
 
     <!-- Navigation -->
-    <div class="parent-nav d-flex gap-3 mb-4">
-        <a href="{{ url_for('kid.dashboard') }}" class="nav-btn active flex-fill">
-            📋 Chores
+    <div class="parent-nav d-flex flex-wrap gap-2 gap-md-3 mb-4">
+        <a href="{{ url_for('kid.dashboard') }}" class="nav-btn active flex-fill flex-md-grow-0">
+            📋 <span class="d-none d-sm-inline">Chores</span>
         </a>
-        <a href="{{ url_for('kid.store') }}" class="nav-btn flex-fill">
-            🛒 Store
+        <a href="{{ url_for('kid.store') }}" class="nav-btn flex-fill flex-md-grow-0">
+            🛒 <span class="d-none d-sm-inline">Store</span>
         </a>
     </div>
     
@@ -49,7 +49,7 @@
                             <div class="chore-item">
                                 <div class="chore-main">
                                     <div class="chore-name-section">
-                                        <strong>{{ chore.name }}</strong>
+                                        <strong style="word-break: break-word;">{{ chore.name }}</strong>
                                     </div>
                                     <div class="chore-rewards-section">
                                         <span class="coin-badge" style="display: inline-block;">🪙 {{ chore.coin_value }}</span>
@@ -93,7 +93,7 @@
                             <div class="chore-item">
                                 <div class="chore-main">
                                     <div class="chore-name-section">
-                                        <strong>{{ assignment.chore.name }}</strong>
+                                        <strong style="word-break: break-word;">{{ assignment.chore.name }}</strong>
                                     </div>
                                     <div class="chore-rewards-section">
                                         <span class="coin-badge" style="display: inline-block;">🪙 {{ assignment.chore.coin_value }}</span>
@@ -101,7 +101,7 @@
                                     </div>
                                 </div>
                                 <form method="POST" action="{{ url_for('kid.complete_chore', assignment_id=assignment.id) }}" class="w-100">
-                                    <button type="submit" class="btn-primary w-100">Mark Complete! ✅</button>
+                                    <button type="submit" class="btn-primary w-100">Complete ✅</button>
                                 </form>
                             </div>
                         </div>
@@ -128,7 +128,7 @@
                             <div class="chore-item" style="opacity: 0.8;">
                                 <div class="chore-main">
                                     <div class="chore-name-section">
-                                        <strong>{{ assignment.chore.name }}</strong>
+                                        <strong style="word-break: break-word;">{{ assignment.chore.name }}</strong>
                                         <span class="status-badge" style="background: #9b59b6; border-color: #9b59b6;">Pending ⏳</span>
                                     </div>
                                     <div class="chore-rewards-section">

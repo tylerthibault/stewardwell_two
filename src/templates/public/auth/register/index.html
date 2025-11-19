@@ -3,7 +3,7 @@
 {% block title %}Register - Stewardwell{% endblock %}
 
 {% block nav %}
-<div class="d-flex gap-2">
+<div class="d-flex flex-wrap gap-2 gap-md-3">
     <a href="{{ url_for('main.landing') }}" class="nav-btn">Home</a>
     <a href="{{ url_for('auth.login') }}" class="nav-btn">Login</a>
 </div>
@@ -11,16 +11,16 @@
 
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header" style="text-align: center;">
-        <h1>Create Your Family Account</h1>
-        <p>Start stewarding your family well today</p>
+    <div class="dashboard-header text-center">
+        <h1 style="font-size: clamp(1.75rem, 5vw, 2.5rem);">Create Your Family Account</h1>
+        <p style="font-size: clamp(0.95rem, 2.5vw, 1.125rem);">Start stewarding your family well today</p>
     </div>
     
     <div class="dashboard-grid">
         <div class="dashboard-card">
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.register') }}">
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label>Account Type</label>
                         <div class="radio-group">
                             <label class="radio-label">
@@ -35,7 +35,7 @@
                     </div>
 
                     <div id="new-family-fields">
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="family_name">Family Name</label>
                             <input 
                                 type="text" 
@@ -48,7 +48,7 @@
                     </div>
 
                     <div id="join-family-fields" style="display: none;">
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="family_code">Family Code</label>
                             <input 
                                 type="text" 
@@ -62,7 +62,7 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="email">Email Address</label>
                         <input 
                             type="email" 
@@ -74,7 +74,7 @@
                         <span class="help-text">This will be your login email</span>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="password">Password</label>
                         <input 
                             type="password" 
@@ -87,7 +87,7 @@
                         <span class="help-text">Must be at least 6 characters</span>
                     </div>
                     
-                    <div class="modal-footer" style="margin-top: 2rem; justify-content: center;">
+                    <div class="text-center" style="margin-top: 2rem;">
                         <button type="submit" class="btn-primary">Create Account</button>
                     </div>
                 </form>

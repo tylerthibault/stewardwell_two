@@ -6,9 +6,9 @@
 
 <div class="dashboard-container">
     <div class="dashboard-header">
-        <h1>{{ family.name }} Dashboard</h1>
-        <p>Simple. Bold. Effective.</p>
-        <div class="family-code-display">
+        <h1 class="text-center text-md-start">{{ family.name }} Dashboard</h1>
+        <p class="text-center text-md-start">Simple. Bold. Effective.</p>
+        <div class="family-code-display d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2">
             <strong>Family Code:</strong> <span class="family-code">{{ family.family_code }}</span>
             <button onclick="copyFamilyCode('{{ family.family_code }}')">📋 Copy</button>
         </div>

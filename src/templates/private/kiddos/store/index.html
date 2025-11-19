@@ -11,11 +11,11 @@
     <div class="dashboard-header">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h1 class="mb-1" style="font-size: 2.5rem;">🛒 Store</h1>
+                <h1 class="mb-1" style="font-size: clamp(1.75rem, 5vw, 2.5rem);">🛒 Store</h1>
                 <p class="m-0">Spend your coins on rewards!</p>
             </div>
-            <div class="text-end">
-                <div class="coin-badge d-inline-block" style="font-size: 2rem; padding: 1rem 1.5rem;">
+            <div class="text-center text-md-end">r text-md-end">
+                <div class="coin-badge d-inline-block" style="font-size: clamp(1.5rem, 4vw, 2rem); padding: 0.75rem 1.25rem;">
                     🪙 {{ kid.coin_balance }}
                 </div>
                 <div class="mt-2" style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 800; text-transform: uppercase;">
@@ -26,24 +26,14 @@
     </div>
 
     <!-- Navigation -->
-    <div class="parent-nav d-flex gap-3 mb-4">
-        <a href="{{ url_for('kid.dashboard') }}" class="nav-btn flex-fill">
-            📋 Chores
+    <div class="parent-nav d-flex flex-wrap gap-2 gap-md-3 mb-4">
+        <a href="{{ url_for('kid.dashboard') }}" class="nav-btn flex-fill flex-md-grow-0">
+            📋 <span class="d-none d-sm-inline">Chores</span>
         </a>
-        <a href="{{ url_for('kid.store') }}" class="nav-btn active flex-fill">
-            🛒 Store
+        <a href="{{ url_for('kid.store') }}" class="nav-btn active flex-fill flex-md-grow-0">
+            🛒 <span class="d-none d-sm-inline">Store</span>
         </a>
     </div>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-messages mb-4">
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
     
     <!-- Store Items -->
     <div class="dashboard-grid">
@@ -58,10 +48,10 @@
                         <div class="col-12 col-md-6 col-lg-4">
                             <div class="store-item">
                                 <div class="store-item-header">
-                                    <strong>{{ item.name }}</strong>
+                                    <strong style="word-break: break-word;">{{ item.name }}</strong>
                                 </div>
                                 {% if item.description %}
-                                    <p class="store-item-description">{{ item.description }}</p>
+                                    <p class="store-item-description" style="word-break: break-word;">{{ item.description }}</p>
                                 {% endif %}
                                 <div class="store-item-cost mb-3">
                                     <span class="coin-badge d-inline-block">🪙 {{ item.coin_cost }}</span>
@@ -74,7 +64,7 @@
                                         onclick="return confirm('Purchase {{ item.name }} for {{ item.coin_cost }} coins?');"
                                     >
                                         {% if kid.coin_balance < item.coin_cost %}
-                                            Not Enough Coins 😔
+                                            <span class="d-none d-sm-inline">Not Enough Coins</span><span class="d-inline d-sm-none">Need More</span> 😔
                                         {% else %}
                                             Purchase! 🎁
                                         {% endif %}

@@ -14,12 +14,12 @@
     </div>
     
     <!-- Settings Tabs -->
-    <div class="d-flex gap-3 mb-4">
-        <button class="nav-btn flex-fill active" onclick="switchTab('account')">
-            👤 Account Settings
+    <div class="d-flex flex-wrap gap-2 gap-md-3 mb-4" role="tablist">
+        <button class="nav-btn flex-fill flex-md-grow-0 active" onclick="switchTab('account')" role="tab" aria-selected="true" aria-controls="account-tab">
+            👤 <span class="d-none d-sm-inline">Account Settings</span>
         </button>
-        <button class="nav-btn flex-fill" onclick="switchTab('family')">
-            👨‍👩‍👧‍👦 Family Information
+        <button class="nav-btn flex-fill flex-md-grow-0" onclick="switchTab('family')" role="tab" aria-selected="false" aria-controls="family-tab">
+            👨‍👩‍👧‍👦 <span class="d-none d-sm-inline">Family Information</span>
         </button>
     </div>
 
@@ -36,7 +36,7 @@
                     <h4>Change Email Address</h4>
                     <p class="section-description">Current email: <strong>{{ parent.email }}</strong></p>
                     <form method="POST" action="{{ url_for('parent.change_email') }}">
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="new_email">New Email Address</label>
                             <input 
                                 type="email" 
@@ -46,7 +46,7 @@
                                 placeholder="Enter new email address"
                             >
                         </div>
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="confirm_password_email">Confirm Password</label>
                             <input 
                                 type="password" 
@@ -63,7 +63,7 @@
                 <div class="settings-section">
                     <h4>Change Password</h4>
                     <form method="POST" action="{{ url_for('parent.change_password') }}">
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="current_password">Current Password</label>
                             <input 
                                 type="password" 
@@ -73,7 +73,7 @@
                                 placeholder="Enter current password"
                             >
                         </div>
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="new_password">New Password</label>
                             <input 
                                 type="password" 
@@ -84,7 +84,7 @@
                                 placeholder="Enter new password (min 6 characters)"
                             >
                         </div>
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="confirm_new_password">Confirm New Password</label>
                             <input 
                                 type="password" 
@@ -122,11 +122,11 @@
                         <span class="family-code">{{ family.family_code }}</span>
                         <button class="btn btn-small btn-secondary" onclick="copyFamilyCode('{{ family.family_code }}')">📋 Copy</button>
                     </div>
-                    <div class="info-row">
+                    <div class="info-row d-flex flex-wrap gap-2 align-items-center mb-3">
                         <strong>Your Role:</strong>
                         <span>{% if parent.is_head %}Head of Family{% else %}Family Member{% endif %}</span>
                     </div>
-                    <div class="info-row">
+                    <div class="info-row d-flex flex-wrap gap-2 align-items-center mb-3">
                         <strong>Parents in Family:</strong>
                         <span>{{ family_parents|length }}</span>
                     </div>
@@ -158,14 +158,16 @@
                 <p class="section-description">
                     Enter a family code to leave your current family and join a different one.
                     {% if family_parents|length == 1 %}
-                    <strong class="warning-text">Warning: You are the only parent. Switching families will delete your current family and all its data (kids, chores, store items).</strong>
+                    <div class="alert" style="background: var(--danger-light, #ffe5e5); border: 3px solid var(--danger-primary); padding: 1rem; margin-top: 0.5rem;">
+                        <strong>⚠️ Warning:</strong> You are the only parent. Switching families will delete your current family and all its data (kids, chores, store items).
+                    </div>
                     {% else %}
                     Your current family will continue to exist with the remaining parents.
                     {% endif %}
                 </p>
                 
                 <form method="POST" action="{{ url_for('parent.join_new_family') }}" onsubmit="return confirm('Are you sure you want to switch families? {% if family_parents|length == 1 %}This will DELETE your current family and all data.{% endif %}');">
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="family_code">Enter New Family Code</label>
                         <input 
                             type="text" 
@@ -191,7 +193,9 @@
                 <p class="section-description">
                     Leave your current family account.
                     {% if family_parents|length == 1 %}
-                    <strong class="warning-text">Warning: You are the only parent. Leaving will permanently delete the entire family and all its data (kids, chores, store items, purchases).</strong>
+                    <div class="alert" style="background: var(--danger-light, #ffe5e5); border: 3px solid var(--danger-primary); padding: 1rem; margin-top: 0.5rem;">
+                        <strong>⚠️ Warning:</strong> You are the only parent. Leaving will permanently delete the entire family and all its data (kids, chores, store items, purchases).
+                    </div>
                     {% else %}
                     You will be removed from the family, but the family will continue to exist with the remaining parents.
                     {% endif %}
@@ -216,18 +220,18 @@ function switchTab(tabName) {
         tab.classList.remove('active');
     });
     
-    // Remove active from all tab buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        if (btn.hasAttribute('onclick') && btn.getAttribute('onclick').includes('switchTab')) {
-            btn.classList.remove('active');
-        }
+    // Remove active from all tab buttons and update ARIA
+    document.querySelectorAll('.nav-btn[role="tab"]').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
     });
     
     // Show selected tab
     document.getElementById(tabName + '-tab').classList.add('active');
     
-    // Set active button
+    // Set active button and ARIA
     event.target.classList.add('active');
+    event.target.setAttribute('aria-selected', 'true');
 }
 
 function copyFamilyCode(code) {

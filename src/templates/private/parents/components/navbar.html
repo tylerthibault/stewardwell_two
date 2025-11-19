@@ -1,11 +1,11 @@
-<div class="parent-nav d-flex gap-3 mb-4">
-    <a href="{{ url_for('parent.dashboard') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.dashboard' %}active{% endif %}">
-        🏠 Dashboard
+<div class="parent-nav d-flex flex-wrap gap-2 gap-md-3 mb-4">
+    <a href="{{ url_for('parent.dashboard') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.dashboard' %}active{% endif %}" style="min-width: fit-content;">
+        🏠 <span class="d-none d-sm-inline">Dashboard</span>
     </a>
-    <a href="{{ url_for('parent.chores') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.chores' %}active{% endif %}">
-        📋 Chores
+    <a href="{{ url_for('parent.chores') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.chores' %}active{% endif %}" style="min-width: fit-content;">
+        📋 <span class="d-none d-sm-inline">Chores</span>
     </a>
-    <a href="{{ url_for('parent.store') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.store' %}active{% endif %}">
-        🛒 Store
+    <a href="{{ url_for('parent.store') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.store' %}active{% endif %}" style="min-width: fit-content;">
+        🛒 <span class="d-none d-sm-inline">Store</span>
     </a>
 </div>

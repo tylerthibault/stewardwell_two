@@ -25,7 +25,7 @@
                         <div class="chore-item">
                             <div class="chore-main">
                                 <div class="chore-name-section">
-                                    <strong>{{ chore.name }}</strong>
+                                    <strong style="word-break: break-word;">{{ chore.name }}</strong>
                                     {% if not chore.is_active %}
                                         <span class="status-badge inactive">Hidden</span>
                                     {% else %}
@@ -53,14 +53,14 @@
                                 </div>
                             </div>
                             
-                            <div class="chore-actions">
-                                <form method="POST" action="{{ url_for('parent.toggle_chore', chore_id=chore.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-secondary">
-                                        {% if chore.is_active %}👁️ Hide{% else %}👁️ Show{% endif %}
+                            <div class="chore-actions d-flex flex-wrap gap-2">
+                                <form method="POST" action="{{ url_for('parent.toggle_chore', chore_id=chore.id) }}" class="inline-form flex-fill" style="min-width: fit-content;">
+                                    <button type="submit" class="btn-secondary w-100">
+                                        {% if chore.is_active %}👁️ <span class="d-none d-sm-inline">Hide</span>{% else %}👁️ <span class="d-none d-sm-inline">Show</span>{% endif %}
                                     </button>
                                 </form>
-                                <button type="button" class="btn-danger" onclick="if(confirm('Delete {{ chore.name }}? This cannot be undone.')) document.getElementById('delete-form-{{ chore.id }}').submit();">
-                                    🗑️ Delete
+                                <button type="button" class="btn-danger flex-fill" onclick="if(confirm('Delete {{ chore.name }}? This cannot be undone.')) document.getElementById('delete-form-{{ chore.id }}').submit();" style="min-width: fit-content;">
+                                    🗑️ <span class="d-none d-sm-inline">Delete</span>
                                 </button>
                                 <form id="delete-form-{{ chore.id }}" method="POST" action="{{ url_for('parent.delete_chore', chore_id=chore.id) }}" style="display: none;"></form>
                             </div>
@@ -69,9 +69,9 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="empty-state">
-                        <p>No chores created yet</p>
-                        <button class="btn-primary" onclick="toggleModal('createChoreModal')" style="margin-top: var(--space-lg); padding: var(--space-md) var(--space-xl); border: var(--border-sm) solid; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary); background: var(--accent-primary); color: #ffffff; border-color: var(--accent-primary);">
+                    <div class="empty-state text-center">
+                        <p style="font-size: 1.1rem; color: var(--text-muted, #666);">No chores created yet</p>
+                        <button class="btn-primary" onclick="toggleModal('createChoreModal')" style="margin-top: 1.5rem;">
                             + Create First Chore
                         </button>
                     </div>
@@ -89,19 +89,19 @@
             <span class="close" onclick="toggleModal('createChoreModal')">&times;</span>
         </div>
         <form method="POST" action="{{ url_for('parent.create_chore') }}">
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label for="chore_name">Chore Name</label>
                 <input type="text" id="chore_name" name="name" required placeholder="e.g., Clean room">
             </div>
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label for="coin_value">Coin Value</label>
                 <input type="number" id="coin_value" name="coin_value" min="0" value="10" required>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label for="point_value">Point Value</label>
                 <input type="number" id="point_value" name="point_value" min="0" value="1" required>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label for="frequency">Frequency</label>
                 <select id="frequency" name="frequency" required>
                     <option value="unlimited">Unlimited (anytime)</option>
@@ -112,14 +112,14 @@
                 </select>
                 <small class="help-text">How often can this chore be done?</small>
             </div>
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label style="display: flex; align-items: center; gap: var(--space-sm); text-transform: none; cursor: pointer;">
                     <input type="checkbox" id="is_active" name="is_active" checked style="width: auto; cursor: pointer;">
                     <span>Active (visible to kids)</span>
                 </label>
                 <small class="help-text">Uncheck to hide this chore from kids</small>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
                 <button type="button" class="btn-secondary" onclick="toggleModal('createChoreModal')">Cancel</button>
                 <button type="submit" class="btn-primary">Create Chore</button>
             </div>
