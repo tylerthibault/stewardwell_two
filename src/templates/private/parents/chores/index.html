@@ -60,7 +60,16 @@
                             </div>
                             
                             <div class="chore-actions d-flex flex-wrap gap-2">
-                                <button type="button" class="btn-primary flex-fill" onclick="openEditModal({{ chore.id }}, '{{ chore.name|replace(\"'\", \"\\\\'\")|safe }}', '{{ chore.description|replace(\"'\", \"\\\\'\")|safe if chore.description else \"\" }}', {{ chore.coin_value }}, {{ chore.point_value }}, '{{ chore.frequency }}', {{ 'true' if chore.is_active else 'false' }})" style="min-width: fit-content;">
+                                <button type="button" 
+                                        class="btn-primary flex-fill edit-chore-btn" 
+                                        data-chore-id="{{ chore.id }}"
+                                        data-chore-name="{{ chore.name }}"
+                                        data-chore-description="{{ chore.description or '' }}"
+                                        data-chore-coin="{{ chore.coin_value }}"
+                                        data-chore-point="{{ chore.point_value }}"
+                                        data-chore-frequency="{{ chore.frequency }}"
+                                        data-chore-active="{{ 'true' if chore.is_active else 'false' }}"
+                                        style="min-width: fit-content;">
                                     ✏️ <span class="d-none d-sm-inline">Edit</span>
                                 </button>
                                 <form method="POST" action="{{ url_for('parent.toggle_chore', chore_id=chore.id) }}" class="inline-form flex-fill" style="min-width: fit-content;">
@@ -68,7 +77,7 @@
                                         {% if chore.is_active %}👁️ <span class="d-none d-sm-inline">Hide</span>{% else %}👁️ <span class="d-none d-sm-inline">Show</span>{% endif %}
                                     </button>
                                 </form>
-                                <button type="button" class="btn-danger flex-fill" onclick="if(confirm('Delete {{ chore.name }}? This cannot be undone.')) document.getElementById('delete-form-{{ chore.id }}').submit();" style="min-width: fit-content;">
+                                <button type="button" class="btn-danger flex-fill delete-chore-btn" data-chore-id="{{ chore.id }}" data-chore-name="{{ chore.name }}" style="min-width: fit-content;">
                                     🗑️ <span class="d-none d-sm-inline">Delete</span>
                                 </button>
                                 <form id="delete-form-{{ chore.id }}" method="POST" action="{{ url_for('parent.delete_chore', chore_id=chore.id) }}" style="display: none;"></form>
@@ -198,20 +207,45 @@ function toggleModal(modalId) {
     document.getElementById(modalId).classList.toggle('active');
 }
 
-function openEditModal(choreId, name, description, coinValue, pointValue, frequency, isActive) {
-    // Set form action
-    document.getElementById('editChoreForm').action = '/parent/edit-chore/' + choreId;
+// Edit chore buttons - use event delegation
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle edit buttons
+    document.querySelectorAll('.edit-chore-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const choreId = this.dataset.choreId;
+            const name = this.dataset.choreName;
+            const description = this.dataset.choreDescription;
+            const coinValue = this.dataset.choreCoin;
+            const pointValue = this.dataset.chorePoint;
+            const frequency = this.dataset.choreFrequency;
+            const isActive = this.dataset.choreActive === 'true';
+            
+            // Set form action
+            document.getElementById('editChoreForm').action = '/parent/edit-chore/' + choreId;
+            
+            // Populate form fields
+            document.getElementById('edit_chore_name').value = name;
+            document.getElementById('edit_chore_description').value = description || '';
+            document.getElementById('edit_coin_value').value = coinValue;
+            document.getElementById('edit_point_value').value = pointValue;
+            document.getElementById('edit_frequency').value = frequency;
+            document.getElementById('edit_is_active').checked = isActive;
+            
+            // Open modal
+            toggleModal('editChoreModal');
+        });
+    });
     
-    // Populate form fields
-    document.getElementById('edit_chore_name').value = name;
-    document.getElementById('edit_chore_description').value = description || '';
-    document.getElementById('edit_coin_value').value = coinValue;
-    document.getElementById('edit_point_value').value = pointValue;
-    document.getElementById('edit_frequency').value = frequency;
-    document.getElementById('edit_is_active').checked = isActive;
-    
-    // Open modal
-    toggleModal('editChoreModal');
-}
+    // Handle delete buttons
+    document.querySelectorAll('.delete-chore-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const choreId = this.dataset.choreId;
+            const choreName = this.dataset.choreName;
+            if (confirm('Delete ' + choreName + '? This cannot be undone.')) {
+                document.getElementById('delete-form-' + choreId).submit();
+            }
+        });
+    });
+});
 </script>
 {% endblock %}
