@@ -138,6 +138,7 @@ def create_chore():
         
         chore_name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
+        tags = request.form.get('tags', '').strip()
         coin_value = request.form.get('coin_value', '0').strip()
         point_value = request.form.get('point_value', '0').strip()
         frequency = request.form.get('frequency', 'unlimited').strip()
@@ -170,6 +171,7 @@ def create_chore():
             family_id=family_id,
             name=chore_name,
             description=description if description else None,
+            tags=tags if tags else None,
             coin_value=coin_value,
             point_value=point_value,
             created_by_parent_id=parent_id,
@@ -239,6 +241,7 @@ def edit_chore(chore_id):
     
     chore_name = request.form.get('name', '').strip()
     description = request.form.get('description', '').strip()
+    tags = request.form.get('tags', '').strip()
     coin_value = request.form.get('coin_value', '0').strip()
     point_value = request.form.get('point_value', '0').strip()
     frequency = request.form.get('frequency', 'unlimited').strip()
@@ -269,6 +272,7 @@ def edit_chore(chore_id):
     # Update chore
     chore.name = chore_name
     chore.description = description if description else None
+    chore.tags = tags if tags else None
     chore.coin_value = coin_value
     chore.point_value = point_value
     chore.frequency = frequency

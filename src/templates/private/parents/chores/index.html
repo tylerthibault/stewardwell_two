@@ -19,10 +19,21 @@
             </div>
             <div class="card-body">
                 {% if chores %}
+                    <!-- Tag Filter -->
+                    <div id="tagFilterSection" style="margin-bottom: var(--space-lg); display: none;">
+                        <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
+                            <strong style="color: var(--text-primary);">Filter by tag:</strong>
+                            <button class="tag-filter-btn active" data-tag="all" style="padding: 0.375rem 0.75rem; background: var(--accent-primary); color: white; border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8125rem; box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark); transition: all 0.2s;">
+                                All
+                            </button>
+                            <div id="tagFilters" style="display: flex; gap: var(--space-sm); flex-wrap: wrap;"></div>
+                        </div>
+                    </div>
+                {% if chores %}
                     <div class="row g-3">
                         {% for chore in chores %}
                         <div class="col-12 col-md-6 col-lg-4">
-                        <div class="chore-item">
+                        <div class="chore-item" data-chore-tags="{{ chore.tags or '' }}">
                             <div class="chore-main">
                                 <div class="chore-name-section">
                                     <strong style="word-break: break-word;">{{ chore.name }}</strong>
@@ -32,6 +43,16 @@
                                         <span class="status-badge active">Active</span>
                                     {% endif %}
                                 </div>
+                                
+                                {% if chore.tags %}
+                                <div class="chore-tags" style="margin: var(--space-xs) 0; display: flex; gap: 0.375rem; flex-wrap: wrap;">
+                                    {% for tag in chore.tags.split(',') %}
+                                    <span class="tag-badge" style="background: var(--accent-primary); color: white; padding: 0.1875rem 0.5rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border: 0.125rem solid var(--accent-dark); box-shadow: 0.125rem 0.125rem 0 var(--accent-dark);">
+                                        #{{ tag.strip() }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                                 
                                 {% if chore.description %}
                                 <div class="chore-description" style="margin: var(--space-sm) 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4; word-break: break-word;">
@@ -65,6 +86,7 @@
                                         data-chore-id="{{ chore.id }}"
                                         data-chore-name="{{ chore.name }}"
                                         data-chore-description="{{ chore.description or '' }}"
+                                        data-chore-tags="{{ chore.tags or '' }}"
                                         data-chore-coin="{{ chore.coin_value }}"
                                         data-chore-point="{{ chore.point_value }}"
                                         data-chore-frequency="{{ chore.frequency }}"
