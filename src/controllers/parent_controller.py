@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 import random
 from datetime import datetime
 from src.models.base_model import db
@@ -101,8 +101,7 @@ def add_kid():
         
         # Validation
         if not kid_name:
-            flash('Kid name is required.', 'error')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({'success': False, 'message': 'Kid name is required.'}), 400
         
         # Generate random 4-digit PIN
         pin = ''.join([str(random.randint(0, 9)) for _ in range(4)])
@@ -118,13 +117,19 @@ def add_kid():
             db.session.add(new_kid)
             db.session.commit()
             
-            # Display PIN to parent (one-time view)
-            flash(f'Kid "{kid_name}" added successfully! Their PIN is: {pin}. Please write this down - it will not be shown again.', 'success')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({
+                'success': True,
+                'message': f'Kid "{kid_name}" added successfully! Their PIN is: {pin}. Please write this down - it will not be shown again.',
+                'kid': {
+                    'id': new_kid.id,
+                    'name': new_kid.name,
+                    'coin_balance': new_kid.coin_balance
+                },
+                'pin': pin
+            })
         except Exception as e:
             db.session.rollback()
-            flash('Failed to add kid. Please try again.', 'error')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({'success': False, 'message': 'Failed to add kid. Please try again.'}), 500
     
     return redirect(url_for('parent.dashboard'))
 
@@ -146,25 +151,21 @@ def create_chore():
         
         # Validation
         if not chore_name:
-            flash('Chore name is required.', 'error')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({'success': False, 'message': 'Chore name is required.'}), 400
         
         # Validate frequency
         valid_frequencies = ['unlimited', 'daily', 'weekly', 'monthly', 'one_time']
         if frequency not in valid_frequencies:
-            flash('Invalid frequency selected.', 'error')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({'success': False, 'message': 'Invalid frequency selected.'}), 400
         
         try:
             coin_value = int(coin_value)
             point_value = int(point_value)
             
             if coin_value < 0 or point_value < 0:
-                flash('Coin and point values must be non-negative.', 'error')
-                return redirect(url_for('parent.dashboard'))
+                return jsonify({'success': False, 'message': 'Coin and point values must be non-negative.'}), 400
         except ValueError:
-            flash('Coin and point values must be valid numbers.', 'error')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({'success': False, 'message': 'Coin and point values must be valid numbers.'}), 400
         
         # Create chore
         new_chore = Chore(
@@ -183,12 +184,14 @@ def create_chore():
             db.session.add(new_chore)
             db.session.commit()
             
-            flash(f'Chore "{chore_name}" created successfully!', 'success')
-            return redirect(url_for('parent.chores'))
+            return jsonify({
+                'success': True,
+                'message': f'Chore "{chore_name}" created successfully!',
+                'chore_id': new_chore.id
+            })
         except Exception as e:
             db.session.rollback()
-            flash('Failed to create chore. Please try again.', 'error')
-            return redirect(url_for('parent.chores'))
+            return jsonify({'success': False, 'message': 'Failed to create chore. Please try again.'}), 500
     
     return redirect(url_for('parent.chores'))
 
@@ -201,13 +204,11 @@ def toggle_chore(chore_id):
     chore = Chore.query.get(chore_id)
     
     if not chore:
-        flash('Chore not found.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Chore not found.'}), 404
     
     # Verify chore belongs to this family
     if chore.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Toggle active status
     chore.is_active = not chore.is_active
@@ -215,12 +216,14 @@ def toggle_chore(chore_id):
     try:
         db.session.commit()
         status = 'active' if chore.is_active else 'inactive'
-        flash(f'"{chore.name}" is now {status}.', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'"{chore.name}" is now {status}.',
+            'is_active': chore.is_active
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to update chore. Please try again.', 'error')
-    
-    return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Failed to update chore. Please try again.'}), 500
 
 
 @parent_bp.route('/edit-chore/<int:chore_id>', methods=['POST'])
@@ -231,13 +234,11 @@ def edit_chore(chore_id):
     chore = Chore.query.get(chore_id)
     
     if not chore:
-        flash('Chore not found.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Chore not found.'}), 404
     
     # Verify chore belongs to this family
     if chore.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     chore_name = request.form.get('name', '').strip()
     description = request.form.get('description', '').strip()
@@ -249,25 +250,21 @@ def edit_chore(chore_id):
     
     # Validation
     if not chore_name:
-        flash('Chore name is required.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Chore name is required.'}), 400
     
     # Validate frequency
     valid_frequencies = ['unlimited', 'daily', 'weekly', 'monthly', 'one_time']
     if frequency not in valid_frequencies:
-        flash('Invalid frequency selected.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Invalid frequency selected.'}), 400
     
     try:
         coin_value = int(coin_value)
         point_value = int(point_value)
         
         if coin_value < 0 or point_value < 0:
-            flash('Coin and point values must be non-negative.', 'error')
-            return redirect(url_for('parent.chores'))
+            return jsonify({'success': False, 'message': 'Coin and point values must be non-negative.'}), 400
     except ValueError:
-        flash('Coin and point values must be valid numbers.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Coin and point values must be valid numbers.'}), 400
     
     # Update chore
     chore.name = chore_name
@@ -280,12 +277,13 @@ def edit_chore(chore_id):
     
     try:
         db.session.commit()
-        flash(f'Chore "{chore_name}" updated successfully!', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'Chore "{chore_name}" updated successfully!'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to update chore. Please try again.', 'error')
-    
-    return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Failed to update chore. Please try again.'}), 500
 
 
 @parent_bp.route('/delete-chore/<int:chore_id>', methods=['POST'])
@@ -296,25 +294,24 @@ def delete_chore(chore_id):
     chore = Chore.query.get(chore_id)
     
     if not chore:
-        flash('Chore not found.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Chore not found.'}), 404
     
     # Verify chore belongs to this family
     if chore.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     chore_name = chore.name
     
     try:
         db.session.delete(chore)
         db.session.commit()
-        flash(f'Chore "{chore_name}" deleted successfully.', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'Chore "{chore_name}" deleted successfully.'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to delete chore. Please try again.', 'error')
-    
-    return redirect(url_for('parent.chores'))
+        return jsonify({'success': False, 'message': 'Failed to delete chore. Please try again.'}), 500
 
 @parent_bp.route('/confirm-chore/<int:assignment_id>', methods=['POST'])
 @login_required
@@ -326,18 +323,15 @@ def confirm_chore(assignment_id):
     assignment = ChoreAssignment.query.get(assignment_id)
     
     if not assignment:
-        flash('Chore assignment not found.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Chore assignment not found.'}), 404
     
     # Verify assignment belongs to this family
     if assignment.kid.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Check if already confirmed
     if assignment.status == 'confirmed':
-        flash('Chore already confirmed.', 'warning')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Chore already confirmed.'}), 400
     
     # Get coin adjustment if any
     coin_adjustment = request.form.get('coin_adjustment', None)
@@ -359,12 +353,15 @@ def confirm_chore(assignment_id):
     
     try:
         db.session.commit()
-        flash(f'Chore confirmed! {assignment.kid.name} earned {coin_adjustment} coins.', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'Chore confirmed! {assignment.kid.name} earned {coin_adjustment} coins.',
+            'kid_id': assignment.kid.id,
+            'new_balance': assignment.kid.coin_balance
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to confirm chore. Please try again.', 'error')
-    
-    return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Failed to confirm chore. Please try again.'}), 500
 
 
 @parent_bp.route('/reject-chore/<int:assignment_id>', methods=['POST'])
@@ -376,25 +373,24 @@ def reject_chore(assignment_id):
     assignment = ChoreAssignment.query.get(assignment_id)
     
     if not assignment:
-        flash('Chore assignment not found.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Chore assignment not found.'}), 404
     
     # Verify assignment belongs to this family
     if assignment.kid.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Update assignment
     assignment.status = 'rejected'
     
     try:
         db.session.commit()
-        flash(f'Chore rejected.', 'info')
+        return jsonify({
+            'success': True,
+            'message': 'Chore rejected.'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to reject chore. Please try again.', 'error')
-    
-    return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Failed to reject chore. Please try again.'}), 500
 
 
 @parent_bp.route('/reset-pin/<int:kid_id>', methods=['POST'])
@@ -406,13 +402,11 @@ def reset_pin(kid_id):
     kid = Kid.query.get(kid_id)
     
     if not kid:
-        flash('Kid not found.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Kid not found.'}), 404
     
     # Verify kid belongs to this family
     if kid.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Generate new 4-digit PIN
     new_pin = ''.join([str(random.randint(0, 9)) for _ in range(4)])
@@ -420,12 +414,14 @@ def reset_pin(kid_id):
     
     try:
         db.session.commit()
-        flash(f'PIN reset for {kid.name}! New PIN is: {new_pin}. Please write this down - it will not be shown again.', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'PIN reset for {kid.name}! New PIN is: {new_pin}. Please write this down - it will not be shown again.',
+            'pin': new_pin
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to reset PIN. Please try again.', 'error')
-    
-    return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Failed to reset PIN. Please try again.'}), 500
 
 
 @parent_bp.route('/adjust-coins/<int:kid_id>', methods=['POST'])
@@ -437,24 +433,20 @@ def adjust_coins(kid_id):
     kid = Kid.query.get(kid_id)
     
     if not kid:
-        flash('Kid not found.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Kid not found.'}), 404
     
     # Verify kid belongs to this family
     if kid.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Get action (add/subtract) and amount
     action = request.form.get('action', 'add')
     try:
         amount = int(request.form.get('amount', 0))
         if amount <= 0:
-            flash('Amount must be greater than zero.', 'error')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({'success': False, 'message': 'Amount must be greater than zero.'}), 400
     except ValueError:
-        flash('Invalid amount.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Invalid amount.'}), 400
     
     reason = request.form.get('reason', '').strip()
     
@@ -474,7 +466,7 @@ def adjust_coins(kid_id):
     try:
         db.session.commit()
         
-        # Create flash message
+        # Create message
         if adjustment > 0:
             message = f'Added {adjustment} coins to {kid.name}\'s balance!'
         else:
@@ -483,12 +475,15 @@ def adjust_coins(kid_id):
         if reason:
             message += f' Reason: {reason}'
         
-        flash(message, 'success')
+        return jsonify({
+            'success': True,
+            'message': message,
+            'kid_id': kid.id,
+            'new_balance': kid.coin_balance
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to adjust coins. Please try again.', 'error')
-    
-    return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Failed to adjust coins. Please try again.'}), 500
 
 
 @parent_bp.route('/add-store-item', methods=['POST'])
@@ -503,17 +498,14 @@ def add_store_item():
     
     # Validation
     if not name:
-        flash('Item name is required.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Item name is required.'}), 400
     
     try:
         coin_cost = int(coin_cost)
         if coin_cost < 0:
-            flash('Coin cost must be non-negative.', 'error')
-            return redirect(url_for('parent.dashboard'))
+            return jsonify({'success': False, 'message': 'Coin cost must be non-negative.'}), 400
     except ValueError:
-        flash('Coin cost must be a valid number.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Coin cost must be a valid number.'}), 400
     
     # Create store item
     new_item = StoreItem(
@@ -528,12 +520,63 @@ def add_store_item():
     try:
         db.session.add(new_item)
         db.session.commit()
-        flash(f'Store item "{name}" added successfully!', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'Store item "{name}" added successfully!',
+            'item_id': new_item.id
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to add store item. Please try again.', 'error')
+        return jsonify({'success': False, 'message': 'Failed to add store item. Please try again.'}), 500
+
+
+@parent_bp.route('/edit-store-item/<int:item_id>', methods=['POST'])
+@login_required
+def edit_store_item(item_id):
+    family_id = session.get('family_id')
     
-    return redirect(url_for('parent.store'))
+    item = StoreItem.query.get(item_id)
+    
+    if not item:
+        return jsonify({'success': False, 'message': 'Store item not found.'}), 404
+    
+    # Verify item belongs to this family
+    if item.family_id != family_id:
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
+    
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    tags = request.form.get('tags', '').strip()
+    coin_cost = request.form.get('coin_cost', '0').strip()
+    is_available = request.form.get('is_available') == 'on'
+    
+    # Validation
+    if not name:
+        return jsonify({'success': False, 'message': 'Item name is required.'}), 400
+    
+    try:
+        coin_cost = int(coin_cost)
+        if coin_cost < 0:
+            return jsonify({'success': False, 'message': 'Coin cost must be non-negative.'}), 400
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Coin cost must be a valid number.'}), 400
+    
+    # Update store item
+    item.name = name
+    item.description = description if description else None
+    item.tags = tags if tags else None
+    item.coin_cost = coin_cost
+    item.is_available = is_available
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Store item "{name}" updated successfully!'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update store item. Please try again.'}), 500
 
 
 @parent_bp.route('/toggle-store-item/<int:item_id>', methods=['POST'])
@@ -544,13 +587,11 @@ def toggle_store_item(item_id):
     item = StoreItem.query.get(item_id)
     
     if not item:
-        flash('Store item not found.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Store item not found.'}), 404
     
     # Verify item belongs to this family
     if item.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Toggle availability
     item.is_available = not item.is_available
@@ -558,12 +599,14 @@ def toggle_store_item(item_id):
     try:
         db.session.commit()
         status = 'available' if item.is_available else 'unavailable'
-        flash(f'"{item.name}" is now {status}.', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'"{item.name}" is now {status}.',
+            'is_available': item.is_available
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to update item. Please try again.', 'error')
-    
-    return redirect(url_for('parent.store'))
+        return jsonify({'success': False, 'message': 'Failed to update item. Please try again.'}), 500
 
 
 @parent_bp.route('/delete-store-item/<int:item_id>', methods=['POST'])
@@ -574,25 +617,24 @@ def delete_store_item(item_id):
     item = StoreItem.query.get(item_id)
     
     if not item:
-        flash('Store item not found.', 'error')
-        return redirect(url_for('parent.store'))
+        return jsonify({'success': False, 'message': 'Store item not found.'}), 404
     
     # Verify item belongs to this family
     if item.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.store'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     item_name = item.name
     
     try:
         db.session.delete(item)
         db.session.commit()
-        flash(f'Store item "{item_name}" deleted successfully.', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'Store item "{item_name}" deleted successfully.'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to delete item. Please try again.', 'error')
-    
-    return redirect(url_for('parent.store'))
+        return jsonify({'success': False, 'message': 'Failed to delete item. Please try again.'}), 500
 
 
 @parent_bp.route('/fulfill-purchase/<int:purchase_id>', methods=['POST'])
@@ -604,18 +646,15 @@ def fulfill_purchase(purchase_id):
     purchase = Purchase.query.get(purchase_id)
     
     if not purchase:
-        flash('Purchase not found.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Purchase not found.'}), 404
     
     # Verify purchase belongs to this family
     if purchase.kid.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Verify status is pending
     if purchase.status != 'pending':
-        flash('This purchase has already been processed.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'This purchase has already been processed.'}), 400
     
     # Mark as fulfilled
     purchase.status = 'fulfilled'
@@ -623,12 +662,13 @@ def fulfill_purchase(purchase_id):
     
     try:
         db.session.commit()
-        flash(f'✓ Purchase fulfilled! {purchase.kid.name} can now enjoy "{purchase.item.name}".', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'✓ Purchase fulfilled! {purchase.kid.name} can now enjoy "{purchase.item.name}".'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to fulfill purchase. Please try again.', 'error')
-    
-    return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Failed to fulfill purchase. Please try again.'}), 500
 
 
 @parent_bp.route('/cancel-purchase/<int:purchase_id>', methods=['POST'])
@@ -640,18 +680,15 @@ def cancel_purchase(purchase_id):
     purchase = Purchase.query.get(purchase_id)
     
     if not purchase:
-        flash('Purchase not found.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Purchase not found.'}), 404
     
     # Verify purchase belongs to this family
     if purchase.kid.family_id != family_id:
-        flash('Unauthorized action.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
     # Verify status is pending
     if purchase.status != 'pending':
-        flash('This purchase has already been processed.', 'error')
-        return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'This purchase has already been processed.'}), 400
     
     # Refund coins to kid
     purchase.kid.coin_balance += purchase.coin_cost
@@ -661,12 +698,15 @@ def cancel_purchase(purchase_id):
     
     try:
         db.session.commit()
-        flash(f'Purchase cancelled and {purchase.coin_cost} coins refunded to {purchase.kid.name}.', 'info')
+        return jsonify({
+            'success': True,
+            'message': f'Purchase cancelled and {purchase.coin_cost} coins refunded to {purchase.kid.name}.',
+            'kid_id': purchase.kid.id,
+            'new_balance': purchase.kid.coin_balance
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Failed to cancel purchase. Please try again.', 'error')
-    
-    return redirect(url_for('parent.dashboard'))
+        return jsonify({'success': False, 'message': 'Failed to cancel purchase. Please try again.'}), 500
 
 
 @parent_bp.route('/family-settings')

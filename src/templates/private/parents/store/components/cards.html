@@ -1,0 +1,112 @@
+<div class="card store-item" data-item-tags="{{ item.tags or '' }}">
+    <div class="d-flex justify-content-between">
+        <!-- Tags -->
+        {% if item.tags %}
+        <div class="tag-badge-container">
+            {% set all_tags = item.tags.split(',') %}
+            {% for tag in all_tags[:4] %}
+            <span class="tag-badge">
+                #{{ tag.strip() }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Header with name and status -->
+        <div class="card-header-row">
+            <form method="POST" action="{{ url_for('parent.toggle_store_item', item_id=item.id) }}" class="form-flex-shrink">
+                <button type="submit" class="status-badge {% if not item.is_available %}inactive{% else %}active{% endif %}"
+                    title="Click to {% if item.is_available %}hide{% else %}show{% endif %}">
+                    {% if not item.is_available %}👁️ Hidden{% else %}✓ Available{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card-title-center">
+        <h3 class="fs-3 fw-bolder">
+            {{ item.name }}
+        </h3>
+    </div>
+
+    <!-- Action Button -->
+    <div class="card-actions">
+        <button type="button" class="btn-primary view-item-btn card-action-button w-100" data-item-id="{{ item.id }}"
+            data-item-name="{{ item.name }}" data-item-description="{{ item.description or '' }}"
+            data-item-tags="{{ item.tags or '' }}" data-item-cost="{{ item.coin_cost }}"
+            data-item-available="{{ 'true' if item.is_available else 'false' }}">
+            <span>View Details</span>
+        </button>
+        <form id="delete-item-form-{{ item.id }}" method="POST"
+            action="{{ url_for('parent.delete_store_item', item_id=item.id) }}" class="hidden-form"></form>
+    </div>
+</div>
+
+<!-- Store Item Details Modal -->
+<div id="itemDetailsModal-{{ item.id }}" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>{{ item.name }}</h3>
+            <span class="close" onclick="toggleModal('itemDetailsModal-{{ item.id }}')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <!-- Status -->
+            <div class="modal-section">
+                <form method="POST" action="{{ url_for('parent.toggle_store_item', item_id=item.id) }}" class="inline-form">
+                    <button type="submit" class="status-badge {% if not item.is_available %}inactive{% else %}active{% endif %}"
+                        title="Click to {% if item.is_available %}hide{% else %}show{% endif %}">
+                        {% if not item.is_available %}👁️ Hidden{% else %}✓ Available{% endif %}
+                    </button>
+                </form>
+            </div>
+
+            <!-- Tags -->
+            {% if item.tags %}
+            <div class="modal-section">
+                <label class="modal-label">Tags</label>
+                <div class="tags-container">
+                    {% for tag in item.tags.split(',') %}
+                    <span class="tag-badge">
+                        #{{ tag.strip() }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Description -->
+            {% if item.description %}
+            <div class="modal-section">
+                <label class="modal-label">Description</label>
+                <p class="modal-text">{{ item.description }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Cost -->
+            <div class="modal-section">
+                <label class="modal-label-lg">Cost</label>
+                <div class="cost-box">
+                    <span class="cost-icon">💰</span>
+                    <div>
+                        <div class="cost-label">Coins</div>
+                        <div class="cost-value">{{ item.coin_cost }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer d-grid" style="grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+            <button type="button" class="btn-primary edit-item-btn" data-item-id="{{ item.id }}"
+                data-item-name="{{ item.name }}" data-item-description="{{ item.description or '' }}"
+                data-item-tags="{{ item.tags or '' }}" data-item-cost="{{ item.coin_cost }}"
+                data-item-available="{{ 'true' if item.is_available else 'false' }}"
+                onclick="toggleModal('itemDetailsModal-{{ item.id }}')">
+                ✏️ Edit
+            </button>
+            <button type="button" class="btn-danger delete-item-btn" data-item-id="{{ item.id }}"
+                data-item-name="{{ item.name }}" onclick="toggleModal('itemDetailsModal-{{ item.id }}')">
+                🗑️ Delete
+            </button>
+        </div>
+    </div>
+</div>

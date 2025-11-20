@@ -23,7 +23,7 @@
                 <div id="tagFilterSection" style="margin-bottom: var(--space-lg); display: none;">
                     <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
                         <strong style="color: var(--text-primary);">Filter by tag:</strong>
-                        <button class="tag-filter-btn active" data-tag="all"
+                        <button class="tag-filter-btn active" data-tag="all" onclick="filterByTag('all')"
                             style="padding: 0.375rem 0.75rem; background: var(--accent-primary); color: white; border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8125rem; box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark); transition: all 0.2s;">
                             All
                         </button>
@@ -170,6 +170,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script>
     function toggleModal(modalId) {
         document.getElementById(modalId).classList.toggle('active');
@@ -177,6 +178,61 @@
 
     // Edit chore buttons - use event delegation
     document.addEventListener('DOMContentLoaded', function () {
+        // Setup AJAX for create chore form
+        setupAjaxForm('#createChoreModal form', {
+            closeModal: 'createChoreModal',
+            onSuccess: () => {
+                location.reload();
+            }
+        });
+        
+        // Setup AJAX for edit chore form
+        setupAjaxForm('#editChoreForm', {
+            closeModal: 'editChoreModal',
+            onSuccess: () => {
+                location.reload();
+            }
+        });
+        
+        // Handle toggle chore forms (in cards and modals)
+        document.querySelectorAll('form[action*="toggle-chore"]').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                await submitForm(form, {
+                    onSuccess: (data) => {
+                        // Update the button text
+                        const button = form.querySelector('button[type="submit"]');
+                        if (button) {
+                            button.textContent = data.is_active ? '✓ Active' : '👁️ Hidden';
+                            button.className = `status-badge ${data.is_active ? 'active' : 'inactive'}`;
+                            button.title = `Click to ${data.is_active ? 'hide' : 'show'}`;
+                        }
+                    }
+                });
+            });
+        });
+        
+        // Handle delete buttons
+        document.querySelectorAll('.delete-chore-btn').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                const choreId = this.dataset.choreId;
+                const choreName = this.dataset.choreName;
+                if (confirm('Delete ' + choreName + '? This cannot be undone.')) {
+                    const form = document.getElementById('delete-form-' + choreId);
+                    await submitForm(form, {
+                        onSuccess: () => {
+                            // Remove the chore card
+                            const choreCard = form.closest('.col-12, .col-md-6');
+                            if (choreCard) {
+                                removeElement(choreCard);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        
         // Handle edit buttons
         document.querySelectorAll('.edit-chore-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -211,17 +267,6 @@
             btn.addEventListener('click', function () {
                 const choreId = this.dataset.choreId;
                 toggleModal('choreDetailsModal-' + choreId);
-            });
-        });
-
-        // Handle delete buttons
-        document.querySelectorAll('.delete-chore-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                const choreId = this.dataset.choreId;
-                const choreName = this.dataset.choreName;
-                if (confirm('Delete ' + choreName + '? This cannot be undone.')) {
-                    document.getElementById('delete-form-' + choreId).submit();
-                }
             });
         });
 
