@@ -244,51 +244,61 @@ def seed_store_items(families):
         {
             "name": "Extra Screen Time (30 min)",
             "description": "Redeem for 30 minutes of extra screen time",
+            "tags": "screentime,entertainment",
             "coin_cost": 25
         },
         {
             "name": "Ice Cream Trip",
             "description": "Family trip to ice cream shop",
+            "tags": "treats,outing",
             "coin_cost": 50
         },
         {
             "name": "Movie Night Choice",
             "description": "Pick the movie for family movie night",
+            "tags": "entertainment,family",
             "coin_cost": 30
         },
         {
             "name": "Skip One Chore",
             "description": "Skip any chore of your choice (one time)",
+            "tags": "special,privilege",
             "coin_cost": 40
         },
         {
             "name": "Sleepover with Friend",
             "description": "Have a friend stay overnight",
+            "tags": "social,special",
             "coin_cost": 75
         },
         {
             "name": "New Book",
             "description": "Choose any book from the bookstore",
+            "tags": "educational,shopping",
             "coin_cost": 35
         },
         {
             "name": "Pizza for Dinner",
             "description": "Family orders pizza for dinner",
+            "tags": "treats,food,family",
             "coin_cost": 45
         },
         {
             "name": "Stay Up Late (1 hour)",
             "description": "Stay up one hour past normal bedtime",
+            "tags": "privilege,bedtime",
             "coin_cost": 20
         },
         {
             "name": "New Toy (Small)",
             "description": "Choose a small toy (under $10)",
+            "tags": "shopping,toys",
             "coin_cost": 100
         },
         {
             "name": "Day Trip Adventure",
             "description": "Family day trip to your choice of location",
+            "tags": "outing,special,family",
             "coin_cost": 150
         },
     ]
@@ -304,13 +314,14 @@ def seed_store_items(families):
                 family_id=family.id,
                 name=item_data["name"],
                 description=item_data["description"],
+                tags=item_data["tags"],
                 coin_cost=item_data["coin_cost"],
                 is_available=random.choice([True, True, True, False])  # 75% available
             )
             db.session.add(item)
             all_items.append(item)
             status = "✅" if item.is_available else "❌"
-            print(f"  {status} Created item: {item.name} (Cost: {item.coin_cost} coins)")
+            print(f"  {status} Created item: {item.name} (Cost: {item.coin_cost} coins, Tags: {item.tags})")
     
     db.session.commit()
     return all_items

@@ -498,6 +498,7 @@ def add_store_item():
     
     name = request.form.get('name', '').strip()
     description = request.form.get('description', '').strip()
+    tags = request.form.get('tags', '').strip()
     coin_cost = request.form.get('coin_cost', '0').strip()
     
     # Validation
@@ -519,6 +520,7 @@ def add_store_item():
         family_id=family_id,
         name=name,
         description=description,
+        tags=tags if tags else None,
         coin_cost=coin_cost,
         is_available=True
     )

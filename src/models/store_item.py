@@ -9,6 +9,7 @@ class StoreItem(db.Model):
     family_id = db.Column(db.Integer, db.ForeignKey('family.id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    tags = db.Column(db.String(500), nullable=True)
     coin_cost = db.Column(db.Integer, nullable=False, default=0)
     is_available = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

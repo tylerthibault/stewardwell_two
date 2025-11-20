@@ -96,6 +96,15 @@ def create_app():
                     conn.commit()
                 print("[DATABASE] Tags column added to chore table")
             
+            # Check if tags column exists in store_item table
+            store_item_columns = [col['name'] for col in inspector.get_columns('store_item')]
+            if 'tags' not in store_item_columns:
+                print("[DATABASE] Adding 'tags' column to store_item table...")
+                with db.engine.connect() as conn:
+                    conn.execute(db.text('ALTER TABLE store_item ADD COLUMN tags VARCHAR(500)'))
+                    conn.commit()
+                print("[DATABASE] Tags column added to store_item table")
+            
         except Exception as e:
             print(f"[DATABASE] Warning: Could not auto-create tables: {e}")
     
