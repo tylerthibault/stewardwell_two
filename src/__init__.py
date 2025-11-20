@@ -88,6 +88,14 @@ def create_app():
                     conn.commit()
                 print("[DATABASE] Description column added to chore table")
             
+            # Check if tags column exists in chore table
+            if 'tags' not in chore_columns:
+                print("[DATABASE] Adding 'tags' column to chore table...")
+                with db.engine.connect() as conn:
+                    conn.execute(db.text('ALTER TABLE chore ADD COLUMN tags VARCHAR(500)'))
+                    conn.commit()
+                print("[DATABASE] Tags column added to chore table")
+            
         except Exception as e:
             print(f"[DATABASE] Warning: Could not auto-create tables: {e}")
     
