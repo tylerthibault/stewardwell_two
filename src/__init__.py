@@ -69,11 +69,25 @@ def create_app():
     # Import models for migration
     from src.models import family, parent, kid, chore, chore_assignment, store_item, purchase
     
-    # Auto-create tables on first request if they don't exist
+    # Auto-create tables and apply schema updates
     with app.app_context():
         try:
             db.create_all()
             print("[DATABASE] Tables initialized successfully")
+            
+            # Apply column migrations for existing tables
+            from sqlalchemy import inspect, Text
+            inspector = inspect(db.engine)
+            
+            # Check if description column exists in chore table
+            chore_columns = [col['name'] for col in inspector.get_columns('chore')]
+            if 'description' not in chore_columns:
+                print("[DATABASE] Adding 'description' column to chore table...")
+                with db.engine.connect() as conn:
+                    conn.execute(db.text('ALTER TABLE chore ADD COLUMN description TEXT'))
+                    conn.commit()
+                print("[DATABASE] Description column added to chore table")
+            
         except Exception as e:
             print(f"[DATABASE] Warning: Could not auto-create tables: {e}")
     
