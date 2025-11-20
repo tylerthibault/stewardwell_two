@@ -31,10 +31,12 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p instance logs
 
+# Copy and set up entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Expose port (CapRover will map this)
 EXPOSE 80
 
-# Run the application with Gunicorn
-# CapRover expects the app to run on port 80
-# Use preload to catch errors early and set config to production
-CMD ["gunicorn", "--bind", "0.0.0.0:80", "--workers", "2", "--threads", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info", "--preload", "--env", "FLASK_ENV=production", "run:app"]
+# Use entrypoint script to run migrations before starting app
+ENTRYPOINT ["docker-entrypoint.sh"]
