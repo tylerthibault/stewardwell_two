@@ -167,22 +167,7 @@
     margin-top: 1.5rem;
 }
 
-.store-item {
-    background: #f8f9fa;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    transition: all 0.3s;
-}
-
-.store-item:hover {
-    border-color: #3498db;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
+/* store-item now uses unified card styling from bold-flat-theme.css */
 
 .item-name {
     font-size: 1.25rem;

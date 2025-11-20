@@ -185,15 +185,110 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script>
 function copyFamilyCode(code) {
     navigator.clipboard.writeText(code).then(() => {
-        alert('Family code copied!');
+        showMessage('Family code copied!', 'success');
     });
 }
 
 function toggleModal(modalId) {
     document.getElementById(modalId).classList.toggle('active');
 }
+
+// Setup AJAX for all forms
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Kid Form
+    setupAjaxForm('#addKidModal form', {
+        closeModal: 'addKidModal',
+        onSuccess: (data) => {
+            // Reload page to show new kid
+            location.reload();
+        }
+    });
+    
+    // Adjust Coins Forms
+    document.querySelectorAll('[id^="adjustCoinsModal"]').forEach(modal => {
+        const form = modal.querySelector('form');
+        setupAjaxForm(form, {
+            closeModal: modal.id,
+            onSuccess: (data) => {
+                // Update coin balance in UI
+                if (data.kid_id) {
+                    const coinBadge = document.querySelector(`.kid-item [data-kid-id="${data.kid_id}"] .coin-badge`);
+                    if (coinBadge) {
+                        coinBadge.textContent = `${data.new_balance} Coins`;
+                    }
+                }
+                location.reload();
+            }
+        });
+    });
+    
+    // Reset PIN Forms
+    document.querySelectorAll('form[action*="reset-pin"]').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!confirm('Reset PIN for this kid?')) return;
+            
+            await submitForm(form, {
+                onSuccess: () => {
+                    // PIN shown in message
+                }
+            });
+        });
+    });
+    
+    // Chore Approval/Rejection Forms
+    document.querySelectorAll('form[action*="confirm-chore"], form[action*="reject-chore"]').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const assignment = form.closest('.assignment-item');
+            await submitForm(form, {
+                onSuccess: (data) => {
+                    // Remove the assignment card
+                    if (assignment) {
+                        removeElement(assignment.closest('.col-12, .col-md-6'));
+                    }
+                    
+                    // Update kid coin balance if provided
+                    if (data.kid_id && data.new_balance !== undefined) {
+                        const coinBadge = document.querySelector(`.kid-item [data-kid-id="${data.kid_id}"] .coin-badge`);
+                        if (coinBadge) {
+                            coinBadge.textContent = `${data.new_balance} Coins`;
+                        }
+                    }
+                }
+            });
+        });
+    });
+    
+    // Purchase Fulfillment/Cancellation Forms
+    document.querySelectorAll('form[action*="fulfill-purchase"], form[action*="cancel-purchase"]').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const purchaseItem = form.closest('.assignment-item');
+            await submitForm(form, {
+                onSuccess: (data) => {
+                    // Remove the purchase card
+                    if (purchaseItem) {
+                        removeElement(purchaseItem.closest('.col-12, .col-md-6'));
+                    }
+                    
+                    // Update kid coin balance if refunded
+                    if (data.kid_id && data.new_balance !== undefined) {
+                        const coinBadge = document.querySelector(`.kid-item [data-kid-id="${data.kid_id}"] .coin-badge`);
+                        if (coinBadge) {
+                            coinBadge.textContent = `${data.new_balance} Coins`;
+                        }
+                    }
+                }
+            });
+        });
+    });
+});
 </script>
 {% endblock %}

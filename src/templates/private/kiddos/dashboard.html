@@ -149,3 +149,39 @@
     
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pick chore forms
+    document.querySelectorAll('form[action*="pick-chore"]').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const choreCard = form.closest('.chore-item');
+            await submitForm(form, {
+                onSuccess: () => {
+                    // Reload to update chore lists
+                    location.reload();
+                }
+            });
+        });
+    });
+    
+    // Complete chore forms
+    document.querySelectorAll('form[action*="complete-chore"]').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            await submitForm(form, {
+                onSuccess: () => {
+                    // Reload to update chore lists
+                    location.reload();
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -87,3 +87,43 @@
 
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Purchase forms
+    document.querySelectorAll('form[action*="purchase"]').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Get item details
+            const button = form.querySelector('button[type="submit"]');
+            const itemName = button.onclick.toString().match(/Purchase (.+?) for/)?.[1] || 'this item';
+            const itemCost = button.onclick.toString().match(/for (\d+) coins/)?.[1] || '0';
+            
+            if (!confirm(`Purchase ${itemName} for ${itemCost} coins?`)) {
+                return;
+            }
+            
+            await submitForm(form, {
+                onSuccess: (data) => {
+                    // Update coin balance in UI
+                    if (data.new_balance !== undefined) {
+                        const coinBadges = document.querySelectorAll('.coin-badge');
+                        coinBadges.forEach(badge => {
+                            if (badge.textContent.includes('🪙')) {
+                                badge.textContent = `🪙 ${data.new_balance}`;
+                            }
+                        });
+                    }
+                    
+                    // Reload to update purchase status
+                    setTimeout(() => location.reload(), 1500);
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

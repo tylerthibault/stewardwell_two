@@ -19,62 +19,31 @@
             </div>
             <div class="card-body">
                 {% if store_items %}
-                    <!-- Tag Filter -->
-                    <div id="tagFilterSection" style="margin-bottom: var(--space-lg); display: none;">
-                        <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
-                            <strong style="color: var(--text-primary);">Filter by tag:</strong>
-                            <button class="tag-filter-btn active" data-tag="all" style="padding: 0.375rem 0.75rem; background: var(--accent-primary); color: white; border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8125rem; box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark); transition: all 0.2s;">
-                                All
-                            </button>
-                            <div id="tagFilters" style="display: flex; gap: var(--space-sm); flex-wrap: wrap;"></div>
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        {% for item in store_items %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                        <div class="store-item" data-item-tags="{{ item.tags or '' }}">
-                            <div class="store-item-header">
-                                <strong style="word-break: break-word;">{{ item.name }}</strong>
-                                <form method="POST" action="{{ url_for('parent.toggle_store_item', item_id=item.id) }}" style="display: inline;">
-                                    <button type="submit" class="status-badge {% if not item.is_available %}inactive{% else %}active{% endif %}" style="cursor: pointer; border: none; font: inherit;" title="Click to {% if item.is_available %}hide{% else %}show{% endif %}">
-                                        {% if not item.is_available %}👁️ Hidden{% else %}✓ Available{% endif %}
-                                    </button>
-                                </form>
-                            </div>
-                            
-                            {% if item.tags %}
-                            <div class="item-tags" style="margin: var(--space-xs) 0; display: flex; gap: 0.375rem; flex-wrap: wrap;">
-                                {% for tag in item.tags.split(',') %}
-                                <span class="tag-badge" style="background: var(--accent-primary); color: white; padding: 0.1875rem 0.5rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border: 0.125rem solid var(--accent-dark); box-shadow: 0.125rem 0.125rem 0 var(--accent-dark);">
-                                    #{{ tag.strip() }}
-                                </span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            
-                            {% if item.description %}
-                                <p class="store-item-description" style="word-break: break-word;">{{ item.description }}</p>
-                            {% endif %}
-                            <div class="store-item-cost">
-                                <span class="coin-badge">{{ item.coin_cost }} Coins</span>
-                            </div>
-                            <div class="store-item-actions d-flex flex-wrap gap-2">
-                                <button type="button" class="btn-danger w-100" onclick="if(confirm('Delete {{ item.name }}? This cannot be undone.')) document.getElementById('delete-item-form-{{ item.id }}').submit();">
-                                    🗑️ <span class="d-none d-sm-inline">Delete</span>
-                                </button>
-                                <form id="delete-item-form-{{ item.id }}" method="POST" action="{{ url_for('parent.delete_store_item', item_id=item.id) }}" style="display: none;"></form>
-                            </div>
-                        </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="empty-state text-center">
-                        <p style="font-size: 1.1rem; color: var(--text-muted, #666);">No store items created yet</p>
-                        <button class="btn-primary" onclick="toggleModal('addStoreItemModal')" style="margin-top: 1.5rem;">
-                            + Add First Item
+                <!-- Tag Filter -->
+                <div id="tagFilterSection" style="margin-bottom: var(--space-lg); display: none;">
+                    <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
+                        <strong style="color: var(--text-primary);">Filter by tag:</strong>
+                        <button class="tag-filter-btn active" data-tag="all" onclick="filterByTag('all')"
+                            style="padding: 0.375rem 0.75rem; background: var(--accent-primary); color: white; border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8125rem; box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark); transition: all 0.2s;">
+                            All
                         </button>
+                        <div id="tagFilters" style="display: flex; gap: var(--space-sm); flex-wrap: wrap;"></div>
                     </div>
+                </div>
+                <div class="row g-3">
+                    {% for item in store_items %}
+                    <div class="col-12 col-md-6 col-lg-4">
+                        {% include 'private/parents/store/components/cards.html' %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state text-center">
+                    <p style="font-size: 1.1rem; color: var(--text-muted, #666);">No store items created yet</p>
+                    <button class="btn-primary" onclick="toggleModal('addStoreItemModal')" style="margin-top: 1.5rem;">
+                        + Add First Item
+                    </button>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -95,7 +64,8 @@
             </div>
             <div class="form-group mb-3">
                 <label for="item_description">Description (optional)</label>
-                <textarea id="item_description" name="description" rows="3" placeholder="Describe the reward..."></textarea>
+                <textarea id="item_description" name="description" rows="3"
+                    placeholder="Describe the reward..."></textarea>
                 <small class="help-text">Add details about this reward</small>
             </div>
             <div class="form-group mb-3">
@@ -115,76 +85,207 @@
     </div>
 </div>
 
+<!-- Edit Store Item Modal -->
+<div id="editStoreItemModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Store Item</h3>
+            <span class="close" onclick="toggleModal('editStoreItemModal')">&times;</span>
+        </div>
+        <form id="editStoreItemForm" method="POST">
+            <div class="form-group mb-3">
+                <label for="edit_item_name">Item Name</label>
+                <input type="text" id="edit_item_name" name="name" required placeholder="e.g., Extra TV time, Ice cream">
+            </div>
+            <div class="form-group mb-3">
+                <label for="edit_item_description">Description (optional)</label>
+                <textarea id="edit_item_description" name="description" rows="3"
+                    placeholder="Describe the reward..."></textarea>
+                <small class="help-text">Add details about this reward</small>
+            </div>
+            <div class="form-group mb-3">
+                <label for="edit_item_tags">Tags (Optional)</label>
+                <input type="text" id="edit_item_tags" name="tags" placeholder="e.g., treats, screentime, special">
+                <small class="help-text">Separate multiple tags with commas</small>
+            </div>
+            <div class="form-group mb-3">
+                <label for="edit_item_coin_cost">Coin Cost</label>
+                <input type="number" id="edit_item_coin_cost" name="coin_cost" min="0" required>
+            </div>
+            <div class="form-group mb-3">
+                <label style="display: flex; align-items: center; gap: var(--space-sm); text-transform: none; cursor: pointer;">
+                    <input type="checkbox" id="edit_is_available" name="is_available" style="width: auto; cursor: pointer;">
+                    <span>Available (visible to kids)</span>
+                </label>
+                <small class="help-text">Uncheck to hide this item from kids</small>
+            </div>
+            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
+                <button type="button" class="btn-secondary" onclick="toggleModal('editStoreItemModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script>
-function toggleModal(modalId) {
-    document.getElementById(modalId).classList.toggle('active');
-}
+    function toggleModal(modalId) {
+        document.getElementById(modalId).classList.toggle('active');
+    }
 
-// Tag filtering system for store items
-document.addEventListener('DOMContentLoaded', function() {
-    const allTags = new Set();
-    
-    // Collect all unique tags from store items
-    document.querySelectorAll('.store-item').forEach(function(item) {
-        const tags = item.dataset.itemTags;
-        if (tags) {
-            tags.split(',').forEach(function(tag) {
-                const trimmed = tag.trim();
-                if (trimmed) {
-                    allTags.add(trimmed);
+    // Tag filtering system for store items
+    document.addEventListener('DOMContentLoaded', function () {
+        // Setup AJAX for add store item form
+        setupAjaxForm('#addStoreItemModal form', {
+            closeModal: 'addStoreItemModal',
+            onSuccess: () => {
+                location.reload();
+            }
+        });
+
+        // Setup AJAX for edit store item form
+        setupAjaxForm('#editStoreItemForm', {
+            closeModal: 'editStoreItemModal',
+            onSuccess: () => {
+                location.reload();
+            }
+        });
+
+        // Handle toggle store item forms
+        document.querySelectorAll('form[action*="toggle-store-item"]').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                await submitForm(form, {
+                    onSuccess: (data) => {
+                        // Update the button text
+                        const button = form.querySelector('button[type="submit"]');
+                        if (button) {
+                            button.textContent = data.is_available ? '✓ Available' : '👁️ Hidden';
+                            button.className = `status-badge ${data.is_available ? 'active' : 'inactive'}`;
+                            button.title = `Click to ${data.is_available ? 'hide' : 'show'}`;
+                        }
+                    }
+                });
+            });
+        });
+
+        // Handle view details buttons
+        document.querySelectorAll('.view-item-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const itemId = this.dataset.itemId;
+                toggleModal('itemDetailsModal-' + itemId);
+            });
+        });
+
+        // Handle edit buttons
+        document.querySelectorAll('.edit-item-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const itemId = this.dataset.itemId;
+                const name = this.dataset.itemName;
+                const description = this.dataset.itemDescription;
+                const tags = this.dataset.itemTags;
+                const cost = this.dataset.itemCost;
+                const isAvailable = this.dataset.itemAvailable === 'true';
+
+                // Set form action
+                document.getElementById('editStoreItemForm').action = '/parent/edit-store-item/' + itemId;
+
+                // Populate form fields
+                document.getElementById('edit_item_name').value = name;
+                document.getElementById('edit_item_description').value = description || '';
+                document.getElementById('edit_item_tags').value = tags || '';
+                document.getElementById('edit_item_coin_cost').value = cost;
+                document.getElementById('edit_is_available').checked = isAvailable;
+
+                // Open modal
+                toggleModal('editStoreItemModal');
+            });
+        });
+
+        // Handle delete buttons
+        document.querySelectorAll('.delete-item-btn').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                const itemId = this.dataset.itemId;
+                const itemName = this.dataset.itemName;
+                if (confirm('Delete ' + itemName + '? This cannot be undone.')) {
+                    const form = document.getElementById('delete-item-form-' + itemId);
+                    await submitForm(form, {
+                        onSuccess: () => {
+                            // Remove the item card
+                            const itemCard = form.closest('.col-12, .col-md-6');
+                            if (itemCard) {
+                                removeElement(itemCard);
+                            }
+                        }
+                    });
                 }
             });
-        }
-    });
-    
-    // Populate filter buttons if tags exist
-    if (allTags.size > 0) {
-        const tagFilters = document.getElementById('tagFilters');
-        allTags.forEach(function(tag) {
-            const btn = document.createElement('button');
-            btn.className = 'tag-filter-btn';
-            btn.dataset.tag = tag;
-            btn.textContent = '#' + tag;
-            btn.style.cssText = 'padding: 0.375rem 0.75rem; background: var(--bg-light); color: var(--text-primary); border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease;';
-            btn.onclick = function() { filterByTag(tag); };
-            tagFilters.appendChild(btn);
         });
-        
-        // Show filter section
-        document.getElementById('tagFilterSection').style.display = 'block';
-    }
-    
-    // Filter function
-    window.filterByTag = function(tag) {
-        document.querySelectorAll('.store-item').forEach(function(item) {
+
+        const allTags = new Set();
+
+        // Collect all unique tags from store items
+        document.querySelectorAll('.store-item').forEach(function (item) {
             const tags = item.dataset.itemTags;
-            const col = item.closest('.col-12, .col-md-6');
-            
-            if (tag === 'all') {
-                col.style.display = 'block';
-            } else if (tags && tags.split(',').some(function(t) { return t.trim() === tag; })) {
-                col.style.display = 'block';
-            } else {
-                col.style.display = 'none';
+            if (tags) {
+                tags.split(',').forEach(function (tag) {
+                    const trimmed = tag.trim();
+                    if (trimmed) {
+                        allTags.add(trimmed);
+                    }
+                });
             }
         });
-        
-        // Update active button styling
-        document.querySelectorAll('.tag-filter-btn').forEach(function(btn) {
-            if (btn.dataset.tag === tag) {
-                btn.classList.add('active');
-                btn.style.background = 'var(--accent-primary)';
-                btn.style.color = 'white';
-            } else {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--bg-light)';
-                btn.style.color = 'var(--text-primary)';
-            }
-        });
-    };
-});
+
+        // Populate filter buttons if tags exist
+        if (allTags.size > 0) {
+            const tagFilters = document.getElementById('tagFilters');
+            allTags.forEach(function (tag) {
+                const btn = document.createElement('button');
+                btn.className = 'tag-filter-btn';
+                btn.dataset.tag = tag;
+                btn.textContent = '#' + tag;
+                btn.style.cssText = 'padding: 0.375rem 0.75rem; background: var(--bg-light); color: var(--text-primary); border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease;';
+                btn.onclick = function () { filterByTag(tag); };
+                tagFilters.appendChild(btn);
+            });
+
+            // Show filter section
+            document.getElementById('tagFilterSection').style.display = 'block';
+        }
+
+        // Filter function
+        window.filterByTag = function (tag) {
+            document.querySelectorAll('.store-item').forEach(function (item) {
+                const tags = item.dataset.itemTags;
+                const col = item.closest('.col-12, .col-md-6');
+
+                if (tag === 'all') {
+                    col.style.display = 'block';
+                } else if (tags && tags.split(',').some(function (t) { return t.trim() === tag; })) {
+                    col.style.display = 'block';
+                } else {
+                    col.style.display = 'none';
+                }
+            });
+
+            // Update active button styling
+            document.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
+                if (btn.dataset.tag === tag) {
+                    btn.classList.add('active');
+                    btn.style.background = 'var(--accent-primary)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.background = 'var(--bg-light)';
+                    btn.style.color = 'var(--text-primary)';
+                }
+            });
+        };
+    });
 </script>
 {% endblock %}

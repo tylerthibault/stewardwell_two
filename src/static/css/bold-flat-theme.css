@@ -54,6 +54,7 @@
     /* Border Widths */
     --border-sm: 3px;
     --border-md: 4px;
+    --border-lg: 8px;
     
     /* Typography */
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -336,15 +337,16 @@ body {
 }
 
 .coin-badge {
-    padding: var(--space-xs) var(--space-md);
+    padding: 0.375rem 0.75rem;
     background: var(--coin-primary);
-    border: var(--border-sm) solid var(--border-primary);
+    border: 2px solid #2c3e50;
+    border-radius: 6px;
     font-size: 0.875rem;
     color: #ffffff;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
+    box-shadow: 2px 2px 0 #2c3e50;
 }
 
 .kid-actions {
@@ -476,77 +478,77 @@ body {
 .btn-success {
     background: var(--success-primary);
     color: #ffffff;
-    border-color: var(--success-primary);
-    box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--success-dark);
+    border: 3px solid #2c3e50;
+    border-radius: 8px;
+    box-shadow: 3px 3px 0 #2c3e50;
 }
 
 .btn-success:hover {
     background: var(--success-dark);
-    border-color: var(--success-dark);
-    transform: translate(2px, 2px);
-    box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--success-dark);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 #2c3e50;
 }
 
 .btn-success:active {
-    transform: translate(var(--shadow-lg), var(--shadow-lg));
-    box-shadow: 0 0 0 var(--success-dark);
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 #2c3e50;
 }
 
 .btn-danger {
     background: var(--danger-primary);
     color: #ffffff;
-    border-color: var(--danger-primary);
-    box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--danger-dark);
+    border: 3px solid #2c3e50;
+    border-radius: 8px;
+    box-shadow: 3px 3px 0 #2c3e50;
 }
 
 .btn-danger:hover {
     background: var(--danger-dark);
-    border-color: var(--danger-dark);
-    transform: translate(2px, 2px);
-    box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--danger-dark);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 #2c3e50;
 }
 
 .btn-danger:active {
-    transform: translate(var(--shadow-lg), var(--shadow-lg));
-    box-shadow: 0 0 0 var(--danger-dark);
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 #2c3e50;
 }
 
 .btn-primary {
     background: var(--accent-primary);
     color: #ffffff;
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--accent-dark);
+    border: 3px solid #2c3e50;
+    border-radius: 8px;
+    box-shadow: 3px 3px 0 #2c3e50;
 }
 
 .btn-primary:hover {
     background: var(--accent-dark);
-    border-color: var(--accent-dark);
-    transform: translate(2px, 2px);
-    box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--accent-dark);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 #2c3e50;
 }
 
 .btn-primary:active {
-    transform: translate(var(--shadow-lg), var(--shadow-lg));
-    box-shadow: 0 0 0 var(--accent-dark);
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 #2c3e50;
 }
 
 .btn-secondary {
     background: #95a5a6;
     color: #ffffff;
-    border-color: #95a5a6;
-    box-shadow: var(--shadow-lg) var(--shadow-lg) 0 #7f8c8d;
+    border: 3px solid #2c3e50;
+    border-radius: 8px;
+    box-shadow: 3px 3px 0 #2c3e50;
 }
 
 .btn-secondary:hover {
     background: #7f8c8d;
-    border-color: #7f8c8d;
-    transform: translate(2px, 2px);
-    box-shadow: var(--shadow-md) var(--shadow-md) 0 #7f8c8d;
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 #2c3e50;
 }
 
 .btn-secondary:active {
-    transform: translate(var(--shadow-lg), var(--shadow-lg));
-    box-shadow: 0 0 0 #7f8c8d;
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 #2c3e50;
 }
 
 .btn-secondary:disabled,
@@ -760,20 +762,63 @@ body {
 }
 
 /* =================================================================
-   Chores List & Items
+   Unified Card Items (Chores, Store, Kids)
    ================================================================= */
 
-.chore-item {
-    padding: 1.75rem;
-    background: var(--bg-tertiary);
-    border: var(--border-sm) solid var(--border-primary);
-    box-shadow: 5px 5px 0 var(--border-primary);
-    transition: all 0.2s;
+.chore-item,
+.store-item,
+.kid-item {
+    padding: 1.5rem;
+    background: #ffffff;
+    border: 3px solid #2c3e50;
+    border-radius: 12px;
+    box-shadow: 4px 4px 0 #2c3e50;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.chore-item:hover {
-    transform: translate(2px, 2px);
-    box-shadow: 3px 3px 0 var(--border-primary);
+.chore-item:hover,
+.store-item:hover,
+.kid-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 #2c3e50;
+}
+
+/* Dark theme card backgrounds */
+.dark-theme .chore-item,
+.dark-theme .store-item,
+.dark-theme .kid-item {
+    background: var(--bg-secondary);
+    border-color: #34495e;
+    box-shadow: 4px 4px 0 #34495e;
+}
+
+.dark-theme .chore-item:hover,
+.dark-theme .store-item:hover,
+.dark-theme .kid-item:hover {
+    box-shadow: 6px 6px 0 #34495e;
+}
+
+/* Card content alignment */
+.chore-item,
+.store-item,
+.kid-item {
+    min-height: 200px;
+}
+
+/* Tags within cards */
+.chore-item .tag-badge,
+.store-item .tag-badge {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 2px solid #2c3e50;
 }
 
 .chore-main {
@@ -804,20 +849,21 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    border: var(--border-sm) solid var(--border-primary);
-    box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
+    border: 2px solid #2c3e50;
+    box-shadow: 2px 2px 0 #2c3e50;
+    border-radius: 8px;
 }
 
 .status-badge.active {
-    background: var(--success-primary);
+    background: #2ecc71;
     color: #ffffff;
-    border-color: var(--success-primary);
+    border-color: #2c3e50;
 }
 
 .status-badge.inactive {
     background: #95a5a6;
     color: #ffffff;
-    border-color: #95a5a6;
+    border-color: #2c3e50;
 }
 
 .chore-rewards-section {
@@ -827,15 +873,16 @@ body {
 }
 
 .point-badge {
-    padding: var(--space-xs) var(--space-md);
+    padding: 0.375rem 0.75rem;
     background: var(--accent-primary);
-    border: var(--border-sm) solid var(--border-primary);
+    border: 2px solid #2c3e50;
+    border-radius: 6px;
     font-size: 0.875rem;
     color: #ffffff;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
+    box-shadow: 2px 2px 0 #2c3e50;
 }
 
 .chore-frequency-section {
@@ -844,7 +891,10 @@ body {
 }
 
 .frequency-badge {
-    padding: var(--space-xs) var(--space-md);
+    padding: 0.375rem 0.75rem;
+    border: 2px solid #2c3e50;
+    border-radius: 6px;
+    box-shadow: 2px 2px 0 #2c3e50;
     background: var(--bg-secondary);
     border: var(--border-sm) solid var(--border-primary);
     font-size: 0.875rem;
@@ -933,25 +983,7 @@ body {
     margin: 0;
 }
 
-/* =================================================================
-   Store Items
-   ================================================================= */
-
-.store-item {
-    padding: 1.75rem;
-    background: var(--bg-tertiary);
-    border: var(--border-sm) solid var(--border-primary);
-    box-shadow: 5px 5px 0 var(--border-primary);
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-}
-
-.store-item:hover {
-    transform: translate(2px, 2px);
-    box-shadow: 3px 3px 0 var(--border-primary);
-}
+/* Store item specific styling removed - now using unified card style above */
 
 .store-item-header {
     display: flex;
@@ -1083,4 +1115,163 @@ body {
     .nav-btn {
         padding: var(--space-md) var(--space-lg);
     }
+}
+
+.card {
+    background: var(--bg-light);
+    border: var(--border-sm) solid var(--border-primary);
+    box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-primary);
+    border-radius: var(--border-lg);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+}
+
+/* Card utility classes */
+.card-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.card-title-center {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    margin: var(--space-md) 0;
+}
+
+.card-actions {
+    margin-top: auto;
+}
+
+.card-action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+}
+
+/* Modal utility classes */
+.modal-section {
+    margin-bottom: var(--space-lg);
+}
+
+.modal-label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.modal-label-lg {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.modal-text {
+    margin: 0;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.tags-container {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.reward-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+.reward-box, .cost-box {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--bg-light);
+    border: var(--border-sm) solid var(--accent-dark);
+    box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark);
+}
+
+.reward-icon, .cost-icon {
+    font-size: 1.5rem;
+}
+
+.reward-label, .cost-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.reward-value, .cost-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.frequency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 1rem;
+}
+
+/* Form utility classes */
+.inline-form {
+    display: inline;
+}
+
+.form-flex-shrink {
+    flex-shrink: 0;
+}
+
+.hidden-form {
+    display: none;
+}
+
+/* Status badge button styles */
+.status-badge {
+    cursor: pointer;
+    border: none;
+    font: inherit;
+    white-space: nowrap;
+}
+
+.tag-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-items: center;
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 0.125rem solid var(--border-primary) !important;
+    border-radius: var(--border-md);
+    box-shadow: 0.125rem 0.125rem 0 var(--border-primary) !important;
+    white-space: nowrap;
+}
+.tag-badge-container {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-sm);
 }

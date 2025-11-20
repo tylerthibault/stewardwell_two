@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, make_response, jsonify
 from datetime import datetime
 from functools import wraps
 from src.models.base_model import db
@@ -171,26 +171,22 @@ def pick_chore(chore_id):
     chore = Chore.query.get(chore_id)
     
     if not chore:
-        flash('Chore not found!', 'error')
-        return redirect(url_for('kid.dashboard'))
+        return jsonify({'success': False, 'message': 'Chore not found!'}), 404
     
     # Check if chore belongs to kid's family
     kid = Kid.query.get(kid_id)
     if chore.family_id != kid.family_id:
-        flash('Invalid chore!', 'error')
-        return redirect(url_for('kid.dashboard'))
+        return jsonify({'success': False, 'message': 'Invalid chore!'}), 403
     
     # Check if already has an in-progress assignment
     existing = ChoreAssignment.query.filter_by(
         kid_id=kid_id, chore_id=chore_id, status='in-progress').first()
     if existing:
-        flash('You already have this chore!', 'error')
-        return redirect(url_for('kid.dashboard'))
+        return jsonify({'success': False, 'message': 'You already have this chore!'}), 400
     
     # Check if chore can be done based on frequency and max_completions
     if not chore.can_be_done_by_kid(kid_id):
-        flash('This chore cannot be done right now. Check the frequency limits!', 'error')
-        return redirect(url_for('kid.dashboard'))
+        return jsonify({'success': False, 'message': 'This chore cannot be done right now. Check the frequency limits!'}), 400
     
     # Create assignment
     assignment = ChoreAssignment(
@@ -201,8 +197,11 @@ def pick_chore(chore_id):
     db.session.add(assignment)
     db.session.commit()
     
-    flash(f'Great! You picked "{chore.name}"! Time to get to work! 💪', 'success')
-    return redirect(url_for('kid.dashboard'))
+    return jsonify({
+        'success': True,
+        'message': f'Great! You picked "{chore.name}"! Time to get to work! 💪',
+        'assignment_id': assignment.id
+    })
 
 
 @kid_bp.route('/complete-chore/<int:assignment_id>', methods=['POST'])
@@ -212,26 +211,25 @@ def complete_chore(assignment_id):
     assignment = ChoreAssignment.query.get(assignment_id)
     
     if not assignment:
-        flash('Assignment not found!', 'error')
-        return redirect(url_for('kid.dashboard'))
+        return jsonify({'success': False, 'message': 'Assignment not found!'}), 404
     
     # Verify assignment belongs to this kid
     if assignment.kid_id != kid_id:
-        flash('Invalid assignment!', 'error')
-        return redirect(url_for('kid.dashboard'))
+        return jsonify({'success': False, 'message': 'Invalid assignment!'}), 403
     
     # Verify status is in-progress
     if assignment.status != 'in-progress':
-        flash('This chore is already completed!', 'error')
-        return redirect(url_for('kid.dashboard'))
+        return jsonify({'success': False, 'message': 'This chore is already completed!'}), 400
     
     # Update to pending
     assignment.status = 'pending'
     assignment.completed_at = datetime.utcnow()
     db.session.commit()
     
-    flash('Awesome job! 🎉 Your chore is waiting for parent approval!', 'success')
-    return redirect(url_for('kid.dashboard'))
+    return jsonify({
+        'success': True,
+        'message': 'Awesome job! 🎉 Your chore is waiting for parent approval!'
+    })
 
 
 @kid_bp.route('/logout')
@@ -270,29 +268,24 @@ def purchase_item(item_id):
     kid = Kid.query.get(kid_id)
     
     if not kid:
-        flash('Session expired. Please log in again!', 'error')
-        return redirect(url_for('kid.kid_login_page'))
+        return jsonify({'success': False, 'message': 'Session expired. Please log in again!'}), 401
     
     # Get the store item
     item = StoreItem.query.get(item_id)
     
     if not item:
-        flash('Item not found!', 'error')
-        return redirect(url_for('kid.store'))
+        return jsonify({'success': False, 'message': 'Item not found!'}), 404
     
     # Verify item belongs to same family and is available
     if item.family_id != kid.family_id:
-        flash('Invalid item!', 'error')
-        return redirect(url_for('kid.store'))
+        return jsonify({'success': False, 'message': 'Invalid item!'}), 403
     
     if not item.is_available:
-        flash('This item is no longer available!', 'error')
-        return redirect(url_for('kid.store'))
+        return jsonify({'success': False, 'message': 'This item is no longer available!'}), 400
     
     # Check if kid has enough coins
     if kid.coin_balance < item.coin_cost:
-        flash('You don\'t have enough coins for this item! 😢', 'error')
-        return redirect(url_for('kid.store'))
+        return jsonify({'success': False, 'message': 'You don\'t have enough coins for this item! 😢'}), 400
     
     # Deduct coins
     kid.coin_balance -= item.coin_cost
@@ -308,9 +301,11 @@ def purchase_item(item_id):
     try:
         db.session.add(purchase)
         db.session.commit()
-        flash(f'🎉 You purchased "{item.name}"! Your parent will fulfill it soon. ({item.coin_cost} coins spent)', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'🎉 You purchased "{item.name}"! Your parent will fulfill it soon. ({item.coin_cost} coins spent)',
+            'new_balance': kid.coin_balance
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Purchase failed. Please try again!', 'error')
-    
-    return redirect(url_for('kid.store'))
+        return jsonify({'success': False, 'message': 'Purchase failed. Please try again!'}), 500
