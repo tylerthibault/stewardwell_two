@@ -8,6 +8,7 @@ class Chore(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     family_id = db.Column(db.Integer, db.ForeignKey('family.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     coin_value = db.Column(db.Integer, nullable=False, default=0)
     point_value = db.Column(db.Integer, nullable=False, default=0)
     created_by_parent_id = db.Column(db.Integer, db.ForeignKey('parent.id'), nullable=False)

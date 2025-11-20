@@ -137,6 +137,7 @@ def create_chore():
         parent_id = session.get('parent_id')
         
         chore_name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
         coin_value = request.form.get('coin_value', '0').strip()
         point_value = request.form.get('point_value', '0').strip()
         frequency = request.form.get('frequency', 'unlimited').strip()
@@ -168,6 +169,7 @@ def create_chore():
         new_chore = Chore(
             family_id=family_id,
             name=chore_name,
+            description=description if description else None,
             coin_value=coin_value,
             point_value=point_value,
             created_by_parent_id=parent_id,
@@ -212,6 +214,69 @@ def toggle_chore(chore_id):
         db.session.commit()
         status = 'active' if chore.is_active else 'inactive'
         flash(f'"{chore.name}" is now {status}.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Failed to update chore. Please try again.', 'error')
+    
+    return redirect(url_for('parent.chores'))
+
+
+@parent_bp.route('/edit-chore/<int:chore_id>', methods=['POST'])
+@login_required
+def edit_chore(chore_id):
+    family_id = session.get('family_id')
+    
+    chore = Chore.query.get(chore_id)
+    
+    if not chore:
+        flash('Chore not found.', 'error')
+        return redirect(url_for('parent.chores'))
+    
+    # Verify chore belongs to this family
+    if chore.family_id != family_id:
+        flash('Unauthorized action.', 'error')
+        return redirect(url_for('parent.chores'))
+    
+    chore_name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    coin_value = request.form.get('coin_value', '0').strip()
+    point_value = request.form.get('point_value', '0').strip()
+    frequency = request.form.get('frequency', 'unlimited').strip()
+    is_active = request.form.get('is_active', 'on') == 'on'
+    
+    # Validation
+    if not chore_name:
+        flash('Chore name is required.', 'error')
+        return redirect(url_for('parent.chores'))
+    
+    # Validate frequency
+    valid_frequencies = ['unlimited', 'daily', 'weekly', 'monthly', 'one_time']
+    if frequency not in valid_frequencies:
+        flash('Invalid frequency selected.', 'error')
+        return redirect(url_for('parent.chores'))
+    
+    try:
+        coin_value = int(coin_value)
+        point_value = int(point_value)
+        
+        if coin_value < 0 or point_value < 0:
+            flash('Coin and point values must be non-negative.', 'error')
+            return redirect(url_for('parent.chores'))
+    except ValueError:
+        flash('Coin and point values must be valid numbers.', 'error')
+        return redirect(url_for('parent.chores'))
+    
+    # Update chore
+    chore.name = chore_name
+    chore.description = description if description else None
+    chore.coin_value = coin_value
+    chore.point_value = point_value
+    chore.frequency = frequency
+    chore.is_active = is_active
+    
+    try:
+        db.session.commit()
+        flash(f'Chore "{chore_name}" updated successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         flash('Failed to update chore. Please try again.', 'error')

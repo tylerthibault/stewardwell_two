@@ -33,6 +33,12 @@
                                     {% endif %}
                                 </div>
                                 
+                                {% if chore.description %}
+                                <div class="chore-description" style="margin: var(--space-sm) 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4; word-break: break-word;">
+                                    {{ chore.description }}
+                                </div>
+                                {% endif %}
+                                
                                 <div class="chore-rewards-section">
                                     <span class="coin-badge">{{ chore.coin_value }} Coins</span>
                                     <span class="point-badge">{{ chore.point_value }} Points</span>
@@ -54,6 +60,9 @@
                             </div>
                             
                             <div class="chore-actions d-flex flex-wrap gap-2">
+                                <button type="button" class="btn-primary flex-fill" onclick="openEditModal({{ chore.id }}, '{{ chore.name|replace(\"'\", \"\\\\'\")|safe }}', '{{ chore.description|replace(\"'\", \"\\\\'\")|safe if chore.description else \"\" }}', {{ chore.coin_value }}, {{ chore.point_value }}, '{{ chore.frequency }}', {{ 'true' if chore.is_active else 'false' }})" style="min-width: fit-content;">
+                                    ✏️ <span class="d-none d-sm-inline">Edit</span>
+                                </button>
                                 <form method="POST" action="{{ url_for('parent.toggle_chore', chore_id=chore.id) }}" class="inline-form flex-fill" style="min-width: fit-content;">
                                     <button type="submit" class="btn-secondary w-100">
                                         {% if chore.is_active %}👁️ <span class="d-none d-sm-inline">Hide</span>{% else %}👁️ <span class="d-none d-sm-inline">Show</span>{% endif %}
@@ -94,6 +103,10 @@
                 <input type="text" id="chore_name" name="name" required placeholder="e.g., Clean room">
             </div>
             <div class="form-group mb-3">
+                <label for="chore_description">Description (Optional)</label>
+                <textarea id="chore_description" name="description" rows="3" placeholder="Add details about what needs to be done..." style="resize: vertical; min-height: 4rem;"></textarea>
+            </div>
+            <div class="form-group mb-3">
                 <label for="coin_value">Coin Value</label>
                 <input type="number" id="coin_value" name="coin_value" min="0" value="10" required>
             </div>
@@ -127,12 +140,78 @@
     </div>
 </div>
 
+<!-- Edit Chore Modal -->
+<div id="editChoreModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Chore</h3>
+            <span class="close" onclick="toggleModal('editChoreModal')">&times;</span>
+        </div>
+        <form id="editChoreForm" method="POST">
+            <div class="form-group mb-3">
+                <label for="edit_chore_name">Chore Name</label>
+                <input type="text" id="edit_chore_name" name="name" required placeholder="e.g., Clean room">
+            </div>
+            <div class="form-group mb-3">
+                <label for="edit_chore_description">Description (Optional)</label>
+                <textarea id="edit_chore_description" name="description" rows="3" placeholder="Add details about what needs to be done..." style="resize: vertical; min-height: 4rem;"></textarea>
+            </div>
+            <div class="form-group mb-3">
+                <label for="edit_coin_value">Coin Value</label>
+                <input type="number" id="edit_coin_value" name="coin_value" min="0" required>
+            </div>
+            <div class="form-group mb-3">
+                <label for="edit_point_value">Point Value</label>
+                <input type="number" id="edit_point_value" name="point_value" min="0" required>
+            </div>
+            <div class="form-group mb-3">
+                <label for="edit_frequency">Frequency</label>
+                <select id="edit_frequency" name="frequency" required>
+                    <option value="unlimited">Unlimited (anytime)</option>
+                    <option value="daily">Daily (once per day)</option>
+                    <option value="weekly">Weekly (once per week)</option>
+                    <option value="monthly">Monthly (once per month)</option>
+                    <option value="one_time">One Time Only</option>
+                </select>
+                <small class="help-text">How often can this chore be done?</small>
+            </div>
+            <div class="form-group mb-3">
+                <label style="display: flex; align-items: center; gap: var(--space-sm); text-transform: none; cursor: pointer;">
+                    <input type="checkbox" id="edit_is_active" name="is_active" style="width: auto; cursor: pointer;">
+                    <span>Active (visible to kids)</span>
+                </label>
+                <small class="help-text">Uncheck to hide this chore from kids</small>
+            </div>
+            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
+                <button type="button" class="btn-secondary" onclick="toggleModal('editChoreModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 function toggleModal(modalId) {
     document.getElementById(modalId).classList.toggle('active');
+}
+
+function openEditModal(choreId, name, description, coinValue, pointValue, frequency, isActive) {
+    // Set form action
+    document.getElementById('editChoreForm').action = '/parent/edit-chore/' + choreId;
+    
+    // Populate form fields
+    document.getElementById('edit_chore_name').value = name;
+    document.getElementById('edit_chore_description').value = description || '';
+    document.getElementById('edit_coin_value').value = coinValue;
+    document.getElementById('edit_point_value').value = pointValue;
+    document.getElementById('edit_frequency').value = frequency;
+    document.getElementById('edit_is_active').checked = isActive;
+    
+    // Open modal
+    toggleModal('editChoreModal');
 }
 </script>
 {% endblock %}
