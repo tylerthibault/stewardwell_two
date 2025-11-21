@@ -52,6 +52,90 @@
     background: #c82333;
 }
 
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+}
+
+/* Stat Cards */
+.stat-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.stat-card {
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s;
+    position: relative;
+    box-shadow: 2px 2px 0 #ddd;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0 #ddd;
+}
+
+.stat-card-alert {
+    border-color: #ffc107;
+    background: #fffbf0;
+}
+
+.stat-card-alert:hover {
+    box-shadow: 3px 3px 0 #ffc107;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.stat-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
 /* Badges */
 .badge {
     padding: 0.25rem 0.75rem;

@@ -78,7 +78,22 @@ def chores():
     # Get all chores in family
     chores = Chore.query.filter_by(family_id=family_id).order_by(Chore.created_at.desc()).all()
     
-    return render_template('private/parents/chores/index.html', chores=chores)
+    # Get active chore assignments (assigned to kids but not completed)
+    active_assignments = ChoreAssignment.query.join(Kid).filter(
+        Kid.family_id == family_id,
+        ChoreAssignment.status == 'active'
+    ).order_by(ChoreAssignment.created_at.desc()).all()
+    
+    # Get pending chore assignments (completed, waiting for approval)
+    pending_assignments = ChoreAssignment.query.join(Kid).filter(
+        Kid.family_id == family_id,
+        ChoreAssignment.status == 'completed'
+    ).order_by(ChoreAssignment.completed_at.desc()).all()
+    
+    return render_template('private/parents/chores/index.html', 
+                         chores=chores, 
+                         active_assignments=active_assignments,
+                         pending_assignments=pending_assignments)
 
 
 @parent_bp.route('/store')
@@ -89,7 +104,22 @@ def store():
     # Get all store items
     store_items = StoreItem.query.filter_by(family_id=family_id).order_by(StoreItem.created_at.desc()).all()
     
-    return render_template('private/parents/store/index.html', store_items=store_items)
+    # Get pending purchases
+    pending_purchases = Purchase.query.join(Kid).filter(
+        Kid.family_id == family_id,
+        Purchase.status == 'pending'
+    ).order_by(Purchase.purchased_at.desc()).all()
+    
+    # Get fulfilled purchases
+    fulfilled_purchases = Purchase.query.join(Kid).filter(
+        Kid.family_id == family_id,
+        Purchase.status == 'fulfilled'
+    ).order_by(Purchase.fulfilled_at.desc()).limit(50).all()
+    
+    return render_template('private/parents/store/index.html', 
+                         store_items=store_items,
+                         pending_purchases=pending_purchases,
+                         fulfilled_purchases=fulfilled_purchases)
 
 
 @parent_bp.route('/add-kid', methods=['GET', 'POST'])
@@ -387,18 +417,44 @@ def reject_chore(assignment_id):
     if assignment.kid.family_id != family_id:
         return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
-    # Update assignment
-    assignment.status = 'rejected'
+    # Get the action type and optional coin adjustment
+    action = request.form.get('reject_action', 'cancel')  # 'cancel' or 'redo'
+    new_coin_value = request.form.get('new_coin_value', None)
+    
+    if action == 'redo':
+        # Send back for redo with adjusted coin value
+        assignment.status = 'active'
+        assignment.completed_at = None
+        
+        # Update the chore's coin value if provided
+        if new_coin_value is not None:
+            try:
+                new_coin_value = int(new_coin_value)
+                if new_coin_value < 0:
+                    return jsonify({'success': False, 'message': 'Coin value must be positive.'}), 400
+                assignment.chore.coin_value = new_coin_value
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Invalid coin value.'}), 400
+        
+        message = f'Chore sent back to {assignment.kid.name} for redo'
+        if new_coin_value is not None:
+            message += f' with adjusted value of {new_coin_value} coins.'
+        else:
+            message += '.'
+    else:
+        # Cancel completely
+        assignment.status = 'rejected'
+        message = 'Chore cancelled.'
     
     try:
         db.session.commit()
         return jsonify({
             'success': True,
-            'message': 'Chore rejected.'
+            'message': message
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': 'Failed to reject chore. Please try again.'}), 500
+        return jsonify({'success': False, 'message': 'Failed to process chore. Please try again.'}), 500
 
 
 @parent_bp.route('/reset-pin/<int:kid_id>', methods=['POST'])

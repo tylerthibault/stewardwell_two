@@ -712,9 +712,9 @@ body {
                                 <button type="button" class="btn-primary" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">
                                     ⚖️ Adjust & Approve
                                 </button>
-                                <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-danger">✗ Reject</button>
-                                </form>
+                                <button type="button" class="btn-danger" onclick="toggleModal('rejectModal{{ assignment.id }}')">
+                                    ✗ Reject
+                                </button>
                             </div>
                         </div>
                         {% endfor %}
@@ -956,6 +956,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="submit" class="btn-success">✓ Approve with Adjusted Amount</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div id="rejectModal{{ assignment.id }}" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Reject Chore</h3>
+            <span class="close" onclick="toggleModal('rejectModal{{ assignment.id }}')">&times;</span>
+        </div>
+        <div class="form-group">
+            <strong>Kid:</strong> {{ assignment.kid.name }}<br>
+            <strong>Chore:</strong> {{ assignment.chore.name }}<br>
+            <strong>Current Value:</strong> {{ assignment.chore.coin_value }} coins
+        </div>
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 15px;">
+                <strong>What would you like to do?</strong>
+            </label>
+            
+            <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" style="margin-bottom: 15px;">
+                <input type="hidden" name="reject_action" value="cancel">
+                <button type="submit" class="btn btn-danger" style="width: 100%;" onclick="return confirm('Cancel this chore completely?');">
+                    ✗ Cancel Chore Completely
+                </button>
+            </form>
+            
+            <div style="border-top: 1px solid #ddd; padding-top: 15px;">
+                <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}">
+                    <input type="hidden" name="reject_action" value="redo">
+                    <div class="form-group">
+                        <label for="new_coin_value_{{ assignment.id }}">Adjust Coins & Send Back for Redo</label>
+                        <input type="number" id="new_coin_value_{{ assignment.id }}" name="new_coin_value" 
+                               value="{{ assignment.chore.coin_value }}" min="0" required placeholder="New coin amount">
+                        <small style="color: #666; font-size: 0.85em;">They'll need to redo it for this amount</small>
+                    </div>
+                    <button type="submit" class="btn btn-warning" style="width: 100%;">
+                        ↩️ Send Back for Redo
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="toggleModal('rejectModal{{ assignment.id }}')">Cancel</button>
+        </div>
     </div>
 </div>
 {% endfor %}

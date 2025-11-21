@@ -64,8 +64,44 @@
     margin-bottom: 0 !important;
 }
 
+/* Mobile Dropdown Styles */
+.my-tabs-dropdown {
+    display: none !important;
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+}
+
+.my-tabs-dropdown select {
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: var(--border-md) solid var(--border-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.my-tabs-dropdown select:focus {
+    outline: none !important;
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1) !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
+    /* Hide desktop tabs */
+    .my-tabs {
+        display: none !important;
+    }
+    
+    /* Show dropdown */
+    .my-tabs-dropdown {
+        display: block !important;
+    }
+    
     .nav-link {
         padding: 0.5rem 1rem !important;
         font-size: 0.875rem !important;

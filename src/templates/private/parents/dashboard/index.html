@@ -16,10 +16,64 @@
 
     {% include 'private/parents/components/navbar.html' %}
 
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon">👨‍👩‍👧‍👦</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ kids|length }}</div>
+                    <div class="stat-label">Kids</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="{{ url_for('parent.chores') }}#pending-tab" class="stat-card-link">
+                <div class="stat-card {% if pending_assignments %}stat-card-alert{% endif %}">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value">{{ pending_assignments|length }}</div>
+                        <div class="stat-label">Chores to Approve</div>
+                    </div>
+                    {% if pending_assignments %}
+                    <div class="stat-badge">{{ pending_assignments|length }}</div>
+                    {% endif %}
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="{{ url_for('parent.store') }}#pending-tab" class="stat-card-link">
+                <div class="stat-card {% if pending_purchases %}stat-card-alert{% endif %}">
+                    <div class="stat-icon">🛒</div>
+                    <div class="stat-content">
+                        <div class="stat-value">{{ pending_purchases|length }}</div>
+                        <div class="stat-label">Purchases to Fulfill</div>
+                    </div>
+                    {% if pending_purchases %}
+                    <div class="stat-badge">{{ pending_purchases|length }}</div>
+                    {% endif %}
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon">🪙</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ kids|sum(attribute='coin_balance') }}</div>
+                    <div class="stat-label">Total Coins</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kids Management -->
     <div class="dashboard-grid">
         <div class="dashboard-card full-width">
             <div class="card-header">
-                <h2>Kids</h2>
+                <h2>Manage Kids</h2>
                 <button onclick="toggleModal('addKidModal')">+ Add Kid</button>
             </div>
             <div class="card-body">
@@ -42,82 +96,6 @@
                     </div>
                 {% else %}
                     <p class="empty-state">No kids added yet</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>Pending Chore Approvals</h2>
-            </div>
-            <div class="card-body">
-                {% if pending_assignments %}
-                    <div class="row g-3">
-                        {% for assignment in pending_assignments %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                        <div class="assignment-item">
-                            <div class="assignment-info">
-                                <strong>{{ assignment.kid.name }}</strong> completed 
-                                <strong>{{ assignment.chore.name }}</strong>
-                                <span class="timestamp">{{ assignment.completed_at.strftime('%Y-%m-%d %H:%M') if assignment.completed_at else 'Just now' }}</span>
-                            </div>
-                            <div class="assignment-actions">
-                                <form method="POST" action="{{ url_for('parent.confirm_chore', assignment_id=assignment.id) }}" class="inline-form">
-                                    <input type="hidden" name="coin_adjustment" value="{{ assignment.chore.coin_value }}">
-                                    <button type="submit" class="btn-success">
-                                        ✓ Approve (+{{ assignment.chore.coin_value }} coins)
-                                    </button>
-                                </form>
-                                <button type="button" class="btn-primary" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">
-                                    ⚖️ Adjust & Approve
-                                </button>
-                                <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-danger">✗ Reject</button>
-                                </form>
-                            </div>
-                        </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="empty-state">No pending chores</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>Pending Purchase Requests</h2>
-            </div>
-            <div class="card-body">
-                {% if pending_purchases %}
-                    <div class="row g-3">
-                        {% for purchase in pending_purchases %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                        <div class="assignment-item">
-                            <div class="assignment-info">
-                                <strong>{{ purchase.kid.name }}</strong> wants to purchase 
-                                <strong>{{ purchase.item.name }}</strong>
-                                {% if purchase.item.description %}
-                                    <span>- {{ purchase.item.description }}</span>
-                                {% endif %}
-                                <span class="timestamp">{{ purchase.purchased_at.strftime('%Y-%m-%d %H:%M') if purchase.purchased_at else 'Just now' }}</span>
-                                <div class="purchase-cost">{{ purchase.coin_cost }} coins</div>
-                            </div>
-                            <div class="assignment-actions">
-                                <form method="POST" action="{{ url_for('parent.fulfill_purchase', purchase_id=purchase.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-success">✓ Fulfill</button>
-                                </form>
-                                <form method="POST" action="{{ url_for('parent.cancel_purchase', purchase_id=purchase.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-danger">✗ Cancel & Refund</button>
-                                </form>
-                            </div>
-                        </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="empty-state">No pending purchases</p>
                 {% endif %}
             </div>
         </div>
@@ -243,6 +221,50 @@
                 <button type="submit" class="btn-success">✓ Approve with Adjusted Amount</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div id="rejectModal{{ assignment.id }}" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Reject Chore</h3>
+            <span class="close" onclick="toggleModal('rejectModal{{ assignment.id }}')">&times;</span>
+        </div>
+        <div class="form-group">
+            <strong>Kid:</strong> {{ assignment.kid.name }}<br>
+            <strong>Chore:</strong> {{ assignment.chore.name }}<br>
+            <strong>Current Value:</strong> {{ assignment.chore.coin_value }} coins
+        </div>
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 15px;">
+                <strong>What would you like to do?</strong>
+            </label>
+            
+            <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" data-assignment-id="{{ assignment.id }}" class="reject-form-cancel" style="margin-bottom: 15px;">
+                <input type="hidden" name="reject_action" value="cancel">
+                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                    ✗ Cancel Chore Completely
+                </button>
+            </form>
+            
+            <div style="border-top: 1px solid #ddd; padding-top: 15px;">
+                <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" data-assignment-id="{{ assignment.id }}" class="reject-form-redo">
+                    <input type="hidden" name="reject_action" value="redo">
+                    <div class="form-group">
+                        <label for="new_coin_value_{{ assignment.id }}">Adjust Coins & Send Back for Redo</label>
+                        <input type="number" id="new_coin_value_{{ assignment.id }}" name="new_coin_value" 
+                               value="{{ assignment.chore.coin_value }}" min="0" required placeholder="New coin amount">
+                        <small style="color: #666; font-size: 0.85em;">They'll need to redo it for this amount</small>
+                    </div>
+                    <button type="submit" class="btn btn-warning" style="width: 100%;">
+                        ↩️ Send Back for Redo
+                    </button>
+                </form> 
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="toggleModal('rejectModal{{ assignment.id }}')">Cancel</button>
+        </div>
     </div>
 </div>
 {% endfor %}
@@ -385,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Chore Approval/Rejection Forms (including adjust & approve modals)
+    // Chore Approval/Rejection Forms (including adjust & approve and reject modals)
     document.querySelectorAll('form[action*="confirm-chore"], form[action*="reject-chore"]').forEach(form => {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -395,18 +417,33 @@ document.addEventListener('DOMContentLoaded', function() {
             
             await submitForm(form, {
                 onSuccess: (data) => {
-                    // Close modal if this was from adjust & approve
+                    // Close modal if this was from a modal form
                     if (assignmentId) {
-                        const modalId = 'adjustApproveModal' + assignmentId;
-                        const modal = document.getElementById(modalId);
-                        if (modal) {
+                        // Check for adjust & approve modal
+                        let modalId = 'adjustApproveModal' + assignmentId;
+                        let modal = document.getElementById(modalId);
+                        if (modal && modal.classList.contains('active')) {
+                            modal.classList.remove('active');
+                        }
+                        
+                        // Check for reject modal
+                        modalId = 'rejectModal' + assignmentId;
+                        modal = document.getElementById(modalId);
+                        if (modal && modal.classList.contains('active')) {
                             modal.classList.remove('active');
                         }
                     }
                     
-                    // Remove the assignment card
-                    if (assignment) {
+                    // Remove the assignment card if it was cancelled or approved
+                    // (For redo, it stays in pending so the page will reload to show updated value)
+                    const isCancelAction = form.querySelector('[name="reject_action"][value="cancel"]');
+                    const isConfirmChore = form.action.includes('confirm-chore');
+                    
+                    if (assignment && (isCancelAction || isConfirmChore)) {
                         removeElement(assignment.closest('.col-12, .col-md-6'));
+                    } else if (form.action.includes('reject-chore')) {
+                        // For redo action, reload to show updated chore value
+                        location.reload();
                     }
                     
                     // Update kid coin balance if provided

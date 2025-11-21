@@ -11,7 +11,31 @@
 
     {% include 'private/parents/components/navbar.html' %}
 
-    <div class="dashboard-grid">
+    <!-- Tabs (Desktop) -->
+    <ul class="my-tabs">
+        <li class="my-tab-item">
+            <a href="#setup-tab" class="my-tab-link active" data-my-target="#setup-tab">Setup Items</a>
+        </li>
+        <li class="my-tab-item">
+            <a href="#pending-tab" class="my-tab-link" data-my-target="#pending-tab">Pending Purchases ({{ pending_purchases|length }})</a>
+        </li>
+        <li class="my-tab-item">
+            <a href="#fulfilled-tab" class="my-tab-link" data-my-target="#fulfilled-tab">Fulfilled Purchases</a>
+        </li>
+    </ul>
+
+    <!-- Dropdown (Mobile) -->
+    <div class="my-tabs-dropdown">
+        <select>
+            <option value="#setup-tab">Setup Items</option>
+            <option value="#pending-tab">Pending Purchases ({{ pending_purchases|length }})</option>
+            <option value="#fulfilled-tab">Fulfilled Purchases</option>
+        </select>
+    </div>
+
+    <div class="my-tab-content">
+        <!-- Setup Items Tab -->
+        <div id="setup-tab" class="my-tab-pane active">
         <div class="dashboard-card full-width">
             <div class="card-header">
                 <h2>Store Items</h2>
@@ -46,6 +70,79 @@
                 </div>
                 {% endif %}
             </div>
+        </div>
+        </div>
+
+        <!-- Pending Purchases Tab -->
+        <div id="pending-tab" class="my-tab-pane">
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h2>Pending Purchase Requests</h2>
+            </div>
+            <div class="card-body">
+                {% if pending_purchases %}
+                    <div class="row g-3">
+                        {% for purchase in pending_purchases %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <strong>{{ purchase.kid.name }}</strong> wants to purchase 
+                                <strong>{{ purchase.item.name }}</strong>
+                                {% if purchase.item.description %}
+                                    <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">{{ purchase.item.description }}</p>
+                                {% endif %}
+                                <span class="timestamp">{{ purchase.purchased_at.strftime('%Y-%m-%d %H:%M') if purchase.purchased_at else 'Just now' }}</span>
+                                <div class="purchase-cost">{{ purchase.coin_cost }} coins</div>
+                            </div>
+                            <div class="assignment-actions">
+                                <form method="POST" action="{{ url_for('parent.fulfill_purchase', purchase_id=purchase.id) }}" class="inline-form">
+                                    <button type="submit" class="btn-success">✓ Fulfill</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('parent.cancel_purchase', purchase_id=purchase.id) }}" class="inline-form">
+                                    <button type="submit" class="btn-danger">✗ Cancel & Refund</button>
+                                </form>
+                            </div>
+                        </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="empty-state">No pending purchases</p>
+                {% endif %}
+            </div>
+        </div>
+        </div>
+
+        <!-- Fulfilled Purchases Tab -->
+        <div id="fulfilled-tab" class="my-tab-pane">
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h2>Fulfilled Purchase History</h2>
+            </div>
+            <div class="card-body">
+                {% if fulfilled_purchases %}
+                    <div class="row g-3">
+                        {% for purchase in fulfilled_purchases %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <strong>{{ purchase.kid.name }}</strong> purchased 
+                                <strong>{{ purchase.item.name }}</strong>
+                                {% if purchase.item.description %}
+                                    <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">{{ purchase.item.description }}</p>
+                                {% endif %}
+                                <span class="timestamp">Fulfilled: {{ purchase.fulfilled_at.strftime('%Y-%m-%d %H:%M') if purchase.fulfilled_at else 'N/A' }}</span>
+                                <div class="purchase-cost">{{ purchase.coin_cost }} coins</div>
+                            </div>
+                        </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="empty-state">No fulfilled purchases yet</p>
+                {% endif %}
+            </div>
+        </div>
         </div>
     </div>
 </div>
@@ -131,6 +228,7 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/tabs.js') }}"></script>
 <script>
     function toggleModal(modalId) {
         document.getElementById(modalId).classList.toggle('active');
@@ -286,6 +384,21 @@
                 }
             });
         };
+
+        // Purchase Fulfillment/Cancellation Forms
+        document.querySelectorAll('form[action*="fulfill-purchase"], form[action*="cancel-purchase"]').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const purchaseItem = form.closest('.assignment-item');
+                await submitForm(form, {
+                    onSuccess: (data) => {
+                        // Reload to update counts and lists
+                        location.reload();
+                    }
+                });
+            });
+        });
     });
 </script>
 {% endblock %}
