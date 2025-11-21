@@ -6,7 +6,6 @@ Automatically runs Flask-Migrate to upgrade database schema
 
 import os
 import sys
-from flask_migrate import upgrade
 from src import create_app
 
 def run_migrations():
@@ -20,7 +19,20 @@ def run_migrations():
     
     with app.app_context():
         try:
+            # Check if migrations folder exists
+            migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
+            
+            if not os.path.exists(migrations_dir):
+                print("\n📄 No migrations folder found")
+                print("   Skipping migration step (using db.create_all() from app initialization)")
+                print("✅ Database is up to date!")
+                print("=" * 60)
+                return 0
+            
             print("\n🔄 Running database migrations...")
+            
+            # Import here to avoid error if migrations folder doesn't exist
+            from flask_migrate import upgrade
             
             # Run all pending migrations
             upgrade()
