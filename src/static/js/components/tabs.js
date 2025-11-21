@@ -7,6 +7,26 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('Tabs found:', all_tabs);
     console.log('Panes found:', all_panes);
 
+    // Check for URL parameter to activate specific tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    
+    if (tabParam) {
+        const target_id = '#' + tabParam + '-tab';
+        const target_pane = document.querySelector(target_id);
+        const target_tab = document.querySelector(`.my-tab-link[data-my-target="${target_id}"]`);
+        
+        if (target_pane && target_tab) {
+            showTab(target_tab, target_pane);
+            
+            // Update dropdown if on mobile
+            const dropdown = document.querySelector('.my-tabs-dropdown select');
+            if (dropdown) {
+                dropdown.value = target_id;
+            }
+        }
+    }
+
     // Desktop tab click handlers
     all_tabs.forEach(function (tab) {
         tab.addEventListener('click', function (e) {

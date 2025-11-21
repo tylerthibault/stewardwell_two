@@ -29,7 +29,7 @@
         </div>
         
         <div class="col-12 col-sm-6 col-lg-3">
-            <a href="{{ url_for('parent.chores') }}#pending-tab" class="stat-card-link">
+            <a href="{{ url_for('parent.chores', tab='pending') }}" class="stat-card-link">
                 <div class="stat-card {% if pending_assignments %}stat-card-alert{% endif %}">
                     <div class="stat-icon">✅</div>
                     <div class="stat-content">
@@ -44,7 +44,7 @@
         </div>
         
         <div class="col-12 col-sm-6 col-lg-3">
-            <a href="{{ url_for('parent.store') }}#pending-tab" class="stat-card-link">
+            <a href="{{ url_for('parent.store', tab='pending') }}" class="stat-card-link">
                 <div class="stat-card {% if pending_purchases %}stat-card-alert{% endif %}">
                     <div class="stat-icon">🛒</div>
                     <div class="stat-content">
