@@ -35,7 +35,7 @@ def dashboard(num=None):
     # Get all chores in family
     chores = Chore.query.filter_by(family_id=family_id).order_by(Chore.created_at.desc()).all()
     
-    # Get pending chore assignments (waiting for parent confirmation)
+    # Get pending chore assignments (completed by kid, waiting for parent approval)
     pending_assignments = ChoreAssignment.query.join(Kid).filter(
         Kid.family_id == family_id,
         ChoreAssignment.status == 'pending'
@@ -81,13 +81,13 @@ def chores():
     # Get active chore assignments (assigned to kids but not completed)
     active_assignments = ChoreAssignment.query.join(Kid).filter(
         Kid.family_id == family_id,
-        ChoreAssignment.status == 'active'
+        ChoreAssignment.status == 'in-progress'
     ).order_by(ChoreAssignment.created_at.desc()).all()
     
-    # Get pending chore assignments (completed, waiting for approval)
+    # Get pending chore assignments (completed by kid, waiting for approval)
     pending_assignments = ChoreAssignment.query.join(Kid).filter(
         Kid.family_id == family_id,
-        ChoreAssignment.status == 'completed'
+        ChoreAssignment.status == 'pending'
     ).order_by(ChoreAssignment.completed_at.desc()).all()
     
     return render_template('private/parents/chores/index.html', 
