@@ -16,8 +16,9 @@ instance/
 *.db
 *.sqlite
 
-# Database Migrations
-migrations/
+# Database Migrations (keep versions folder but ignore pycache)
+migrations/__pycache__/
+migrations/versions/__pycache__/
 
 # IDEs
 .vscode/
