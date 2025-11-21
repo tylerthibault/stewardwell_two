@@ -1,0 +1,73 @@
+/* Custom Tab Component with Bold Flat Theme */
+
+/* Tabs Container */
+.my-tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    padding-left: 0 !important;
+    margin-bottom: 0 !important;
+    list-style: none !important;
+    gap: 0.25rem !important;
+}
+
+/* Individual Tab Links */
+.my-tab-link {
+    display: block !important;
+    padding: 0.75rem 1.5rem !important;
+    text-decoration: none !important;
+    background: var(--bg-subtle) !important;
+    color: var(--text-primary) !important;
+    border: var(--border-md) solid var(--border-primary) !important;
+    border-bottom: none !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+    bottom: calc(-1 * var(--border-md)) !important;
+    margin-bottom: 0 !important;
+}
+
+.my-tab-link:hover {
+    background: var(--card-bg) !important;
+    transform: translateY(-2px) !important;
+    color: var(--text-primary) !important;
+}
+
+.my-tab-link.active {
+    background: var(--card-bg) !important;
+    /* border-bottom: var(--border-md) solid var(--card-bg) !important; */
+    /* box-shadow: var(--shadow-md) var(--shadow-md) 0 var(--border-primary) !important; */
+    background-color: var(--accent-primary) !important;
+    z-index: 1 !important;
+    color: var(--text-primary) !important;
+}
+
+/* Tab Content Container */
+.my-tab-content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Tab Panes */
+.my-tab-pane {
+    display: none !important;
+}
+
+.my-tab-pane.active {
+    display: block !important;
+}
+
+/* Tab Items (if using list structure) */
+.my-tab-item {
+    margin-bottom: 0 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-link {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+    }
+}

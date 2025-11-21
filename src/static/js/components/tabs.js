@@ -1,0 +1,38 @@
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    all_tabs = document.querySelectorAll('.my-tabs .my-tab-link');
+    all_panes = document.querySelectorAll('.my-tab-pane');
+
+    console.log('Tabs found:', all_tabs);
+    console.log('Panes found:', all_panes);
+
+    all_tabs.forEach(function (tab) {
+        tab.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target_id = tab.getAttribute('data-my-target');
+            const target_pane = document.querySelector(target_id);
+            console.log('Tab clicked:', tab, 'Target pane:', target_pane);
+            showTab(tab, target_pane);
+        });
+    });
+
+    function showTab(tab, pane) {
+        // Hide all panes and remove active class from all tabs
+        hideAllTabs();
+
+        // activate the tab
+        tab.classList.add('active');
+        // activate the pane
+        pane.classList.add('active');
+    }
+
+    function hideAllTabs() {
+        all_tabs.forEach(function (t) {
+            t.classList.remove('active');
+        });
+        all_panes.forEach(function (p) {
+            p.classList.remove('active');
+        });
+    }
+});

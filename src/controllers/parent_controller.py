@@ -98,13 +98,21 @@ def add_kid():
     if request.method == 'POST':
         family_id = session.get('family_id')
         kid_name = request.form.get('name', '').strip()
+        custom_pin = request.form.get('custom_pin', '').strip()
+        use_random_pin = request.form.get('use_random_pin') == 'true'
         
         # Validation
         if not kid_name:
             return jsonify({'success': False, 'message': 'Kid name is required.'}), 400
         
-        # Generate random 4-digit PIN
-        pin = ''.join([str(random.randint(0, 9)) for _ in range(4)])
+        # Handle PIN: use custom or generate random 4-digit PIN
+        if use_random_pin or not custom_pin:
+            pin = ''.join([str(random.randint(0, 9)) for _ in range(4)])
+        else:
+            # Validate custom PIN (must be 4 digits)
+            if not custom_pin.isdigit() or len(custom_pin) != 4:
+                return jsonify({'success': False, 'message': 'PIN must be exactly 4 digits.'}), 400
+            pin = custom_pin
         
         # Create kid
         new_kid = Kid(
@@ -397,6 +405,8 @@ def reject_chore(assignment_id):
 @login_required
 def reset_pin(kid_id):
     family_id = session.get('family_id')
+    custom_pin = request.form.get('custom_pin', '').strip()
+    use_random_pin = request.form.get('use_random_pin') == 'true'
     
     # Get the kid
     kid = Kid.query.get(kid_id)
@@ -408,8 +418,15 @@ def reset_pin(kid_id):
     if kid.family_id != family_id:
         return jsonify({'success': False, 'message': 'Unauthorized action.'}), 403
     
-    # Generate new 4-digit PIN
-    new_pin = ''.join([str(random.randint(0, 9)) for _ in range(4)])
+    # Handle PIN: use custom or generate random 4-digit PIN
+    if use_random_pin or not custom_pin:
+        new_pin = ''.join([str(random.randint(0, 9)) for _ in range(4)])
+    else:
+        # Validate custom PIN (must be 4 digits)
+        if not custom_pin.isdigit() or len(custom_pin) != 4:
+            return jsonify({'success': False, 'message': 'PIN must be exactly 4 digits.'}), 400
+        new_pin = custom_pin
+    
     kid.set_pin(new_pin)
     
     try:
@@ -943,3 +960,32 @@ def change_password():
         flash('Failed to update password. Please try again.', 'error')
     
     return redirect(url_for('parent.family_settings'))
+
+
+@parent_bp.route('/history')
+@login_required
+def history():
+    family_id = session.get('family_id')
+    
+    # Get all purchases for this family, ordered by most recent first
+    purchases = Purchase.query.join(Kid).filter(
+        Kid.family_id == family_id
+    ).order_by(Purchase.purchased_at.desc()).all()
+    
+    # Get all completed/confirmed chore assignments for this family
+    assignments = ChoreAssignment.query.join(Kid).join(Chore).filter(
+        Kid.family_id == family_id,
+        ChoreAssignment.status.in_(['confirmed', 'rejected'])
+    ).order_by(ChoreAssignment.completed_at.desc()).all()
+    
+    # Get all kids for filtering
+    kids = Kid.query.filter_by(family_id=family_id).order_by(Kid.name).all()
+    
+    # Get all chores for filtering
+    chores = Chore.query.filter_by(family_id=family_id).order_by(Chore.name).all()
+    
+    return render_template('private/parents/history/index.html',
+                         purchases=purchases,
+                         assignments=assignments,
+                         kids=kids,
+                         chores=chores)

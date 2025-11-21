@@ -1,0 +1,95 @@
+{% extends "bases/private.html" %}
+
+{% block title %}History - Stewardwell{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>History</h1>
+        <p>Track purchases and completed chores</p>
+    </div>
+
+    {% include 'private/parents/components/navbar.html' %}
+
+    <!-- Tab Navigation -->
+    <ul class="my-tabs" role="tablist">
+        <li class="my-tab-item" role="presentation">
+            <button class="my-tab-link active" data-my-toggle="tab" data-my-target="#purchases" type="button" role="tab">
+                💳 Purchases
+            </button>
+        </li>
+        <li class="my-tab-item" role="presentation">
+            <button class="my-tab-link" data-my-toggle="tab" data-my-target="#chores" type="button" role="tab">
+                ✅ Chores
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="my-tab-content">
+        <div class="my-tab-pane active" id="purchases" role="tabpanel">
+            {% include 'private/parents/history/purchase_history.html' %}
+        </div>
+        <div class="my-tab-pane" id="chores" role="tabpanel">
+            {% include 'private/parents/history/chore_history.html' %}
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Purchase filter functionality
+    const purchaseKidFilter = document.getElementById('purchaseKidFilter');
+    const purchaseStatusFilter = document.getElementById('purchaseStatusFilter');
+    const purchaseRows = document.querySelectorAll('.purchase-row');
+
+    function filterPurchaseTable() {
+        const selectedKid = purchaseKidFilter.value;
+        const selectedStatus = purchaseStatusFilter.value;
+
+        purchaseRows.forEach(row => {
+            const kidId = row.dataset.kidId;
+            const status = row.dataset.status;
+
+            const kidMatch = selectedKid === 'all' || kidId === selectedKid;
+            const statusMatch = selectedStatus === 'all' || status === selectedStatus;
+
+            row.style.display = (kidMatch && statusMatch) ? '' : 'none';
+        });
+    }
+
+    if (purchaseKidFilter) purchaseKidFilter.addEventListener('change', filterPurchaseTable);
+    if (purchaseStatusFilter) purchaseStatusFilter.addEventListener('change', filterPurchaseTable);
+
+    // Chore filter functionality
+    const choreKidFilter = document.getElementById('choreKidFilter');
+    const choreChoreFilter = document.getElementById('choreChoreFilter');
+    const choreStatusFilter = document.getElementById('choreStatusFilter');
+    const choreRows = document.querySelectorAll('.chore-row');
+
+    function filterChoreTable() {
+        const selectedKid = choreKidFilter.value;
+        const selectedChore = choreChoreFilter.value;
+        const selectedStatus = choreStatusFilter.value;
+
+        choreRows.forEach(row => {
+            const kidId = row.dataset.kidId;
+            const choreId = row.dataset.choreId;
+            const status = row.dataset.status;
+
+            const kidMatch = selectedKid === 'all' || kidId === selectedKid;
+            const choreMatch = selectedChore === 'all' || choreId === selectedChore;
+            const statusMatch = selectedStatus === 'all' || status === selectedStatus;
+
+            row.style.display = (kidMatch && choreMatch && statusMatch) ? '' : 'none';
+        });
+    }
+
+    if (choreKidFilter) choreKidFilter.addEventListener('change', filterChoreTable);
+    if (choreChoreFilter) choreChoreFilter.addEventListener('change', filterChoreTable);
+    if (choreStatusFilter) choreStatusFilter.addEventListener('change', filterChoreTable);
+</script>
+{% endblock %}

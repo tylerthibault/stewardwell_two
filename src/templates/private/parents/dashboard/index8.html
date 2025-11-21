@@ -677,9 +677,7 @@ body {
                             </div>
                             <div class="kid-actions">
                                 <button type="button" onclick="toggleModal('adjustCoinsModal{{ kid.id }}')">💰 Adjust Coins</button>
-                                <form method="POST" action="{{ url_for('parent.reset_pin', kid_id=kid.id) }}" class="inline-form" onsubmit="return confirm('Reset PIN for {{ kid.name }}?');">
-                                    <button type="submit">🔑 Reset PIN</button>
-                                </form>
+                                <button type="button" onclick="toggleModal('resetPinModal{{ kid.id }}')">🔑 Reset PIN</button>
                             </div>
                         </div>
                         {% endfor %}
@@ -711,6 +709,9 @@ body {
                                         ✓ Approve (+{{ assignment.chore.coin_value }} coins)
                                     </button>
                                 </form>
+                                <button type="button" class="btn-primary" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">
+                                    ⚖️ Adjust & Approve
+                                </button>
                                 <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" class="inline-form">
                                     <button type="submit" class="btn-danger">✗ Reject</button>
                                 </form>
@@ -762,16 +763,55 @@ body {
 </div>
 
 <!-- Modals -->
+{% for kid in kids %}
+<div id="resetPinModal{{ kid.id }}" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Reset PIN: {{ kid.name }}</h3>
+            <span class="close" onclick="toggleModal('resetPinModal{{ kid.id }}')">×</span>
+        </div>
+        <form method="POST" action="{{ url_for('parent.reset_pin', kid_id=kid.id) }}">
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="use_random_pin_{{ kid.id }}" name="use_random_pin" checked onchange="toggleResetPinInput({{ kid.id }})">
+                    Generate Random PIN
+                </label>
+            </div>
+            <div class="form-group" id="custom_pin_group_{{ kid.id }}" style="display: none;">
+                <label for="custom_pin_{{ kid.id }}">Custom PIN (4 digits)</label>
+                <input type="text" id="custom_pin_{{ kid.id }}" name="custom_pin" maxlength="4" pattern="\d{4}" placeholder="Enter 4-digit PIN">
+                <small style="color: #666; font-size: 0.85em;">Enter exactly 4 digits</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('resetPinModal{{ kid.id }}')">Cancel</button>
+                <button type="submit" class="btn-primary">Reset PIN</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
 <div id="addKidModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
             <h3>Add Kid</h3>
-            <span class="close" onclick="toggleModal('addKidModal')">&times;</span>
+            <span class="close" onclick="toggleModal('addKidModal')">×</span>
         </div>
         <form method="POST" action="{{ url_for('parent.add_kid') }}">
             <div class="form-group">
                 <label for="kid_name">Kid's Name</label>
                 <input type="text" id="kid_name" name="name" required placeholder="Enter kid's name">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="use_random_pin" name="use_random_pin" checked onchange="togglePinInput()">
+                    Generate Random PIN
+                </label>
+            </div>
+            <div class="form-group" id="custom_pin_group" style="display: none;">
+                <label for="custom_pin">Custom PIN (4 digits)</label>
+                <input type="text" id="custom_pin" name="custom_pin" maxlength="4" pattern="\d{4}" placeholder="Enter 4-digit PIN">
+                <small style="color: #666; font-size: 0.85em;">Enter exactly 4 digits</small>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="toggleModal('addKidModal')">Cancel</button>
@@ -833,5 +873,91 @@ function copyFamilyCode(code) {
 function toggleModal(modalId) {
     document.getElementById(modalId).classList.toggle('active');
 }
+
+function togglePinInput() {
+    const checkbox = document.getElementById('use_random_pin');
+    const customPinGroup = document.getElementById('custom_pin_group');
+    const customPinInput = document.getElementById('custom_pin');
+    
+    if (checkbox.checked) {
+        customPinGroup.style.display = 'none';
+        customPinInput.removeAttribute('required');
+        customPinInput.value = '';
+    } else {
+        customPinGroup.style.display = 'block';
+        customPinInput.setAttribute('required', 'required');
+    }
+}
+
+function toggleResetPinInput(kidId) {
+    const checkbox = document.getElementById('use_random_pin_' + kidId);
+    const customPinGroup = document.getElementById('custom_pin_group_' + kidId);
+    const customPinInput = document.getElementById('custom_pin_' + kidId);
+    
+    if (checkbox.checked) {
+        customPinGroup.style.display = 'none';
+        customPinInput.removeAttribute('required');
+        customPinInput.value = '';
+    } else {
+        customPinGroup.style.display = 'block';
+        customPinInput.setAttribute('required', 'required');
+    }
+}
+
+// Add Kid Form handling
+document.addEventListener('DOMContentLoaded', function() {
+    const addKidForm = document.querySelector('#addKidModal form');
+    if (addKidForm) {
+        addKidForm.addEventListener('submit', function(e) {
+            const checkbox = document.getElementById('use_random_pin');
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'use_random_pin';
+            hiddenInput.value = checkbox.checked ? 'true' : 'false';
+            addKidForm.appendChild(hiddenInput);
+        });
+    }
+    
+    // Reset PIN Form handling
+    document.querySelectorAll('form[action*="reset-pin"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const kidId = form.action.match(/reset-pin\/(\d+)/)[1];
+            const checkbox = document.getElementById('use_random_pin_' + kidId);
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'use_random_pin';
+            hiddenInput.value = checkbox.checked ? 'true' : 'false';
+            form.appendChild(hiddenInput);
+        });
+    });
+});
 </script>
+
+{% for assignment in pending_assignments %}
+<div id="adjustApproveModal{{ assignment.id }}" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Adjust Coins & Approve</h3>
+            <span class="close" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('parent.confirm_chore', assignment_id=assignment.id) }}">
+            <div class="form-group">
+                <label for="coin_adjustment_{{ assignment.id }}">Coin Amount</label>
+                <input type="number" id="coin_adjustment_{{ assignment.id }}" name="coin_adjustment" 
+                       value="{{ assignment.chore.coin_value }}" min="0" required placeholder="Enter coin amount">
+                <small style="color: #666; font-size: 0.85em;">Original value: {{ assignment.chore.coin_value }} coins</small>
+            </div>
+            <div class="form-group">
+                <strong>Kid:</strong> {{ assignment.kid.name }}<br>
+                <strong>Chore:</strong> {{ assignment.chore.name }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">Cancel</button>
+                <button type="submit" class="btn-success">✓ Approve with Adjusted Amount</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

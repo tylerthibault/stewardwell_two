@@ -11,6 +11,8 @@
     --bg-primary: #ecf0f1;
     --bg-secondary: #ffffff;
     --bg-tertiary: #f8f9fa;
+    --bg-info: #92e2f0;
+
     --text-primary: #2c3e50;
     --text-secondary: #7f8c8d;
     --text-tertiary: #34495e;
@@ -1274,4 +1276,4 @@ body {
     gap: 0.25rem;
     flex-wrap: wrap;
     margin-bottom: var(--space-sm);
-}
+} 

@@ -14,7 +14,7 @@
                 <h1 class="mb-1" style="font-size: clamp(1.75rem, 5vw, 2.5rem);">👋 Hi {{ kid.name }}!</h1>
                 <p class="m-0">Let's get some chores done!</p>
             </div>
-            <div class="text-center text-md-end">r text-md-end">
+            <div class="text-center text-md-end">
                 <div class="coin-badge d-inline-block" style="font-size: clamp(1.5rem, 4vw, 2rem); padding: 0.75rem 1.25rem;">
                     🪙 {{ kid.coin_balance }}
                 </div>
@@ -89,7 +89,7 @@
                 {% if active_assignments %}
                     <div class="row g-3">
                         {% for assignment in active_assignments %}
-                        <div class="col-12">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="chore-item">
                                 <div class="chore-main">
                                     <div class="chore-name-section">
@@ -124,7 +124,7 @@
                 {% if pending_assignments %}
                     <div class="row g-3">
                         {% for assignment in pending_assignments %}
-                        <div class="col-12">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="chore-item" style="opacity: 0.8;">
                                 <div class="chore-main">
                                     <div class="chore-name-section">
