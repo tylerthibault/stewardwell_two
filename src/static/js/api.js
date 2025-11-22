@@ -11,8 +11,8 @@
  */
 async function submitForm(form, options = {}) {
     const formData = new FormData(form);
-    const action = form.action;
-    const method = form.method || 'POST';
+    const action = form.getAttribute('action') || form.action;
+    const method = form.getAttribute('method') || form.method || 'POST';
     
     try {
         const response = await fetch(action, {
