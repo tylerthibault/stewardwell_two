@@ -1,0 +1,6 @@
+entrypoint = "run.py"
+run = "python3 run.py"
+
+[deployment]
+run = ["sh", "-c", "gunicorn run:app --bind 0.0.0.0:${PORT:-5123}"]
+deploymentTarget = "cloudrun"
