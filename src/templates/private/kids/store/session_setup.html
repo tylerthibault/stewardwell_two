@@ -1,0 +1,117 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Session Setup - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Session Setup</h1>
+	<div class="d-flex gap-2 align-items-center">
+		<span class="pill">{{ kid.display_name }} • 🪙 {{ kid.coin_balance }}</span>
+		<form method="post" action="{{ url_for('public.kid_logout_web') }}">
+			<button type="submit" class="btn">Logout</button>
+		</form>
+	</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+	<div class="mb-3">
+		<a href="{{ url_for('public.kid_store', tab='kid') }}" class="btn">← Back to Store</a>
+	</div>
+
+	<div class="dashboard-grid">
+		<div class="dashboard-card">
+			<div class="card-header"><h2>⏱ {{ item.name }}</h2></div>
+			<div class="card-body">
+				{% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
+				<div class="d-flex flex-wrap gap-2 mb-3">
+					<span class="pill">👥 Up to {{ item.session_max_participants }}</span>
+					{% if item.session_rate_type == 'flat' %}
+						<span class="coin-badge">🪙 {{ item.session_flat_cost }} flat</span>
+					{% else %}
+						<span class="coin-badge">🪙 {{ item.session_coin_per_minute }}/min</span>
+					{% endif %}
+				</div>
+
+				<form method="post" class="d-flex flex-column gap-3">
+					<div>
+						<label>Timer Mode</label>
+						<div class="d-flex gap-3 flex-wrap" style="margin-top:6px;">
+							<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+								<input type="radio" name="timing_mode" value="countdown" {% if default_mode != 'stopwatch' %}checked{% endif %} style="width:auto;" />
+								⏳ Countdown
+							</label>
+							<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+								<input type="radio" name="timing_mode" value="stopwatch" {% if default_mode == 'stopwatch' %}checked{% endif %} style="width:auto;" />
+								⏱ Stopwatch
+							</label>
+						</div>
+					</div>
+
+					<div id="countdown_minutes_section">
+						<label for="countdown_minutes">Countdown Minutes</label>
+						<input id="countdown_minutes" name="countdown_minutes" type="number" min="1" value="{{ default_minutes }}" required />
+					</div>
+
+					{% if item.session_max_participants > 1 and other_kids %}
+					<div>
+						<label for="participant_kid_id">Add another kid (optional)</label>
+						<select id="participant_kid_id" name="participant_kid_id">
+							<option value="">No additional kid</option>
+							{% for other in other_kids %}
+								<option value="{{ other.id }}">{{ other.display_name }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div id="participant_pin_section" hidden>
+						<label for="participant_pin">Added kid PIN</label>
+						<input id="participant_pin" name="participant_pin" type="password" inputmode="numeric" autocomplete="off" />
+						<p class="muted" style="margin:6px 0 0 0;">The added kid confirms by entering their code once.</p>
+					</div>
+					{% endif %}
+
+					<button type="submit" class="btn primary">Start Session</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+	const modeRadios = document.querySelectorAll('input[name="timing_mode"]');
+	const countdownSection = document.getElementById('countdown_minutes_section');
+	const countdownInput = document.getElementById('countdown_minutes');
+	const participantSelect = document.getElementById('participant_kid_id');
+	const participantPinSection = document.getElementById('participant_pin_section');
+	const participantPinInput = document.getElementById('participant_pin');
+
+	function syncMode() {
+		const selected = document.querySelector('input[name="timing_mode"]:checked');
+		if (!selected || !countdownSection || !countdownInput) return;
+		const isCountdown = selected.value === 'countdown';
+		countdownSection.hidden = !isCountdown;
+		countdownInput.required = isCountdown;
+	}
+
+	function syncParticipant() {
+		if (!participantSelect || !participantPinSection || !participantPinInput) return;
+		const hasParticipant = participantSelect.value !== '';
+		participantPinSection.hidden = !hasParticipant;
+		participantPinInput.required = hasParticipant;
+		if (!hasParticipant) participantPinInput.value = '';
+	}
+
+	modeRadios.forEach(function (radio) {
+		radio.addEventListener('change', syncMode);
+	});
+	if (participantSelect) participantSelect.addEventListener('change', syncParticipant);
+
+	syncMode();
+	syncParticipant();
+});
+</script>
+{% endblock %}

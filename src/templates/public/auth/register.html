@@ -1,0 +1,72 @@
+{% extends "bases/public.html" %}
+
+{% block title %}Stewardwell — Parent Register{% endblock %}
+
+{% block content %}
+  <section class="auth-grid" style="width:min(1040px,100%);margin:0 auto;grid-template-columns:1.2fr .9fr;">
+    <article class="panel" aria-labelledby="register-title">
+      <div class="pill">Parent onboarding</div>
+      <h1 id="register-title" style="font-size:34px;line-height:1.08;margin-top:10px;">Create your household command center.</h1>
+      <p class="muted" style="margin-top:10px;">Set up a guardian account first, then create your family context for chores, Coins, and approvals.</p>
+
+      <form action="{{ url_for('public.register') }}" method="post" style="margin-top:14px;display:grid;gap:12px;">
+        <div class="row" style="grid-template-columns:1fr 1fr;">
+          <div>
+            <label for="first_name">First name</label>
+            <input id="first_name" name="first_name" type="text" placeholder="Jordan" required />
+          </div>
+          <div>
+            <label for="last_name">Last name</label>
+            <input id="last_name" name="last_name" type="text" placeholder="Rivera" required />
+          </div>
+        </div>
+
+        <div>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="parent@family.com" required />
+        </div>
+
+        <div class="row" style="grid-template-columns:1fr 1fr;">
+          <div>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="Create password" required />
+          </div>
+          <div>
+            <label for="confirm_password">Confirm password</label>
+            <input id="confirm_password" name="confirm_password" type="password" placeholder="Confirm password" required />
+          </div>
+        </div>
+
+        <div>
+          <label for="household_name">Household name</label>
+          <input id="household_name" name="household_name" type="text" placeholder="Rivera Family" required />
+        </div>
+
+        <div class="metric-card" style="font-size:13px;line-height:1.4;">
+          Rewards require guardian approval before payout, and child spend balances cannot go negative.
+        </div>
+
+        <div style="display:grid;gap:8px;">
+          <button class="btn primary" type="submit">Create account and household</button>
+          <a class="btn" href="{{ url_for('public.login') }}">Already have an account? Log in</a>
+        </div>
+      </form>
+
+      <a href="{{ url_for('public.landing') }}" style="margin-top:14px;display:inline-block;color:#c8d7f7;font-weight:600;">← Back to landing page</a>
+    </article>
+
+    <aside class="panel" aria-labelledby="setup-title">
+      <h2 id="setup-title" style="font-size:20px;">What happens next</h2>
+      <ul style="margin:10px 0 0;padding-left:18px;color:var(--duo-muted);font-size:14px;">
+        <li>Add children and guardian members.</li>
+        <li>Set default split percentages for Spend, Save, and Give.</li>
+        <li>Create first chore and start approval tracking.</li>
+      </ul>
+
+      <div class="metric-card" style="margin-top:12px;">
+        <div class="metric-label">Setup checkpoint</div>
+        <div class="metric-value" style="font-size:1.25rem;">Step 1 of 3</div>
+      </div>
+    </aside>
+  </section>
+{% endblock %}

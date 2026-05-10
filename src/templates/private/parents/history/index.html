@@ -23,6 +23,11 @@
                 ✅ Chores
             </button>
         </li>
+        <li class="my-tab-item" role="presentation">
+            <button class="my-tab-link" data-my-toggle="tab" data-my-target="#sessions" type="button" role="tab">
+                ⏱️ Sessions
+            </button>
+        </li>
     </ul>
 
     <!-- Tab Content -->
@@ -32,6 +37,71 @@
         </div>
         <div class="my-tab-pane" id="chores" role="tabpanel">
             {% include 'private/parents/history/chore_history.html' %}
+        </div>
+        <div class="my-tab-pane" id="sessions" role="tabpanel">
+            <div class="dashboard-card full-width">
+                <div class="card-header">
+                    <h2>⏱️ Session History</h2>
+                </div>
+                <div class="card-body">
+                    {% if game_sessions %}
+                    <!-- Filters -->
+                    <div class="d-flex flex-wrap gap-3 mb-4">
+                        <div>
+                            <label class="form-label" for="sessionKidFilter">Kid</label>
+                            <select id="sessionKidFilter" class="form-control">
+                                <option value="all">All Kids</option>
+                                {% for k in kids %}
+                                <option value="{{ k.id }}">{{ k.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>Kid</th>
+                                    <th>Activity</th>
+                                    <th>Started</th>
+                                    <th>Ended</th>
+                                    <th>Minutes</th>
+                                    <th>Coins Spent</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for gs in game_sessions %}
+                                <tr class="session-row" data-kid-id="{{ gs.kid_id }}">
+                                    <td><strong>{{ gs.kid.name }}</strong></td>
+                                    <td>{{ gs.activity.name }}</td>
+                                    <td>{{ gs.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ gs.ended_at.strftime('%Y-%m-%d %H:%M') if gs.ended_at else '—' }}</td>
+                                    <td>{{ gs.minutes_played if gs.minutes_played is not none else '—' }}</td>
+                                    <td>
+                                        {% if gs.coins_spent is not none %}
+                                        <span class="coin-badge" style="display:inline-block; font-size:0.85rem;">🪙 {{ gs.coins_spent }}</span>
+                                        {% else %}—{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if gs.status == 'completed' %}
+                                        <span style="color: var(--success-primary, #27ae60); font-weight:700;">✓ Completed</span>
+                                        {% elif gs.status == 'ended_by_parent' %}
+                                        <span style="color: var(--warning-primary, #e67e22); font-weight:700;">⏹ Ended by Parent</span>
+                                        {% else %}
+                                        {{ gs.status }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">No session history yet. Kids haven't used the timer!</div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -91,5 +161,20 @@
     if (choreKidFilter) choreKidFilter.addEventListener('change', filterChoreTable);
     if (choreChoreFilter) choreChoreFilter.addEventListener('change', filterChoreTable);
     if (choreStatusFilter) choreStatusFilter.addEventListener('change', filterChoreTable);
+
+    // Session filter
+    const sessionKidFilter = document.getElementById('sessionKidFilter');
+    const sessionRows = document.querySelectorAll('.session-row');
+
+    function filterSessionTable() {
+        if (!sessionKidFilter) return;
+        const selectedKid = sessionKidFilter.value;
+        sessionRows.forEach(function(row) {
+            const kidMatch = selectedKid === 'all' || row.dataset.kidId === selectedKid;
+            row.style.display = kidMatch ? '' : 'none';
+        });
+    }
+
+    if (sessionKidFilter) sessionKidFilter.addEventListener('change', filterSessionTable);
 </script>
 {% endblock %}

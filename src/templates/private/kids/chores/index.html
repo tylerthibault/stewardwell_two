@@ -1,0 +1,140 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Kid Chores - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Chores</h1>
+	<div class="d-flex gap-2 align-items-center">
+		<span class="pill">{{ kid.display_name }} • 🪙 {{ kid.coin_balance }}</span>
+		<span class="pill">Family ⭐ {{ family.family_points_balance }}</span>
+		<form method="post" action="{{ url_for('public.kid_logout_web') }}">
+			<button type="submit" class="btn">Logout</button>
+		</form>
+	</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+	<div class="d-flex flex-wrap gap-2 mb-3">
+		<a href="{{ url_for('public.kid_chores') }}" class="btn primary">Chores</a>
+		<a href="{{ url_for('public.kid_store', tab='kid') }}" class="btn">Kid Store</a>
+		<a href="{{ url_for('public.kid_store', tab='family') }}" class="btn">Family Goals</a>
+	</div>
+
+	<section class="dashboard-grid">
+		<article class="dashboard-card full-width">
+			<header class="card-header">
+				<h2>Your Active Claims</h2>
+				<span class="pill">{{ active_claims|length }}</span>
+			</header>
+			<div class="card-body">
+				{% if active_claims %}
+					<div class="d-flex flex-column gap-3">
+						{% for claim in active_claims %}
+							<div class="store-item">
+								<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+									<div>
+										<strong>{{ claim.chore.name }}</strong>
+										<div class="muted">Claimed {{ claim.claimed_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+									</div>
+									<span class="pill">{{ claim.status|upper }}</span>
+								</div>
+
+								{% if claim.status == 'claimed' %}
+									<form method="post" action="{{ url_for('public.kid_submit_chore', submission_id=claim.id) }}" enctype="multipart/form-data" class="d-flex flex-column gap-2 mt-2">
+										<div class="d-flex flex-wrap gap-2">
+											{% if claim.before_photo_path %}
+												<div style="flex:1; min-width:200px;">
+													<label>Before photo</label>
+													<div class="pill">Saved</div>
+												</div>
+											{% else %}
+												<div style="flex:1; min-width:200px;">
+													<label for="before-photo-{{ claim.id }}">Before photo {% if claim.chore.requires_photo_proof %}*{% endif %}</label>
+													<input id="before-photo-{{ claim.id }}" name="before_photo" type="file" accept="image/*" capture="environment" {% if claim.chore.requires_photo_proof %}required{% endif %} />
+												</div>
+											{% endif %}
+											<div style="flex:1; min-width:200px;">
+												<label for="after-photo-{{ claim.id }}">After photo {% if claim.chore.requires_photo_proof %}*{% endif %}</label>
+												<input id="after-photo-{{ claim.id }}" name="after_photo" type="file" accept="image/*" capture="environment" {% if claim.chore.requires_photo_proof %}required{% endif %} />
+											</div>
+										</div>
+										<p class="muted" style="margin:0; font-size:13px;">Take your final after photo and submit for parent approval.</p>
+										<button type="submit" class="btn primary">Submit Final Product</button>
+									</form>
+								{% else %}
+									<p class="muted" style="margin-top:8px;">Submitted and waiting for parent approval.</p>
+								{% endif %}
+							</div>
+						{% endfor %}
+					</div>
+				{% else %}
+					<div class="empty-state">No active claims yet. Pick an available chore below.</div>
+				{% endif %}
+			</div>
+		</article>
+	</section>
+
+	<section class="dashboard-grid">
+		<article class="dashboard-card full-width">
+			<header class="card-header">
+				<h2>Available Chores</h2>
+				<span class="pill">{{ chores|length }}</span>
+			</header>
+			<div class="card-body">
+				{% if chores %}
+					<div class="chore-square-grid">
+						{% for chore in chores %}
+							<div class="chore-item chore-square-card">
+								<div class="d-flex flex-column gap-2">
+									<strong>{{ chore.name }}</strong>
+									{% if chore.description %}
+										<span class="muted">{{ chore.description }}</span>
+									{% endif %}
+									<div class="d-flex flex-wrap gap-2">
+										<span class="coin-badge">🪙 {{ chore.coin_reward }}</span>
+										<span class="point-badge">⭐ {{ chore.point_value }}</span>
+										<span class="pill">👥 {{ remaining_slots_by_chore_id.get(chore.id, 0) }} / {{ chore.max_concurrent_claims }} slots left</span>
+										{% if chore.requires_photo_proof %}
+											<span class="pill">📷 Before + After Required</span>
+										{% endif %}
+									</div>
+									{% if chore.categories %}
+										<div class="d-flex flex-wrap gap-2">
+											{% for category in chore.categories %}
+												<span class="pill">{{ category.name }}</span>
+											{% endfor %}
+										</div>
+									{% endif %}
+								</div>
+								<div class="d-flex flex-wrap gap-2 mt-auto">
+									{% set own_claim = active_claim_by_chore_id.get(chore.id) %}
+									{% if chore.id in locked_chore_ids %}
+										<span class="pill">Done for today</span>
+									{% elif own_claim %}
+										<span class="pill">You already claimed this</span>
+									{% elif remaining_slots_by_chore_id.get(chore.id, 0) <= 0 %}
+										<span class="pill">No slots left right now</span>
+									{% else %}
+										<form method="post" action="{{ url_for('public.kid_claim_chore', chore_id=chore.id) }}" enctype="multipart/form-data" class="d-flex flex-column gap-2" style="width:100%;">
+											<div>
+												<label for="claim-before-photo-{{ chore.id }}">Before photo {% if chore.requires_photo_proof %}*{% endif %}</label>
+												<input id="claim-before-photo-{{ chore.id }}" name="before_photo" type="file" accept="image/*" capture="environment" {% if chore.requires_photo_proof %}required{% endif %} />
+											</div>
+											<button type="submit" class="btn primary">Save &amp; Go Do It</button>
+										</form>
+									{% endif %}
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				{% else %}
+					<div class="empty-state">No chores are currently available.</div>
+				{% endif %}
+			</div>
+		</article>
+	</section>
+</div>
+{% endblock %}

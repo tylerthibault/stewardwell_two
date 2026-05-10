@@ -1,0 +1,315 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Timed Activities - Stewardwell{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>⏱️ Timed Activities</h1>
+        <p>Manage activities kids can time with the Turn Taker</p>
+    </div>
+
+    {% include 'private/parents/components/navbar.html' %}
+
+    <!-- Tabs (Desktop) -->
+    <ul class="my-tabs">
+        <li class="my-tab-item">
+            <button class="my-tab-link active" data-my-toggle="tab" data-my-target="#setup-tab" type="button">Setup Activities</button>
+        </li>
+        <li class="my-tab-item">
+            <button class="my-tab-link" data-my-toggle="tab" data-my-target="#active-tab" type="button">
+                Active Sessions {% if active_sessions %}({{ active_sessions|length }}){% endif %}
+            </button>
+        </li>
+    </ul>
+
+    <!-- Dropdown (Mobile) -->
+    <div class="my-tabs-dropdown">
+        <select>
+            <option value="#setup-tab">Setup Activities</option>
+            <option value="#active-tab">Active Sessions {% if active_sessions %}({{ active_sessions|length }}){% endif %}</option>
+        </select>
+    </div>
+
+    <div class="my-tab-content">
+
+        <!-- ── Setup Tab ── -->
+        <div id="setup-tab" class="my-tab-pane active">
+            <div class="dashboard-card full-width">
+                <div class="card-header">
+                    <h2>Activities</h2>
+                    <button onclick="toggleModal('addActivityModal')">+ Add Activity</button>
+                </div>
+                <div class="card-body">
+                    {% if activities %}
+                    <div class="row g-3">
+                        {% for activity in activities %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card store-item">
+                                <!-- Status toggle -->
+                                <div class="d-flex justify-content-end mb-2">
+                                    <form method="POST" action="{{ url_for('parent.toggle_activity', activity_id=activity.id) }}" class="form-flex-shrink toggle-activity-form">
+                                        <button type="submit" class="status-badge {% if not activity.is_active %}inactive{% else %}active{% endif %}"
+                                            title="Click to {% if activity.is_active %}hide{% else %}show{% endif %}">
+                                            {% if not activity.is_active %}👁️ Hidden{% else %}✓ Active{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div class="card-title-center">
+                                    <h3 class="fs-3 fw-bolder">{{ activity.name }}</h3>
+                                </div>
+
+                                {% if activity.description %}
+                                <p style="color: var(--text-secondary); font-size: 0.9rem; text-align: center; margin: 0 0 0.75rem;">{{ activity.description }}</p>
+                                {% endif %}
+
+                                <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                                    <span class="coin-badge" style="display: inline-block;">🪙 {{ activity.coins_per_minute }}/min</span>
+                                    <span class="frequency-badge">⏰ {{ activity.time_limit_minutes }} min limit</span>
+                                </div>
+
+                                <div class="card-actions">
+                                    <button type="button" class="btn-primary card-action-button w-100 edit-activity-btn"
+                                        data-activity-id="{{ activity.id }}"
+                                        data-activity-name="{{ activity.name }}"
+                                        data-activity-description="{{ activity.description or '' }}"
+                                        data-activity-cpm="{{ activity.coins_per_minute }}"
+                                        data-activity-limit="{{ activity.time_limit_minutes }}">
+                                        Edit
+                                    </button>
+                                    <form id="delete-activity-form-{{ activity.id }}" method="POST"
+                                        action="{{ url_for('parent.delete_activity', activity_id=activity.id) }}"
+                                        class="hidden-form"></form>
+                                    <button type="button" class="btn-danger card-action-button w-100 mt-2 delete-activity-btn"
+                                        data-activity-id="{{ activity.id }}"
+                                        data-activity-name="{{ activity.name }}">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state text-center">
+                        <p style="font-size: 1.1rem; color: var(--text-muted, #666);">No activities yet</p>
+                        <button class="btn-primary" onclick="toggleModal('addActivityModal')" style="margin-top: 1.5rem;">
+                            + Add First Activity
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Active Sessions Tab ── -->
+        <div id="active-tab" class="my-tab-pane">
+            <div class="dashboard-card full-width">
+                <div class="card-header">
+                    <h2>Sessions In Progress</h2>
+                </div>
+                <div class="card-body">
+                    {% if active_sessions %}
+                    <div class="row g-3">
+                        {% for gs in active_sessions %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="assignment-item">
+                                <div class="assignment-info">
+                                    <strong>{{ gs.kid.name }}</strong> is playing
+                                    <strong>{{ gs.activity.name }}</strong>
+                                    <div class="timestamp mt-1">Started: {{ gs.started_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                    <div class="mt-1">
+                                        <span class="coin-badge" style="display: inline-block; font-size: 0.85rem;">
+                                            🪙 {{ gs.activity.coins_per_minute }}/min
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="assignment-actions">
+                                    <form method="POST" action="{{ url_for('parent.end_session_parent', session_id=gs.id) }}"
+                                        class="inline-form end-session-parent-form">
+                                        <button type="submit" class="btn-danger">⏹ End Early</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">No active sessions right now. 🎮</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end tab-content -->
+</div>
+
+<!-- ── Add Activity Modal ── -->
+<div id="addActivityModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Activity</h3>
+            <span class="close" onclick="toggleModal('addActivityModal')">&times;</span>
+        </div>
+        <form id="addActivityForm" method="POST" action="{{ url_for('parent.add_activity') }}">
+            <div class="modal-body">
+                <div class="form-group mb-3">
+                    <label class="form-label" for="add-name">Activity Name *</label>
+                    <input type="text" id="add-name" name="name" class="form-control" placeholder="e.g. Minecraft" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" for="add-description">Description (optional)</label>
+                    <textarea id="add-description" name="description" class="form-control" rows="2" placeholder="Short description"></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label" for="add-cpm">Coins Per Minute *</label>
+                        <input type="number" id="add-cpm" name="coins_per_minute" class="form-control" value="1" min="1" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="add-limit">Time Limit (minutes) *</label>
+                        <input type="number" id="add-limit" name="time_limit_minutes" class="form-control" value="10" min="1" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('addActivityModal')">Cancel</button>
+                <button type="submit" class="btn-success">Add Activity</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── Edit Activity Modal ── -->
+<div id="editActivityModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Activity</h3>
+            <span class="close" onclick="toggleModal('editActivityModal')">&times;</span>
+        </div>
+        <form id="editActivityForm" method="POST" action="">
+            <div class="modal-body">
+                <div class="form-group mb-3">
+                    <label class="form-label" for="edit-name">Activity Name *</label>
+                    <input type="text" id="edit-name" name="name" class="form-control" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" for="edit-description">Description (optional)</label>
+                    <textarea id="edit-description" name="description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label" for="edit-cpm">Coins Per Minute *</label>
+                        <input type="number" id="edit-cpm" name="coins_per_minute" class="form-control" min="1" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="edit-limit">Time Limit (minutes) *</label>
+                        <input type="number" id="edit-limit" name="time_limit_minutes" class="form-control" min="1" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('editActivityModal')">Cancel</button>
+                <button type="submit" class="btn-success">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+// ── Add Activity ──
+setupAjaxForm('#addActivityForm', {
+    onSuccess: function(data) {
+        showMessage(data.message, 'success');
+        toggleModal('addActivityModal');
+        document.getElementById('addActivityForm').reset();
+        setTimeout(function() { window.location.reload(); }, 900);
+    },
+    onError: function(data) {
+        showMessage(data.message || 'Could not add activity.', 'error');
+    }
+});
+
+// ── Edit Activity ──
+document.querySelectorAll('.edit-activity-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id   = btn.dataset.activityId;
+        var form = document.getElementById('editActivityForm');
+        form.action = '/parent/edit-activity/' + id;
+        document.getElementById('edit-name').value        = btn.dataset.activityName;
+        document.getElementById('edit-description').value = btn.dataset.activityDescription;
+        document.getElementById('edit-cpm').value         = btn.dataset.activityCpm;
+        document.getElementById('edit-limit').value       = btn.dataset.activityLimit;
+        toggleModal('editActivityModal');
+    });
+});
+
+setupAjaxForm('#editActivityForm', {
+    onSuccess: function(data) {
+        showMessage(data.message, 'success');
+        toggleModal('editActivityModal');
+        setTimeout(function() { window.location.reload(); }, 900);
+    },
+    onError: function(data) {
+        showMessage(data.message || 'Could not save changes.', 'error');
+    }
+});
+
+// ── Delete Activity ──
+document.querySelectorAll('.delete-activity-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var name = btn.dataset.activityName;
+        var id   = btn.dataset.activityId;
+        if (!confirm('Delete "' + name + '"? All session history will be lost.')) return;
+        var form = document.getElementById('delete-activity-form-' + id);
+        submitForm(form, {
+            onSuccess: function(data) {
+                showMessage(data.message, 'success');
+                setTimeout(function() { window.location.reload(); }, 800);
+            },
+            onError: function(data) {
+                showMessage(data.message || 'Could not delete activity.', 'error');
+            }
+        });
+    });
+});
+
+// ── Toggle Activity ──
+document.querySelectorAll('.toggle-activity-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm(form, {
+            onSuccess: function(data) {
+                showMessage(data.message, 'success');
+                setTimeout(function() { window.location.reload(); }, 600);
+            },
+            onError: function(data) {
+                showMessage(data.message || 'Could not toggle activity.', 'error');
+            }
+        });
+    });
+});
+
+// ── End Session (Parent) ──
+document.querySelectorAll('.end-session-parent-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!confirm('End this session early and deduct coins?')) return;
+        submitForm(form, {
+            onSuccess: function(data) {
+                showMessage(data.message, 'success');
+                setTimeout(function() { window.location.reload(); }, 1000);
+            },
+            onError: function(data) {
+                showMessage(data.message || 'Could not end session.', 'error');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,37 +1,58 @@
-/* Modal Toggle JavaScript */
-function toggleModal(modalId) {
-    const modal = document.getElementById(modalId);
-    modal.classList.toggle('active');
-}
+/* ── Flash message auto-dismiss with progress bar ─────────────────────────
+   Each .flash has a .flash-progress child whose scaleX shrinks from 1 → 0
+   over DURATION ms. Hovering pauses the countdown; leaving resumes it.
+─────────────────────────────────────────────────────────────────────────── */
+(function () {
+  const DURATION = 4000; // ms before a flash auto-dismisses
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.classList.remove('active');
+  document.querySelectorAll('.flash').forEach(function (flash) {
+    var progress = flash.querySelector('.flash-progress');
+    if (!progress) return;
+
+    var remaining = DURATION;
+    var lastTimestamp = null;
+    var rafId = null;
+    var paused = false;
+
+    function step(timestamp) {
+      if (lastTimestamp !== null) {
+        remaining -= timestamp - lastTimestamp;
+      }
+      lastTimestamp = timestamp;
+
+      var scale = Math.max(0, remaining / DURATION);
+      progress.style.transform = 'scaleX(' + scale + ')';
+
+      if (remaining <= 0) {
+        dismiss();
+        return;
+      }
+
+      if (!paused) {
+        rafId = requestAnimationFrame(step);
+      }
     }
-}
 
-// Copy to clipboard functionality
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        // Optional: Add visual feedback
-    });
-}
-
-// PIN input validation for kid login
-document.addEventListener('DOMContentLoaded', function() {
-    const pinInputs = document.querySelectorAll('input[name="pin"]');
-    pinInputs.forEach(function(input) {
-        input.addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        });
-    });
-
-    // Also handle single PIN input validation (for kid quick login page)
-    const pinInput = document.querySelector('input[type="password"][name="pin"]');
-    if (pinInput) {
-        pinInput.addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        });
+    function dismiss() {
+      flash.classList.add('flash-dismissing');
+      setTimeout(function () {
+        if (flash.parentNode) flash.parentNode.removeChild(flash);
+      }, 300);
     }
-});
+
+    flash.addEventListener('mouseenter', function () {
+      paused = true;
+      cancelAnimationFrame(rafId);
+      lastTimestamp = null;
+    });
+
+    flash.addEventListener('mouseleave', function () {
+      paused = false;
+      lastTimestamp = null;
+      rafId = requestAnimationFrame(step);
+    });
+
+    // Kick off the timer
+    rafId = requestAnimationFrame(step);
+  });
+}());

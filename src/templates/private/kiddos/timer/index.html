@@ -1,0 +1,229 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Timer - {{ kid.name }} - Stewardwell{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timer-display {
+        font-size: clamp(2.5rem, 10vw, 5rem);
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        color: var(--text-primary);
+        font-family: 'Courier New', monospace;
+        line-height: 1;
+    }
+    .timer-coin-rate {
+        font-size: clamp(1rem, 3vw, 1.4rem);
+        font-weight: 800;
+        color: var(--coin-primary);
+    }
+    .timer-live-cost {
+        font-size: clamp(1.25rem, 4vw, 1.75rem);
+        font-weight: 900;
+        color: var(--danger-primary, #e74c3c);
+    }
+    .activity-card {
+        border: 3px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        background: var(--surface);
+        box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--border-color);
+        transition: all .15s ease;
+    }
+    .activity-card:hover {
+        transform: translateY(-2px);
+    }
+    .active-session-card {
+        border-color: var(--success-primary, #2ecc71);
+        background: var(--success-light, #eafaf1);
+        box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--success-dark, #27ae60);
+    }
+    .sibling-badge {
+        display: inline-block;
+        padding: 0.3rem 0.75rem;
+        border-radius: var(--radius-sm);
+        background: var(--warning-light, #fef9e7);
+        border: 2px solid var(--warning-primary, #f39c12);
+        color: var(--warning-dark, #e67e22);
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block nav %}
+<a href="{{ url_for('kid.logout') }}" class="nav-btn">Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="mb-1" style="font-size: clamp(1.75rem, 5vw, 2.5rem);">⏱️ Timer</h1>
+                <p class="m-0">Start and stop your play sessions</p>
+            </div>
+            <div class="text-center text-md-end">
+                <div class="coin-badge d-inline-block" style="font-size: clamp(1.5rem, 4vw, 2rem); padding: 0.75rem 1.25rem;">
+                    🪙 <span id="coin-balance">{{ kid.coin_balance }}</span>
+                </div>
+                <div class="mt-2" style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 800; text-transform: uppercase;">
+                    Coins
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="parent-nav d-flex flex-wrap gap-2 gap-md-3 mb-4">
+        <a href="{{ url_for('kid.dashboard') }}" class="nav-btn flex-fill flex-md-grow-0">
+            📋 <span class="d-none d-sm-inline">Chores</span>
+        </a>
+        <a href="{{ url_for('kid.store') }}" class="nav-btn flex-fill flex-md-grow-0">
+            🛒 <span class="d-none d-sm-inline">Store</span>
+        </a>
+        <a href="{{ url_for('kid.timer') }}" class="nav-btn active flex-fill flex-md-grow-0">
+            ⏱️ <span class="d-none d-sm-inline">Timer</span>
+        </a>
+    </div>
+
+    {% if my_active_session %}
+    <!-- ────── ACTIVE SESSION VIEW ────── -->
+    {% set act = my_active_session.activity %}
+    <div class="dashboard-card active-session-card mb-4">
+        <div class="card-header" style="background: var(--success-primary, #2ecc71); border-bottom-color: var(--success-dark, #27ae60);">
+            <h2>🎮 {{ act.name }} — Playing Now!</h2>
+        </div>
+        <div class="card-body text-center">
+            <div class="timer-display mb-2" id="timer-display">00:00:00</div>
+            <div class="timer-coin-rate mb-1">{{ act.coins_per_minute }} coin{{ 's' if act.coins_per_minute != 1 }} per minute</div>
+            <div class="timer-live-cost mb-4">🪙 <span id="live-cost">0</span> coins so far</div>
+
+            {% if act.time_limit_minutes %}
+            <div class="mb-4" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">
+                ⏰ You'll be warned at {{ act.time_limit_minutes }} minutes
+            </div>
+            {% endif %}
+
+            <button id="end-session-btn"
+                    class="btn-danger"
+                    style="font-size: 1.1rem; padding: 1rem 2.5rem; width: 100%; max-width: 320px;"
+                    data-session-id="{{ my_active_session.id }}"
+                    data-started-at="{{ my_active_session.started_at.isoformat() }}"
+                    data-coins-per-minute="{{ act.coins_per_minute }}"
+                    data-time-limit="{{ act.time_limit_minutes }}">
+                ⏹ End Session
+            </button>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- ────── ACTIVITY SELECTION ────── -->
+    {% if activities %}
+    <div class="dashboard-card mb-4">
+        <div class="card-header">
+            <h2>🎮 Choose an Activity</h2>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for activity in activities %}
+                {% set other_session = activity_active_sessions.get(activity.id) %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="activity-card h-100 d-flex flex-column gap-3">
+                        <div>
+                            <h3 class="mb-1" style="word-break: break-word;">{{ activity.name }}</h3>
+                            {% if activity.description %}
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">{{ activity.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="coin-badge" style="display: inline-block;">🪙 {{ activity.coins_per_minute }}/min</span>
+                            <span class="frequency-badge">⏰ {{ activity.time_limit_minutes }} min limit</span>
+                        </div>
+
+                        {% if other_session and other_session.kid_id != kid.id %}
+                        <div class="sibling-badge">🎮 {{ other_session.kid.name }} is playing</div>
+                        {% endif %}
+
+                        <form method="POST" action="{{ url_for('kid.start_session', activity_id=activity.id) }}" class="start-session-form mt-auto">
+                            <button type="submit" class="btn-success w-100" style="font-size: 1rem; padding: 0.75rem;">
+                                ▶ Start
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="dashboard-card mb-4">
+        <div class="card-body">
+            <div class="empty-state">No activities set up yet. Ask a parent to add one! 🎮</div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+
+<script>
+// ── Start session forms ──
+document.querySelectorAll('.start-session-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Starting…';
+
+        postRequest(form.action, {}, {
+            onSuccess: function(data) {
+                showMessage(data.message, 'success');
+                setTimeout(function() { window.location.reload(); }, 800);
+            },
+            onError: function(data) {
+                showMessage(data.message || 'Could not start session.', 'error');
+                btn.disabled = false;
+                btn.textContent = '▶ Start';
+            }
+        });
+    });
+});
+
+// ── End session button ──
+const endBtn = document.getElementById('end-session-btn');
+if (endBtn) {
+    const sessionId    = endBtn.dataset.sessionId;
+    const startedAt    = new Date(endBtn.dataset.startedAt + 'Z');
+    const cpm          = parseInt(endBtn.dataset.coinsPerMinute, 10);
+    const timeLimitMin = parseInt(endBtn.dataset.timeLimit, 10);
+
+    // Boot the live timer
+    startLiveTimer(startedAt, cpm, timeLimitMin);
+
+    endBtn.addEventListener('click', function() {
+        if (!confirm('End your session now?')) return;
+        endBtn.disabled = true;
+        endBtn.textContent = 'Ending…';
+
+        postRequest('/kid/end-session/' + sessionId, {}, {
+            onSuccess: function(data) {
+                showMessage(data.message, 'success');
+                document.getElementById('coin-balance').textContent = data.new_balance;
+                setTimeout(function() { window.location.reload(); }, 1800);
+            },
+            onError: function(data) {
+                showMessage(data.message || 'Could not end session.', 'error');
+                endBtn.disabled = false;
+                endBtn.textContent = '⏹ End Session';
+            }
+        });
+    });
+}
+</script>
+{% endblock %}

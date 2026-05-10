@@ -1,124 +1,106 @@
-import os
-from urllib.parse import quote_plus
 from flask import Flask
-from flask_migrate import Migrate
-from src.models.base_model import db
+from sqlalchemy import inspect, text
 
-migrate = Migrate()
+from src.models.main import db
 
 
-def create_app():
-    app = Flask(__name__)
-    
-    # Configuration
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-    
-    # Database configuration - use MySQL in production, SQLite locally
-    deployment_env = os.environ.get('DEPLOYMENT_ENV', 'development')
-    
-    if deployment_env == 'production':
-        # Production MySQL database on CapRover
-        mysql_user = os.environ.get('MYSQL_USER', 'root')
-        mysql_password = os.environ.get('MYSQL_PASSWORD', '')
-        mysql_host = os.environ.get('MYSQL_HOST', 'srv-captain--stewardwell-db')
-        mysql_port = os.environ.get('MYSQL_PORT', '3306')
-        mysql_database = os.environ.get('MYSQL_DATABASE', 'stewardwell')
-        
-        # URL-encode password to handle special characters
-        encoded_password = quote_plus(mysql_password)
-        
-        # First, create the database if it doesn't exist
-        try:
-            import pymysql
-            connection = pymysql.connect(
-                host=mysql_host,
-                port=int(mysql_port),
-                user=mysql_user,
-                password=mysql_password
-            )
-            with connection.cursor() as cursor:
-                cursor.execute(f"CREATE DATABASE IF NOT EXISTS {mysql_database}")
-            connection.commit()
-            connection.close()
-            print(f"[DATABASE] Ensured database '{mysql_database}' exists")
-        except Exception as e:
-            print(f"[DATABASE] Warning: Could not create database: {e}")
-        
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{mysql_user}:{encoded_password}@{mysql_host}:{mysql_port}/{mysql_database}'
-        
-        # MySQL connection pool settings
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'pool_size': 10,
-            'pool_recycle': 3600,
-            'pool_pre_ping': True,
-        }
-        
-        # Log database connection info (without password)
-        print(f"[DATABASE] Using MySQL: {mysql_user}@{mysql_host}:{mysql_port}/{mysql_database}")
-    else:
-        # Local development SQLite database
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stewardwell.db'
-        print(f"[DATABASE] Using SQLite: stewardwell.db")
-    
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
-    # Initialize extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
-    
-    # Import models for migration
-    from src.models import family, parent, kid, chore, chore_assignment, store_item, purchase
-    
-    # Auto-create tables and apply schema updates
-    with app.app_context():
-        try:
-            db.create_all()
-            print("[DATABASE] Tables initialized successfully")
-            
-            # Apply column migrations for existing tables
-            from sqlalchemy import inspect, Text
-            inspector = inspect(db.engine)
-            
-            # Check if description column exists in chore table
-            chore_columns = [col['name'] for col in inspector.get_columns('chore')]
-            if 'description' not in chore_columns:
-                print("[DATABASE] Adding 'description' column to chore table...")
-                with db.engine.connect() as conn:
-                    conn.execute(db.text('ALTER TABLE chore ADD COLUMN description TEXT'))
-                    conn.commit()
-                print("[DATABASE] Description column added to chore table")
-            
-            # Check if tags column exists in chore table
-            if 'tags' not in chore_columns:
-                print("[DATABASE] Adding 'tags' column to chore table...")
-                with db.engine.connect() as conn:
-                    conn.execute(db.text('ALTER TABLE chore ADD COLUMN tags VARCHAR(500)'))
-                    conn.commit()
-                print("[DATABASE] Tags column added to chore table")
-            
-            # Check if tags column exists in store_item table
-            store_item_columns = [col['name'] for col in inspector.get_columns('store_item')]
-            if 'tags' not in store_item_columns:
-                print("[DATABASE] Adding 'tags' column to store_item table...")
-                with db.engine.connect() as conn:
-                    conn.execute(db.text('ALTER TABLE store_item ADD COLUMN tags VARCHAR(500)'))
-                    conn.commit()
-                print("[DATABASE] Tags column added to store_item table")
-            
-        except Exception as e:
-            print(f"[DATABASE] Warning: Could not auto-create tables: {e}")
-    
-    # Register blueprints
-    from src.controllers.routes import main_bp
-    from src.controllers.auth_controller import auth_bp
-    from src.controllers.parent_controller import parent_bp
-    from src.controllers.kid_controller import kid_bp
-    from src.controllers.chore_controller import chore_bp
-    
-    app.register_blueprint(main_bp)
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(parent_bp, url_prefix='/parent')
-    app.register_blueprint(kid_bp, url_prefix='/kid')
-    app.register_blueprint(chore_bp, url_prefix='/chore')
-    
-    return app
+def _apply_sqlite_schema_fixes() -> None:
+	inspector = inspect(db.engine)
+	table_names = set(inspector.get_table_names())
+	if "chores" not in table_names:
+		return
+
+	columns = {column["name"] for column in inspector.get_columns("chores")}
+	if "point_value" not in columns:
+		with db.engine.begin() as connection:
+			connection.execute(text("ALTER TABLE chores ADD COLUMN point_value INTEGER NOT NULL DEFAULT 0"))
+	if "requires_photo_proof" not in columns:
+		with db.engine.begin() as connection:
+			connection.execute(text("ALTER TABLE chores ADD COLUMN requires_photo_proof BOOLEAN NOT NULL DEFAULT 0"))
+	if "daily_reset_version" not in columns:
+		with db.engine.begin() as connection:
+			connection.execute(text("ALTER TABLE chores ADD COLUMN daily_reset_version INTEGER NOT NULL DEFAULT 0"))
+	if "max_concurrent_claims" not in columns:
+		with db.engine.begin() as connection:
+			connection.execute(text("ALTER TABLE chores ADD COLUMN max_concurrent_claims INTEGER NOT NULL DEFAULT 1"))
+
+	if "families" in table_names:
+		family_columns = {column["name"] for column in inspector.get_columns("families")}
+		if "family_points_balance" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN family_points_balance INTEGER NOT NULL DEFAULT 0"))
+		if "family_code_plain" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN family_code_plain VARCHAR(16)"))
+
+	if "kids" in table_names:
+		kid_columns = {column["name"] for column in inspector.get_columns("kids")}
+		if "coin_balance" not in kid_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE kids ADD COLUMN coin_balance INTEGER NOT NULL DEFAULT 0"))
+
+	if "trusted_devices" in table_names:
+		device_columns = {column["name"] for column in inspector.get_columns("trusted_devices")}
+		if "user_agent_hash" not in device_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE trusted_devices ADD COLUMN user_agent_hash VARCHAR(64)"))
+		if "ip_hash" not in device_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE trusted_devices ADD COLUMN ip_hash VARCHAR(64)"))
+
+	if "chore_submissions" in table_names:
+		submission_columns = {column["name"] for column in inspector.get_columns("chore_submissions")}
+		if "reset_version" not in submission_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE chore_submissions ADD COLUMN reset_version INTEGER NOT NULL DEFAULT 0"))
+		if "awarded_coin_amount" not in submission_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE chore_submissions ADD COLUMN awarded_coin_amount INTEGER NOT NULL DEFAULT 0"))
+		if "awarded_point_amount" not in submission_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE chore_submissions ADD COLUMN awarded_point_amount INTEGER NOT NULL DEFAULT 0"))
+
+	if "store_items" in table_names:
+		si_columns = {column["name"] for column in inspector.get_columns("store_items")}
+		_si_patches = [
+			("item_type", "VARCHAR(20) NOT NULL DEFAULT 'basic'"),
+			("timing_mode", "VARCHAR(20)"),
+			("session_duration_minutes", "INTEGER"),
+			("session_rate_type", "VARCHAR(20)"),
+			("session_flat_cost", "INTEGER NOT NULL DEFAULT 0"),
+			("session_coin_per_minute", "INTEGER NOT NULL DEFAULT 0"),
+			("session_max_participants", "INTEGER NOT NULL DEFAULT 1"),
+			("stock_qty", "INTEGER NOT NULL DEFAULT -1"),
+		]
+		for col_name, col_sql in _si_patches:
+			if col_name not in si_columns:
+				with db.engine.begin() as connection:
+					connection.execute(text(f"ALTER TABLE store_items ADD COLUMN {col_name} {col_sql}"))
+
+	if "store_timed_sessions" in table_names:
+		sts_columns = {column["name"] for column in inspector.get_columns("store_timed_sessions")}
+		if "participant_kid_id" not in sts_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE store_timed_sessions ADD COLUMN participant_kid_id INTEGER"))
+
+
+def create_app() -> Flask:
+	app = Flask(__name__)
+	app.config["SECRET_KEY"] = "dev-secret-key"
+	app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///stewardwell.db"
+	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+	from src.controllers.routes import public_bp
+	from src.controllers.parent_controller import parent_bp
+	from src.controllers.kid_controller import kid_bp
+
+	db.init_app(app)
+	app.register_blueprint(public_bp)
+	app.register_blueprint(parent_bp)
+	app.register_blueprint(kid_bp)
+
+	with app.app_context():
+		db.create_all()
+		_apply_sqlite_schema_fixes()
+
+	return app

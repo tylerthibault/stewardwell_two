@@ -1,0 +1,204 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Edit Chore - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Edit Chore</h1>
+    <div class="d-flex gap-2 align-items-center">
+        <a href="{{ url_for('public.parent_chores') }}" class="btn">← Back to chores</a>
+        <form method="post" action="{{ url_for('public.parent_logout') }}">
+            <button type="submit" class="btn">Logout</button>
+        </form>
+    </div>
+</div>
+{% include 'private/parents/components/navbar.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <article class="dashboard-card full-width">
+        <header class="card-header">
+            <h2>Update {{ chore.name }}</h2>
+            <span class="pill">{{ chore.schedule_kind|replace('_', ' ')|title }}</span>
+        </header>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('public.parent_edit_chore', chore_id=chore.id) }}" class="d-flex flex-column gap-3">
+                <input type="hidden" id="schedule_kind_fallback" name="schedule_kind" value="unscheduled" {% if chore.schedule_kind != 'unscheduled' %}disabled{% endif %} />
+
+                <div class="row g-3" style="grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end;">
+                    <div class="col-12">
+                        <label for="name">Chore name</label>
+                        <input id="name" name="name" type="text" value="{{ chore.name }}" required />
+                    </div>
+                    <div class="col-12">
+                        <label for="coin_reward">Coin reward</label>
+                        <input id="coin_reward" name="coin_reward" type="number" min="0" value="{{ chore.coin_reward }}" required />
+                    </div>
+                    <div class="col-12">
+                        <label for="point_value">Point value</label>
+                        <input id="point_value" name="point_value" type="number" min="0" value="{{ chore.point_value }}" required />
+                    </div>
+                    <div class="col-12">
+                        <label for="max_concurrent_claims">Kids at same time</label>
+                        <input id="max_concurrent_claims" name="max_concurrent_claims" type="number" min="1" value="{{ chore.max_concurrent_claims }}" required />
+                    </div>
+                    <div class="col-12">
+                        <label>Scheduling</label>
+                        <button id="toggle-schedule-builder" class="btn" type="button" aria-expanded="{{ 'true' if chore.schedule_kind != 'unscheduled' else 'false' }}" aria-controls="schedule-builder">
+                            {% if chore.schedule_kind == 'unscheduled' %}Add schedule{% else %}Remove schedule{% endif %}
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Optional notes for the family">{{ chore.description or '' }}</textarea>
+                </div>
+
+                <div>
+                    <label style="display:flex; align-items:center; gap:8px; width:fit-content;">
+                        <input name="requires_photo_proof" type="checkbox" style="width:auto;" {% if requires_photo_proof_checked %}checked{% endif %} />
+                        Require before and after photos for approval
+                    </label>
+                </div>
+
+                <div class="panel" style="padding:14px;">
+                    <h3 style="font-size:1.05rem;">Categories</h3>
+                    <p class="muted" style="margin:6px 0 10px;">Update category tags and add new ones if needed.</p>
+
+                    {% if categories %}
+                        <div class="d-flex flex-wrap gap-2" style="margin-bottom:10px;">
+                            {% for category in categories %}
+                                <label class="pill" style="cursor:pointer;">
+                                    <input
+                                        type="checkbox"
+                                        name="category_ids"
+                                        value="{{ category.id }}"
+                                        style="width:auto; margin-right:6px;"
+                                        {% if category.id|string in selected_category_ids %}checked{% endif %}
+                                    />
+                                    {{ category.name }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div>
+                        <label for="new_category_name">Add new category</label>
+                        <input id="new_category_name" name="new_category_name" type="text" placeholder="House, Outside" />
+                    </div>
+                </div>
+
+                <div id="schedule-builder" class="panel" style="padding:14px;" {% if chore.schedule_kind == 'unscheduled' %}hidden{% endif %}>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <h3 style="font-size:1.1rem;">Schedule Setup</h3>
+                            <p class="muted" style="margin-top:4px;">You can switch this chore between unscheduled, weekly, and alternating at any time.</p>
+                        </div>
+                        <div style="min-width: 220px;">
+                            <label for="schedule_kind">Schedule type</label>
+                            <select id="schedule_kind" name="schedule_kind" data-schedule-field {% if chore.schedule_kind == 'unscheduled' %}disabled{% endif %}>
+                                <option value="weekly" {% if chore.schedule_kind == 'weekly' %}selected{% endif %}>Weekly</option>
+                                <option value="alternating" {% if chore.schedule_kind == 'alternating' %}selected{% endif %}>Alternating weeks</option>
+                            </select>
+                        </div>
+                        <div style="min-width: 220px;">
+                            <label for="anchor_date">Start week date</label>
+                            <input id="anchor_date" name="anchor_date" type="date" value="{{ chore.anchor_date.isoformat() }}" data-schedule-field {% if chore.schedule_kind == 'unscheduled' %}disabled{% endif %} />
+                        </div>
+                    </div>
+
+                    <div class="row g-3" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                        <div class="col-12">
+                            <article class="metric-card">
+                                <div class="metric-label">Week A</div>
+                                <div class="d-flex flex-column gap-2" style="margin-top:10px;">
+                                    {% for label in weekday_labels %}
+                                        {% set weekday_index = loop.index0 %}
+                                        <div>
+                                            <label for="week0_day_{{ loop.index0 }}">{{ label }}</label>
+                                            <select id="week0_day_{{ loop.index0 }}" name="week0_day_{{ loop.index0 }}" data-schedule-field {% if chore.schedule_kind == 'unscheduled' %}disabled{% endif %}>
+                                                <option value="">Unassigned</option>
+                                                {% for kid in kids %}
+                                                    <option value="{{ kid.id }}" {% if slot_lookup.get((0, weekday_index)) == kid.id %}selected{% endif %}>{{ kid.display_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </article>
+                        </div>
+                        <div id="week-b-panel" class="col-12" {% if chore.schedule_kind != 'alternating' %}hidden{% endif %}>
+                            <article class="metric-card">
+                                <div class="metric-label">Week B</div>
+                                <div class="d-flex flex-column gap-2" style="margin-top:10px;">
+                                    {% for label in weekday_labels %}
+                                        {% set weekday_index = loop.index0 %}
+                                        <div>
+                                            <label for="week1_day_{{ loop.index0 }}">{{ label }}</label>
+                                            <select id="week1_day_{{ loop.index0 }}" name="week1_day_{{ loop.index0 }}" data-schedule-field {% if chore.schedule_kind == 'unscheduled' %}disabled{% endif %}>
+                                                <option value="">Unassigned</option>
+                                                {% for kid in kids %}
+                                                    <option value="{{ kid.id }}" {% if slot_lookup.get((1, weekday_index)) == kid.id %}selected{% endif %}>{{ kid.display_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn primary" type="submit">Save Changes</button>
+                    <a class="btn" href="{{ url_for('public.parent_chores') }}">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </article>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleButton = document.getElementById('toggle-schedule-builder');
+    const scheduleBuilder = document.getElementById('schedule-builder');
+    const fallbackField = document.getElementById('schedule_kind_fallback');
+    const scheduleFields = Array.from(document.querySelectorAll('[data-schedule-field]'));
+    const scheduleKindSelect = document.getElementById('schedule_kind');
+    const weekBPanel = document.getElementById('week-b-panel');
+    const weekBFields = Array.from(document.querySelectorAll('[id^="week1_day_"]'));
+
+    function syncWeekBVisibility() {
+        const showWeekB = !scheduleBuilder.hidden && scheduleKindSelect.value === 'alternating';
+        weekBPanel.hidden = !showWeekB;
+        weekBFields.forEach(function (field) {
+            field.disabled = !showWeekB;
+        });
+    }
+
+    function setScheduleEnabled(enabled) {
+        scheduleBuilder.hidden = !enabled;
+        toggleButton.setAttribute('aria-expanded', String(enabled));
+        toggleButton.textContent = enabled ? 'Remove schedule' : 'Add schedule';
+        fallbackField.disabled = enabled;
+
+        scheduleFields.forEach(function (field) {
+            field.disabled = !enabled;
+        });
+
+        syncWeekBVisibility();
+    }
+
+    toggleButton.addEventListener('click', function () {
+        setScheduleEnabled(scheduleBuilder.hidden);
+    });
+
+    scheduleKindSelect.addEventListener('change', syncWeekBVisibility);
+    setScheduleEnabled(!scheduleBuilder.hidden);
+});
+</script>
+{% endblock %}

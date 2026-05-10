@@ -1,48 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Stewardwell{% endblock %}</title>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap/bootstrap.min.css') }}">
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bold-flat-theme.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tabs.css') }}">
-    {% block extra_css %}{% endblock %}
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>{% block title %}Stewardwell{% endblock %}</title>
+	<script>
+		(function () {
+			try {
+				var stored = localStorage.getItem('stewardwell-theme');
+				var theme = (stored === 'dark' || stored === 'light')
+					? stored
+					: (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.setAttribute('data-theme', theme);
+			} catch (e) {
+				document.documentElement.setAttribute('data-theme', 'light');
+			}
+		})();
+	</script>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/galactic-opera.css') }}" />
+	{% block extra_css %}{% endblock %}
 </head>
-<body>
-    <header>
-        <nav class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div class="logo">
-                <h1>Stewardwell</h1>
-            </div>
-            <div class="nav-links d-flex flex-wrap gap-2 gap-md-3">
-                {% block nav %}
-                <a href="{{ url_for('parent.dashboard') }}" class="nav-btn" style="flex: none; padding: 0.75rem 1rem; font-size: 0.85rem;">🏠 <span class=" d-sm-inline">Dashboard</span></a>
-                <a href="{{ url_for('parent.family_settings') }}" class="nav-btn" style="flex: none; padding: 0.75rem 1rem; font-size: 0.85rem;">⚙️ <span class="d-sm-inline">Settings</span></a>
-                <a href="{{ url_for('auth.logout') }}" class="nav-btn" style="flex: none; padding: 0.75rem 1rem; font-size: 0.85rem; background: var(--danger-primary); border-color: var(--danger-primary); color: #ffffff; box-shadow: var(--shadow-lg) var(--shadow-lg) 0 var(--danger-dark);"><span class="d-sm-inline">Logout</span><span class="d-inline d-sm-none">🚪</span></a>
-                {% endblock %}
-            </div>
-        </nav>
-    </header>
-    
-    {% include 'app_components/flash_messages.html' %}
-    
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-    
-    <footer>
-        <p>&copy; 2025 Stewardwell - Stewarding Your Family Well</p>
-    </footer>
+<body class="{% block body_class %}{% endblock %}">
+	<div class="theme-toggle-wrap">
+		<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle color theme" aria-pressed="false">
+			<span class="theme-toggle-icon">☀️</span>
+			<span class="theme-toggle-label">Light mode</span>
+		</button>
+	</div>
+	<main class="page-wrap">
+		{% with messages = get_flashed_messages(with_categories=true) %}
+			{% if messages %}
+				<section class="flash-stack" aria-label="Messages">
+					{% for category, message in messages %}
+						<div class="flash {{ category }}">
+							{{ message }}
+							<div class="flash-progress"></div>
+						</div>
+					{% endfor %}
+				</section>
+			{% endif %}
+		{% endwith %}
 
-    <script src="{{ url_for('static', filename='js/bootstrap/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/bold-flat-theme.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/components/tabs.js') }}"></script>
-    {% block scripts %}{% endblock %}
+		{% block nav %}{% endblock %}
+		{% block content %}{% endblock %}
+	</main>
+	<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
+	{% block scripts %}{% endblock %}
 </body>
 </html>

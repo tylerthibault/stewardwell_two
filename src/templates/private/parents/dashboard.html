@@ -1,0 +1,91 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Parent Dashboard - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Parent Dashboard</h1>
+	<div class="d-flex gap-2 align-items-center">
+		<a href="{{ url_for('public.parent_settings') }}" class="btn">⚙️ Settings</a>
+		<form method="post" action="{{ url_for('public.parent_logout') }}">
+			<button type="submit" class="btn">Logout</button>
+		</form>
+	</div>
+</div>
+{% include 'private/parents/components/navbar.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+	<section class="dashboard-grid">
+		<div class="row g-3">
+			<div class="col-12 col-md-6 col-lg-4">
+				<article class="dashboard-card">
+					<div class="card-body">
+						<div class="metric-label">Family code status</div>
+						<div class="metric-value" style="font-size:1.2rem;">Active</div>
+						<p class="muted" style="margin-top:6px;">Rotation timestamp tracking is coming next.</p>
+					</div>
+				</article>
+			</div>
+			<div class="col-12 col-md-6 col-lg-4">
+				<article class="dashboard-card">
+					<div class="card-body">
+						<div class="metric-label">Parent last login</div>
+						<div class="metric-value" style="font-size:1.2rem;">
+							{% if parent.last_login_at %}
+								{{ parent.last_login_at.strftime('%b %d, %Y %I:%M %p') }}
+							{% else %}
+								First login session
+							{% endif %}
+						</div>
+						<p class="muted" style="margin-top:6px;">Signed in as {{ parent.name }}.</p>
+					</div>
+				</article>
+			</div>
+			<div class="col-12 col-md-6 col-lg-4">
+				<article class="dashboard-card">
+					<div class="card-body">
+						<div class="metric-label">Pending chore approvals</div>
+						<div class="metric-value">
+							{% if pending_approvals_count is not none %}
+								{{ pending_approvals_count }}
+							{% else %}
+								—
+							{% endif %}
+						</div>
+						<p class="muted" style="margin-top:6px;">Submissions waiting for parent review.</p>
+					</div>
+				</article>
+			</div>
+		</div>
+	</section>
+
+	<section class="dashboard-grid">
+		<div class="row g-3">
+			<div class="col-12">
+				<article class="dashboard-card full-width">
+					<header class="card-header">
+						<h2>Kids</h2>
+						<span class="pill">{{ kids|length }} total</span>
+					</header>
+					<div class="card-body">
+						{% if kids %}
+							<div class="d-flex flex-column gap-2">
+								{% for kid in kids %}
+									<div class="chore-item">
+										<strong>{{ kid.display_name }}</strong>
+										<span class="muted">Joined {{ kid.created_at.strftime('%b %d, %Y') }} • 🪙 {{ kid.coin_balance }} coins</span>
+									</div>
+								{% endfor %}
+							</div>
+						{% else %}
+							<div class="empty-state">No kids yet. Add your first kid above.</div>
+						{% endif %}
+					</div>
+				</article>
+			</div>
+		</div>
+	</section>
+</div>
+{% endblock %}

@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stewardwell — Galactic Opera Landing</title>
+  <style>
+    :root {
+      --space: #04070f;
+      --space-2: #0a1227;
+      --panel: #0f172e;
+      --line: #22345e;
+      --ink: #eaf1ff;
+      --muted: #9db0d6;
+      --gold: #f7cf63;
+      --gold-dark: #b7902d;
+      --blue: #6db4ff;
+      --red: #ff5f66;
+      --green: #78ff9f;
+      --shadow: rgba(1, 4, 12, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(109, 180, 255, 0.18), transparent 30%),
+        radial-gradient(circle at 90% 12%, rgba(255, 95, 102, 0.16), transparent 28%),
+        radial-gradient(circle at 50% -30%, rgba(247, 207, 99, 0.09), transparent 50%),
+        linear-gradient(180deg, var(--space) 0%, var(--space-2) 50%, #03050c 100%);
+      min-height: 100vh;
+    }
+
+    a { color: inherit; }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(#ffffff 0.7px, transparent 0.7px),
+        radial-gradient(#ffffff 0.6px, transparent 0.6px);
+      background-size: 120px 120px, 180px 180px;
+      background-position: 0 0, 40px 70px;
+      opacity: 0.35;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .status-rail {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(13, 22, 46, 0.72);
+      backdrop-filter: blur(8px);
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 8px 20px var(--shadow);
+    }
+
+    .rail-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .rail-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      white-space: nowrap;
+    }
+
+    .chip::before {
+      content: "●";
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    .chip.pending { color: #ffd86a; background: rgba(247,207,99,0.14); border-color: rgba(247,207,99,0.32); }
+    .chip.approved { color: #9ff5bb; background: rgba(120,255,159,0.12); border-color: rgba(120,255,159,0.32); }
+    .chip.rejected { color: #ffb1b5; background: rgba(255,95,102,0.12); border-color: rgba(255,95,102,0.32); }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(13, 22, 46, 0.72);
+      backdrop-filter: blur(8px);
+      padding: 12px 14px;
+      box-shadow: 0 12px 24px var(--shadow);
+    }
+
+    .brand {
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .beacon {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--gold);
+      box-shadow: 0 0 18px rgba(247, 207, 99, 0.9);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid #2a3f71;
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--ink);
+      background: #101a35;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      color: #1b1505;
+      background: linear-gradient(135deg, var(--gold), #ffe08e);
+      border-color: #f5d77e;
+      box-shadow: 0 0 18px rgba(247, 207, 99, 0.35);
+    }
+
+    .btn-group { display: flex; gap: 8px; }
+
+    .hero {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 12px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(15, 23, 46, 0.92), rgba(10, 16, 32, 0.92));
+      padding: 22px;
+      box-shadow: 0 16px 28px var(--shadow), inset 0 0 0 1px rgba(62, 92, 155, 0.2);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 48px;
+      line-height: 1.03;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 18px;
+      max-width: 640px;
+    }
+
+    .hero-note {
+      margin-top: 12px;
+      color: #bed0f3;
+      font-size: 14px;
+      border-left: 3px solid rgba(247,207,99,.7);
+      padding-left: 10px;
+    }
+
+    .cta { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .telemetry {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tile {
+      border-radius: 12px;
+      border: 1px solid #2a3f71;
+      background: #121d3b;
+      padding: 12px;
+      min-height: 92px;
+      display: grid;
+      align-content: start;
+    }
+
+    .tile.alert { box-shadow: inset 0 0 0 1px rgba(255,95,102,0.22); border-color: #5f2f41; }
+    .tile.ok { box-shadow: inset 0 0 0 1px rgba(120,255,159,0.2); border-color: #2e5a4a; }
+
+    .k { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #a9bce0; }
+    .v { margin-top: 6px; font-size: 26px; font-weight: 900; }
+
+    .status-inline {
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #d4def6;
+    }
+
+    .status-inline .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 8px rgba(109,180,255,0.8);
+    }
+
+    .section { margin-top: 14px; }
+    h2 { margin: 0 0 10px; font-size: 26px; text-transform: uppercase; letter-spacing: .04em; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .step {
+      border-radius: 12px;
+      border: 1px solid #2a3f71;
+      background: #101a35;
+      padding: 12px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .num {
+      width: 26px;
+      height: 26px;
+      margin: 0 auto 8px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #2b2207;
+      background: var(--gold);
+      box-shadow: 0 0 14px rgba(247, 207, 99, 0.65);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .queue {
+      margin-top: 10px;
+      border-radius: 12px;
+      border: 1px solid #2a3f71;
+      overflow: hidden;
+      background: #101a35;
+    }
+
+    .queue table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .queue th,
+    .queue td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #21335d;
+      text-align: left;
+    }
+
+    .queue th {
+      color: #a9bce0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .queue tr:last-child td { border-bottom: none; }
+
+    .queue small { color: var(--muted); }
+
+    .feature {
+      border-radius: 12px;
+      border: 1px solid #2a3f71;
+      background: #101a35;
+      padding: 14px;
+    }
+
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+
+    .tag.gold { background: rgba(247,207,99,0.2); color: #ffd86a; border: 1px solid rgba(247,207,99,0.35); }
+    .tag.blue { background: rgba(109,180,255,0.2); color: #9ad0ff; border: 1px solid rgba(109,180,255,0.35); }
+    .tag.red { background: rgba(255,95,102,0.2); color: #ff9aa0; border: 1px solid rgba(255,95,102,0.35); }
+
+    .final {
+      margin-top: 16px;
+      border: 1px solid #2d4478;
+      border-radius: 14px;
+      padding: 18px;
+      background: linear-gradient(135deg, rgba(19, 29, 59, 0.95), rgba(10, 15, 31, 0.95));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .final h3 { margin: 0; font-size: 24px; text-transform: uppercase; }
+    .final p { margin: 6px 0 0; color: #b6c7ea; }
+
+    @media (max-width: 930px) {
+      h1 { font-size: 36px; }
+      .status-rail { grid-template-columns: 1fr; }
+      .topbar { gap: 10px; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr 1fr; }
+      .features { grid-template-columns: 1fr; }
+      .final { flex-direction: column; align-items: flex-start; }
+      .queue { overflow-x: auto; }
+      .btn-group { display: grid; grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .flow { grid-template-columns: 1fr; }
+      .btn-group { grid-template-columns: 1fr; }
+      .telemetry { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="status-rail" aria-label="System status">
+      <div class="rail-left">Household context: Demo Family · Guardian role: Parent · Session: Active</div>
+      <div class="rail-right">
+        <span class="chip pending" aria-label="Pending approval status">Pending approval</span>
+        <span class="chip approved" aria-label="Approved status">Approved</span>
+        <span class="chip rejected" aria-label="Rejected status">Rejected</span>
+      </div>
+    </div>
+
+    <header class="topbar">
+      <div class="brand"><span class="beacon"></span>Stewardwell Galactic Command</div>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#how-it-works">How it works</a>
+        <a href="#approval-queue">Approval queue</a>
+        <a href="#features">Features</a>
+      </nav>
+      <div class="btn-group">
+        <a class="btn" href="#how-it-works">View demo</a>
+        <a class="btn primary" href="register-galactic-opera.html">Create household</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <article class="panel">
+        <h1>Lead your household with mission-level clarity.</h1>
+        <p class="subtitle">Stewardwell helps guardians assign chores, review completions, and approve Coins with confidence while kids stay motivated by visible progress.</p>
+        <p class="hero-note">All chore rewards require approval before payout, and every action stays visible through clear status labels.</p>
+        <div class="cta">
+          <a class="btn primary" href="register-galactic-opera.html">Start your family</a>
+          <a class="btn" href="login-galactic-opera.html">Parent login</a>
+        </div>
+      </article>
+
+      <aside class="panel">
+        <div class="telemetry">
+          <div class="tile alert"><div class="k">Pending approvals</div><div class="v">7</div><div class="status-inline"><span class="dot"></span>Needs review</div></div>
+          <div class="tile ok"><div class="k">Family points</div><div class="v">3,460</div><div class="status-inline"><span class="dot"></span>Goal progress active</div></div>
+          <div class="tile ok"><div class="k">Coins earned</div><div class="v">+282</div><div class="status-inline"><span class="dot"></span>Week to date</div></div>
+          <div class="tile alert"><div class="k">Timed sessions</div><div class="v">2</div><div class="status-inline"><span class="dot"></span>1 active now</div></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section panel" id="how-it-works">
+      <h2>Command Flow</h2>
+      <div class="flow">
+        <div class="step"><div class="num">1</div>Assign Chore</div>
+        <div class="step"><div class="num">2</div>Complete Task</div>
+        <div class="step"><div class="num">3</div>Approve Reward</div>
+        <div class="step"><div class="num">4</div>Earn + Redeem</div>
+      </div>
+    </section>
+
+    <section class="section panel" id="approval-queue">
+      <h2>Approval Queue Snapshot</h2>
+      <div class="queue">
+        <table>
+          <thead>
+            <tr>
+              <th>Child</th>
+              <th>Chore</th>
+              <th>Reward</th>
+              <th>Status</th>
+              <th>Completed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Alex</td>
+              <td>Kitchen cleanup <small>+ feedback note</small></td>
+              <td>12 Coins · 8 Points</td>
+              <td><span class="chip pending">Pending approval</span></td>
+              <td>Today · 4:18 PM</td>
+            </tr>
+            <tr>
+              <td>Jordan</td>
+              <td>Laundry fold</td>
+              <td>9 Coins · 6 Points</td>
+              <td><span class="chip approved">Approved</span></td>
+              <td>Today · 3:05 PM</td>
+            </tr>
+            <tr>
+              <td>Casey</td>
+              <td>Pet feeding</td>
+              <td>6 Coins · 4 Points</td>
+              <td><span class="chip rejected">Rejected</span></td>
+              <td>Today · 2:42 PM</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section features" id="features">
+      <article class="feature">
+        <span class="tag gold">Trust</span>
+        <h3>Approval-first payouts</h3>
+        <p>Every reward requires guardian confirmation before Coins are credited.</p>
+      </article>
+      <article class="feature">
+        <span class="tag blue">Visibility</span>
+        <h3>Wallet telemetry</h3>
+        <p>Spend, Save, and Give balances stay readable and transparent.</p>
+      </article>
+      <article class="feature">
+        <span class="tag red">Momentum</span>
+        <h3>Family missions</h3>
+        <p>Shared points and timed privileges turn routines into team progress.</p>
+      </article>
+    </section>
+
+    <section class="final">
+      <div>
+        <h3>Set course for consistent family habits.</h3>
+        <p>Sci-fi atmosphere with clear, parent-first stewardship controls.</p>
+      </div>
+      <a class="btn primary" href="register-galactic-opera.html">Begin journey</a>
+    </section>
+  </div>
+</body>
+</html>

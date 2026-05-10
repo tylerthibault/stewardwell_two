@@ -1,0 +1,530 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Kid Store - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Store</h1>
+	<div class="d-flex gap-2 align-items-center">
+		<span class="pill">{{ kid.display_name }} • 🪙 {{ kid.coin_balance }}</span>
+		<span class="pill">Family ⭐ {{ family.family_points_balance }}</span>
+		<form method="post" action="{{ url_for('public.kid_logout_web') }}">
+			<button type="submit" class="btn">Logout</button>
+		</form>
+	</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+	<div class="d-flex flex-wrap gap-2 mb-3">
+		<a href="{{ url_for('public.kid_chores') }}" class="btn">Chores</a>
+		<a href="{{ url_for('public.kid_store', tab='kid') }}" class="btn {% if active_tab == 'kid' %}primary{% endif %}">Kid Store</a>
+		<a href="{{ url_for('public.kid_store', tab='family') }}" class="btn {% if active_tab == 'family' %}primary{% endif %}">Family Goals</a>
+	</div>
+
+	{% if active_tab == 'kid' %}
+		<div class="dashboard-grid">
+			<div class="dashboard-card">
+				<div class="card-header"><h2>🛒 Basic Items</h2></div>
+				<div class="card-body">
+					{% set basic_items = kid_items | selectattr('item_type', 'equalto', 'basic') | list %}
+					{% if basic_items %}
+						<div class="row g-3">
+							{% for item in basic_items %}
+								<div class="col-12 col-md-6 col-lg-4">
+									<div class="store-item d-flex flex-column gap-2">
+										<strong>{{ item.name }}</strong>
+										{% if item.description %}<p class="muted m-0">{{ item.description }}</p>{% endif %}
+										<span class="coin-badge d-inline-block" style="width:fit-content;">🪙 {{ item.kid_coin_cost }} coins</span>
+															{% if item.stock_qty == 0 %}
+																<span class="pill" style="color:var(--danger);">Out of stock</span>
+															{% elif item.stock_qty > 0 %}
+																<span class="pill">📦 {{ item.stock_qty }} left</span>
+															{% endif %}
+										<form method="post" action="{{ url_for('public.kid_purchase_store_item', item_id=item.id) }}" class="mt-auto">
+											<button type="submit" class="btn {% if item.stock_qty != 0 and kid.coin_balance >= item.kid_coin_cost %}primary{% endif %}" {% if item.stock_qty == 0 or kid.coin_balance < item.kid_coin_cost %}disabled{% endif %}>
+												{% if item.stock_qty == 0 %}Out of stock{% elif kid.coin_balance >= item.kid_coin_cost %}Purchase{% else %}Need more coins{% endif %}
+											</button>
+										</form>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<div class="empty-state">No basic items available.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+
+		{% set timed_items = kid_items | selectattr('item_type', 'equalto', 'timed_session') | list %}
+		{% if timed_items %}
+		<div class="dashboard-grid" style="margin-top:12px;">
+			<div class="dashboard-card">
+				<div class="card-header"><h2>⏱ Turn Timers</h2></div>
+				<div class="card-body">
+					<div class="row g-3">
+						{% for item in timed_items %}
+							{%- set active_session_for_item = active_session_by_item_id.get(item.id) -%}
+							{%- set current_turn = active_session_for_item.current_turn if active_session_for_item else none -%}
+								{%- set current_participant = current_turn.participant if current_turn else none -%}
+								{%- set elapsed_lookup = active_session_elapsed_seconds.get(active_session_for_item.id, {}) if active_session_for_item else {} -%}
+								{%- set charged_lookup = active_session_charged_coins.get(active_session_for_item.id, {}) if active_session_for_item else {} -%}
+									{%- set current_prior_seconds = (elapsed_lookup.get(current_participant.id, 0) - current_turn.live_elapsed_seconds) if current_turn and current_participant else 0 -%}
+									{%- set current_charged_coins = charged_lookup.get(current_participant.id, 0) if current_participant else 0 -%}
+									{%- set current_paid_seconds = ((current_turn.coins_charged // (item.session_coin_per_minute or 1)) * 60) if current_turn and current_participant and current_participant.charges_coins and item.session_rate_type == 'per_minute' else 0 -%}
+									{%- set turn_start_cost = item.session_flat_cost if item.session_rate_type == 'flat' else item.session_coin_per_minute -%}
+									{%- set out_of_stock = (item.stock_qty == 0) -%}
+							<div class="col-12 col-md-6 col-lg-4">
+								<div class="store-item d-flex flex-column gap-2 {% if active_session_for_item %}store-item-active{% endif %}">
+									<strong>{{ item.name }}</strong>
+									{% if item.description %}<p class="muted m-0">{{ item.description }}</p>{% endif %}
+									<div class="d-flex flex-wrap gap-2">
+										<span class="pill">Count Up</span>
+										{% if item.session_rate_type == 'flat' %}
+												<span class="coin-badge">🪙 {{ item.session_flat_cost }} flat</span>
+										{% else %}
+												<span class="coin-badge">🪙 {{ item.session_coin_per_minute }}/min</span>
+										{% endif %}
+									</div>
+									{% if item.stock_qty == 0 %}
+										<span class="pill" style="color:var(--danger);">Out of stock</span>
+									{% elif item.stock_qty > 0 %}
+										<span class="pill">📦 {{ item.stock_qty }} left</span>
+									{% endif %}
+
+									{% if active_session_for_item and current_turn %}
+										<div class="turn-timer-panel"
+											data-session-panel
+											data-session-id="{{ active_session_for_item.id }}"
+											data-current-participant-id="{{ current_participant.id if current_participant else '' }}"
+											data-started-at="{{ current_turn.started_at.isoformat() }}Z"
+												data-prior-seconds="{{ current_prior_seconds }}"
+												data-current-charged="{{ current_charged_coins }}"
+												data-paid-seconds="{{ current_paid_seconds }}"
+												data-rate-type="{{ item.session_rate_type }}"
+												data-coins-per-minute="{{ item.session_coin_per_minute or 0 }}"
+												data-charges-coins="{{ '1' if current_participant and current_participant.charges_coins else '0' }}">
+											<span class="status-badge active">RUNNING</span>
+											<div class="turn-player">{{ current_participant.display_name if current_participant else 'No turn' }}</div>
+											<div class="turn-time" data-turn-display>00:00</div>
+												{% if current_participant and current_participant.charges_coins %}
+													<p class="muted text-center m-0">🪙 <strong data-turn-cost>{{ current_charged_coins }}</strong> coins charged</p>
+												{% else %}
+													<p class="muted text-center m-0">Guest turns are not charged</p>
+												{% endif %}
+
+													<div class="turn-switch-grid">
+														{% for participant in active_session_for_item.participants %}
+															{% set needs_coins = participant.charges_coins and participant.kid.coin_balance < (turn_start_cost or 0) %}
+															{% if current_participant and participant.id == current_participant.id %}
+																<button type="button" class="btn primary w-100" disabled>{{ participant.display_name }}</button>
+														{% elif needs_coins %}
+															<button type="button" class="btn w-100" disabled>{{ participant.display_name }} needs coins</button>
+														{% else %}
+															<form method="post" action="{{ url_for('public.kid_switch_store_session_turn', timed_session_id=active_session_for_item.id) }}" class="m-0">
+																<input type="hidden" name="participant_id" value="{{ participant.id }}" />
+															<button type="submit" class="btn w-100">{{ participant.display_name }}</button>
+														</form>
+													{% endif %}
+												{% endfor %}
+											</div>
+
+											<form method="post" action="{{ url_for('public.kid_end_store_session', timed_session_id=active_session_for_item.id) }}" class="turn-stop-form">
+												<button type="submit" class="btn-danger w-100">End Session</button>
+											</form>
+										</div>
+									{% elif active_session_for_item %}
+										<div class="turn-timer-panel">
+											<span class="status-badge inactive">TURN ENDED</span>
+												<p class="muted text-center m-0">Choose who plays next.</p>
+												<div class="turn-switch-grid">
+													{% for participant in active_session_for_item.participants %}
+														{% set needs_coins = participant.charges_coins and participant.kid.coin_balance < (turn_start_cost or 0) %}
+														{% if needs_coins %}
+														<button type="button" class="btn w-100" disabled>{{ participant.display_name }} needs coins</button>
+													{% else %}
+														<form method="post" action="{{ url_for('public.kid_switch_store_session_turn', timed_session_id=active_session_for_item.id) }}" class="m-0">
+															<input type="hidden" name="participant_id" value="{{ participant.id }}" />
+															<button type="submit" class="btn w-100">{{ participant.display_name }}</button>
+														</form>
+													{% endif %}
+												{% endfor %}
+											</div>
+											<form method="post" action="{{ url_for('public.kid_end_store_session', timed_session_id=active_session_for_item.id) }}" class="turn-stop-form">
+												<button type="submit" class="btn-danger w-100">End Session</button>
+											</form>
+										</div>
+									{% else %}
+										<button type="button" class="btn {% if not out_of_stock %}primary{% endif %} w-100 mt-auto" data-open-session-modal="sessionModal-{{ item.id }}" {% if out_of_stock %}disabled{% endif %}>
+											{% if out_of_stock %}Out of stock{% else %}Start Session{% endif %}
+										</button>
+									{% endif %}
+								</div>
+
+								<div id="sessionModal-{{ item.id }}" class="modal session-modal" aria-hidden="true">
+									<div class="modal-content">
+										<div class="modal-header d-flex justify-content-between align-items-center">
+											<h3>{{ item.name }}</h3>
+											<button type="button" class="btn" data-close-session-modal>Close</button>
+										</div>
+										<form method="post" action="{{ url_for('public.kid_start_store_session') }}" class="session-start-form">
+											<div class="modal-body d-flex flex-column gap-3">
+												<input type="hidden" name="item_id" value="{{ item.id }}" />
+												<div>
+													<label>Kids</label>
+													<div class="join-player-list">
+														{% for player in family_kids %}
+															<div class="join-player-row">
+																<label class="join-player-check">
+																	<input type="checkbox" name="joined_kid_ids" value="{{ player.id }}" data-join-kid-id="{{ player.id }}" {% if player.id == kid.id %}checked{% endif %} />
+																	<span>
+																		<strong>{{ player.display_name }}</strong>
+																		<small>🪙 {{ player.coin_balance }}</small>
+																	</span>
+																</label>
+																{% if player.id == kid.id %}
+																	<span class="pill">Signed in</span>
+																{% else %}
+																	<input name="kid_pin_{{ player.id }}" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" data-join-pin-for="{{ player.id }}" />
+																{% endif %}
+															</div>
+														{% endfor %}
+													</div>
+												</div>
+
+												<div>
+													<label>Guests</label>
+													<div class="guest-list" data-guest-list>
+														<div class="guest-row" data-guest-row>
+															<input name="guest_names" type="text" maxlength="120" placeholder="Guest name" data-guest-name data-guest-index="0" />
+															<button type="button" class="btn" data-remove-guest hidden>Remove</button>
+														</div>
+													</div>
+													<button type="button" class="btn" data-add-guest style="margin-top:8px;">Add + Guest</button>
+													<input name="parent_password" type="password" autocomplete="current-password" placeholder="Parent password for guests" data-parent-password style="margin-top:10px;" />
+												</div>
+
+												<div>
+													<label for="first_turn_{{ item.id }}">First Turn</label>
+													<select id="first_turn_{{ item.id }}" name="first_turn" data-first-turn-select>
+														{% for player in family_kids %}
+															<option value="kid:{{ player.id }}" {% if player.id == kid.id %}selected{% endif %}>{{ player.display_name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="modal-footer d-flex justify-content-end gap-2">
+												<button type="button" class="btn" data-close-session-modal>Cancel</button>
+												<button type="submit" class="btn primary">Start Session</button>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		{% if recent_timed_sessions %}
+		<div class="dashboard-grid" style="margin-top:12px;">
+			<div class="dashboard-card">
+				<div class="card-header"><h2>Recent Turns</h2></div>
+				<div class="card-body">
+					<div class="recent-turn-list">
+						{% for s in recent_timed_sessions %}
+							<div class="recent-turn-row">
+								<div>
+									<strong>{{ s.started_by_kid.display_name }}</strong>
+									<div class="muted">{{ s.store_item.name }} • {{ s.ended_at.strftime('%I:%M %p') if s.ended_at else 'ended' }}</div>
+								</div>
+								<div class="text-md-end">
+									<span class="coin-badge">🪙 {{ s.total_coins_charged }}</span>
+									<span class="pill">{{ (s.elapsed_seconds / 60)|round(0, 'ceil')|int }} min</span>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+		{% endif %}
+	{% else %}
+		<div class="dashboard-grid">
+			<div class="dashboard-card">
+				<div class="card-header"><h2>Family Goals</h2></div>
+				<div class="card-body">
+					{% if family_items %}
+						<div class="row g-3">
+							{% for item in family_items %}
+								<div class="col-12 col-md-6 col-lg-4">
+									<div class="store-item">
+										<strong>{{ item.name }}</strong>
+										{% if item.description %}<p class="muted" style="margin:6px 0;">{{ item.description }}</p>{% endif %}
+										<p class="m-0">⭐ {{ item.family_point_cost }} family points</p>
+										<form method="post" action="{{ url_for('public.kid_request_family_goal') }}" class="mt-2">
+											<input type="hidden" name="item_id" value="{{ item.id }}" />
+											<button type="submit" class="btn primary">Request Goal</button>
+										</form>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<div class="empty-state">No family goals are active.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+
+		<div class="dashboard-grid my-3">
+			<div class="dashboard-card">
+				<div class="card-header"><h2>Goal Requests & Voting</h2></div>
+				<div class="card-body">
+					{% if family_redemptions %}
+						<div class="d-flex flex-column gap-2">
+							{% for redemption in family_redemptions %}
+								<div class="chore-item">
+									<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+										<div>
+											<strong>{{ redemption.store_item.name }}</strong>
+											<div class="muted">Requested by {{ redemption.requested_by_kid.display_name }} • 👍 {{ vote_summary[redemption.id]['yes'] }} / 👎 {{ vote_summary[redemption.id]['no'] }}</div>
+										</div>
+										<span class="pill">{{ redemption.status|upper }}</span>
+									</div>
+									{% if redemption.status == 'pending' %}
+										<div class="d-flex gap-2 mt-2">
+											<form method="post" action="{{ url_for('public.kid_vote_family_goal', redemption_id=redemption.id) }}">
+												<input type="hidden" name="vote" value="yes" />
+												<button type="submit" class="btn {% if vote_lookup.get(redemption.id) == 'yes' %}primary{% endif %}">Vote Yes</button>
+											</form>
+											<form method="post" action="{{ url_for('public.kid_vote_family_goal', redemption_id=redemption.id) }}">
+												<input type="hidden" name="vote" value="no" />
+												<button type="submit" class="btn-danger {% if vote_lookup.get(redemption.id) != 'no' %}btn{% endif %}">Vote No</button>
+											</form>
+										</div>
+									{% endif %}
+								</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<div class="empty-state">No family goal requests yet.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  function fmt(totalSecs) {
+    totalSecs = Math.max(0, Math.floor(totalSecs));
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  document.querySelectorAll('[data-session-panel]').forEach(function (panel) {
+    const sessionId = panel.dataset.sessionId;
+    const currentParticipantId = parseInt(panel.dataset.currentParticipantId || '0', 10);
+    const startedAt = new Date(panel.dataset.startedAt).getTime();
+    const chargesCoins = panel.dataset.chargesCoins === '1';
+    const display = panel.querySelector('[data-turn-display]');
+    const costEl = panel.querySelector('[data-turn-cost]');
+
+    let serverElapsed = null;
+    let pollBase = null;
+    let paidSeconds = parseInt(panel.dataset.paidSeconds || '0', 10);
+    let chargedCoins = parseInt(panel.dataset.currentCharged || '0', 10);
+    let lastBoundarySyncAt = 0;
+    let syncing = false;
+
+    function currentElapsed() {
+      if (serverElapsed !== null) {
+        return serverElapsed + Math.floor((Date.now() - pollBase) / 1000);
+      }
+      return Math.floor((Date.now() - startedAt) / 1000);
+    }
+
+    function tick() {
+      const elapsed = currentElapsed();
+      if (display) display.textContent = fmt(elapsed);
+      if (costEl) {
+        costEl.textContent = chargedCoins;
+      }
+      if (chargesCoins && paidSeconds > 0 && elapsed >= paidSeconds) {
+        const now = Date.now();
+        if (!syncing && now - lastBoundarySyncAt > 1000) {
+          lastBoundarySyncAt = now;
+          syncWithServer();
+        }
+      }
+    }
+
+    const tickInterval = setInterval(tick, 1000);
+    tick();
+
+    function syncWithServer() {
+      syncing = true;
+      fetch(`/kid/store/sessions/${sessionId}/status`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status !== 'active') {
+            clearInterval(tickInterval);
+            clearInterval(pollInterval);
+            location.reload();
+            return;
+          }
+          if (currentParticipantId && data.current_participant_id !== currentParticipantId) {
+            clearInterval(tickInterval);
+            clearInterval(pollInterval);
+            location.reload();
+            return;
+          }
+          serverElapsed = data.current_turn_elapsed_seconds;
+          pollBase = Date.now();
+          paidSeconds = parseInt(data.current_turn_paid_seconds || '0', 10);
+          if (data.participant_charged_coins && currentParticipantId) {
+            chargedCoins = parseInt(data.participant_charged_coins[currentParticipantId] || '0', 10);
+          }
+          tick();
+        })
+        .catch(() => {})
+        .finally(() => { syncing = false; });
+    }
+
+    const pollInterval = setInterval(syncWithServer, 10000);
+    syncWithServer();
+  });
+
+  document.querySelectorAll('[data-open-session-modal]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const modal = document.getElementById(button.dataset.openSessionModal);
+      if (!modal) return;
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    });
+  });
+
+  document.querySelectorAll('[data-close-session-modal]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const modal = button.closest('.session-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    });
+  });
+
+  document.querySelectorAll('.session-modal').forEach(function (modal) {
+    modal.addEventListener('click', function (event) {
+      if (event.target === modal) {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    });
+  });
+
+  document.querySelectorAll('.session-start-form').forEach(function (form) {
+    function updateGuestIndexes() {
+      form.querySelectorAll('[data-guest-name]').forEach(function (guestInput, index) {
+        guestInput.dataset.guestIndex = String(index);
+      });
+    }
+
+    function syncFirstTurnOptions() {
+      const firstTurnSelect = form.querySelector('[data-first-turn-select]');
+      if (!firstTurnSelect) return;
+
+      const previousValue = firstTurnSelect.value;
+      firstTurnSelect.querySelectorAll('[data-dynamic-guest-option]').forEach(function (option) {
+        option.remove();
+      });
+
+      let guestOptionIndex = 0;
+      form.querySelectorAll('[data-guest-name]').forEach(function (guestInput) {
+        const guestName = guestInput.value.trim();
+        if (!guestName) return;
+
+        const option = document.createElement('option');
+        option.value = 'guest:' + guestOptionIndex;
+        option.textContent = guestName;
+        option.dataset.dynamicGuestOption = 'true';
+        firstTurnSelect.appendChild(option);
+        guestOptionIndex += 1;
+      });
+
+      if ([...firstTurnSelect.options].some(function (option) { return option.value === previousValue; })) {
+        firstTurnSelect.value = previousValue;
+      }
+    }
+
+    function syncPins() {
+      form.querySelectorAll('[data-join-pin-for]').forEach(function (pinInput) {
+        const checkbox = form.querySelector('[data-join-kid-id="' + pinInput.dataset.joinPinFor + '"]');
+        const needed = checkbox && checkbox.checked;
+        pinInput.required = needed;
+        pinInput.disabled = !needed;
+        if (!needed) pinInput.value = '';
+      });
+
+      const guestName = form.querySelector('[data-guest-name]');
+      const parentPassword = form.querySelector('[data-parent-password]');
+      if (parentPassword) {
+        const hasGuest = [...form.querySelectorAll('[data-guest-name]')].some(function (input) {
+          return input.value.trim() !== '';
+        });
+        parentPassword.required = hasGuest;
+      }
+
+      updateGuestIndexes();
+      syncFirstTurnOptions();
+    }
+
+    form.querySelectorAll('[data-join-kid-id]').forEach(function (checkbox) {
+      checkbox.addEventListener('change', syncPins);
+    });
+
+    function bindGuestRow(row) {
+      const guestName = row.querySelector('[data-guest-name]');
+      const removeButton = row.querySelector('[data-remove-guest]');
+      if (guestName) guestName.addEventListener('input', syncPins);
+      if (removeButton) {
+        removeButton.addEventListener('click', function () {
+          row.remove();
+          syncPins();
+        });
+      }
+    }
+
+    form.querySelectorAll('[data-guest-row]').forEach(bindGuestRow);
+
+    const addGuestButton = form.querySelector('[data-add-guest]');
+    const guestList = form.querySelector('[data-guest-list]');
+    if (addGuestButton && guestList) {
+      addGuestButton.addEventListener('click', function () {
+        const row = document.createElement('div');
+        row.className = 'guest-row';
+        row.dataset.guestRow = 'true';
+        row.innerHTML = '<input name="guest_names" type="text" maxlength="120" placeholder="Guest name" data-guest-name /> <button type="button" class="btn" data-remove-guest>Remove</button>';
+        guestList.appendChild(row);
+        bindGuestRow(row);
+        const input = row.querySelector('[data-guest-name]');
+        if (input) input.focus();
+        syncPins();
+      });
+    }
+
+    syncPins();
+  });
+})();
+</script>
+{% endblock %}

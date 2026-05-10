@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stewardwell — Parent Register</title>
+  <style>
+    :root {
+      --space: #04070f;
+      --space-2: #0a1227;
+      --panel: #0f172e;
+      --line: #22345e;
+      --ink: #eaf1ff;
+      --muted: #9db0d6;
+      --gold: #f7cf63;
+      --blue: #6db4ff;
+      --red: #ff5f66;
+      --green: #78ff9f;
+      --shadow: rgba(1, 4, 12, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(109, 180, 255, 0.18), transparent 30%),
+        radial-gradient(circle at 90% 12%, rgba(255, 95, 102, 0.16), transparent 28%),
+        radial-gradient(circle at 50% -30%, rgba(247, 207, 99, 0.09), transparent 50%),
+        linear-gradient(180deg, var(--space) 0%, var(--space-2) 50%, #03050c 100%);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(#ffffff 0.7px, transparent 0.7px),
+        radial-gradient(#ffffff 0.6px, transparent 0.6px);
+      background-size: 120px 120px, 180px 180px;
+      background-position: 0 0, 40px 70px;
+      opacity: 0.3;
+      z-index: 0;
+    }
+
+    .register-shell {
+      position: relative;
+      z-index: 1;
+      width: min(1040px, 100%);
+      display: grid;
+      grid-template-columns: 1.2fr .9fr;
+      gap: 12px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(15, 23, 46, 0.95), rgba(10, 16, 32, 0.95));
+      padding: 22px;
+      box-shadow: 0 16px 28px var(--shadow), inset 0 0 0 1px rgba(62, 92, 155, 0.2);
+    }
+
+    h1, h2 {
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    h1 { font-size: 34px; line-height: 1.08; }
+    h2 { font-size: 20px; }
+
+    .muted { color: var(--muted); margin-top: 10px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(120, 255, 159, 0.32);
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #b5ffcb;
+      background: rgba(120, 255, 159, 0.12);
+    }
+
+    .chip::before { content: "●"; font-size: 10px; }
+
+    form { margin-top: 14px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field { margin-bottom: 12px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #b5c7eb;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #2a3f71;
+      background: #101a35;
+      color: var(--ink);
+      padding: 11px 12px;
+      font-size: 14px;
+    }
+
+    input::placeholder { color: #8ea3cf; }
+
+    input:focus,
+    .btn:focus,
+    a:focus {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .helper {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .notice {
+      margin-top: 12px;
+      border: 1px solid #2f5a4a;
+      border-radius: 10px;
+      background: rgba(120,255,159,0.1);
+      color: #baf9cd;
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      text-decoration: none;
+      border: 1px solid #2a3f71;
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--ink);
+      background: #101a35;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      color: #1b1505;
+      background: linear-gradient(135deg, var(--gold), #ffe08e);
+      border-color: #f5d77e;
+      box-shadow: 0 0 18px rgba(247, 207, 99, 0.35);
+    }
+
+    .list {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: #c8d7f7;
+      font-size: 14px;
+    }
+
+    .stat {
+      margin-top: 12px;
+      border: 1px solid #2a3f71;
+      border-radius: 12px;
+      background: #101a35;
+      padding: 12px;
+    }
+
+    .k {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #a9bce0;
+    }
+
+    .v {
+      margin-top: 5px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .top-link {
+      margin-top: 14px;
+      display: inline-block;
+      color: #c8d7f7;
+      font-weight: 600;
+    }
+
+    @media (max-width: 920px) {
+      .register-shell { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+
+  <main class="register-shell">
+    <section class="panel" aria-labelledby="register-title">
+      <span class="chip">Parent onboarding</span>
+      <h1 id="register-title">Create your household command center.</h1>
+      <p class="muted">Set up a guardian account first, then create your family context for chores, Coins, and approvals.</p>
+
+      <form action="#" method="post">
+        <div class="grid">
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input id="firstName" name="firstName" type="text" placeholder="Jordan" required />
+          </div>
+
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input id="lastName" name="lastName" type="text" placeholder="Rivera" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="parent@family.com" required />
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="Create password" required />
+            <div class="helper">Use at least 8 characters.</div>
+          </div>
+
+          <div class="field">
+            <label for="confirmPassword">Confirm password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm password" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="householdName">Household name</label>
+          <input id="householdName" name="householdName" type="text" placeholder="Rivera Family" required />
+          <div class="helper">This identifies your family workspace.</div>
+        </div>
+
+        <div class="notice">
+          Rewards require guardian approval before payout, and child spend balances cannot go negative.
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" type="submit">Create account and household</button>
+          <a class="btn" href="login-galactic-opera.html">Already have an account? Log in</a>
+        </div>
+      </form>
+
+      <a class="top-link" href="index-galactic-opera.html">← Back to landing page</a>
+    </section>
+
+    <aside class="panel" aria-labelledby="setup-title">
+      <h2 id="setup-title">What happens next</h2>
+      <ul class="list">
+        <li>Add children and guardian members.</li>
+        <li>Set default split percentages for Spend, Save, and Give.</li>
+        <li>Create first chore and start approval tracking.</li>
+      </ul>
+
+      <div class="stat">
+        <div class="k">Setup checkpoint</div>
+        <div class="v">Step 1 of 3</div>
+      </div>
+      <div class="stat">
+        <div class="k">Default policy</div>
+        <div class="v">Approval before payout</div>
+      </div>
+      <div class="stat">
+        <div class="k">Balance guardrail</div>
+        <div class="v">No negative Spend balance</div>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

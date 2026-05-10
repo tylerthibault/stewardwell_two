@@ -1,0 +1,54 @@
+{% extends "bases/public.html" %}
+
+{% block title %}Stewardwell — Parent Login{% endblock %}
+
+{% block content %}
+  <section class="auth-grid" style="width:min(980px,100%);margin:0 auto;">
+    <article class="panel" aria-labelledby="login-title">
+      <div class="pill">Parent login</div>
+      <h1 id="login-title" style="font-size:36px;line-height:1.08;margin-top:10px;">Welcome back, parent.</h1>
+      <p class="muted" style="margin-top:10px;">Sign in to manage chores, approvals, and your family store.</p>
+
+      <form action="{{ url_for('public.login') }}" method="post" style="margin-top:14px;display:grid;gap:12px;">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="parent@family.com" required />
+        </div>
+
+        <div>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Enter password" required />
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center gap-2" style="font-size:13px;">
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" /> Keep me signed in
+          </label>
+          <a href="#" class="muted">Forgot password?</a>
+        </div>
+
+        <div style="display:grid;gap:8px;">
+          <button class="btn primary" type="submit">Log in</button>
+          <a class="btn" href="{{ url_for('public.register') }}">Create a parent account</a>
+          <a class="btn" href="{{ url_for('public.kid_login') }}">Kid login</a>
+        </div>
+      </form>
+
+      <a href="{{ url_for('public.landing') }}" style="margin-top:14px;display:inline-block;color:#c8d7f7;font-weight:600;">← Back to landing page</a>
+    </article>
+
+    <aside class="panel" aria-labelledby="trust-title">
+      <h2 id="trust-title" style="font-size:20px;">Why parents trust Stewardwell</h2>
+      <ul style="margin:10px 0 0;padding-left:18px;color:var(--duo-muted);font-size:14px;">
+        <li>All chore rewards require approval before payout.</li>
+        <li>Status labels stay clear: pending approval, approved, rejected.</li>
+        <li>Spend, Save, and Give balances remain transparent.</li>
+      </ul>
+
+      <div class="metric-card" style="margin-top:16px;font-size:13px;">
+        <strong>Current platform rules</strong><br />
+        No negative spend balances · role-based permissions · auditable reward actions.
+      </div>
+    </aside>
+  </section>
+{% endblock %}

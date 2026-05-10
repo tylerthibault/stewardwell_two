@@ -1,404 +1,576 @@
 {% extends "bases/private.html" %}
 
-{% block title %}Manage Store - Stewardwell{% endblock %}
+{% block title %}Store - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Store</h1>
+	<div class="d-flex gap-2 align-items-center">
+		<a href="{{ url_for('public.parent_settings') }}" class="btn">⚙️ Settings</a>
+		<form method="post" action="{{ url_for('public.parent_logout') }}">
+			<button type="submit" class="btn">Logout</button>
+		</form>
+	</div>
+</div>
+{% include 'private/parents/components/navbar.html' %}
+{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>Manage Store</h1>
-        <p>Rewards kids can purchase with coins</p>
-    </div>
+	<div class="d-flex flex-wrap gap-2 mb-3">
+		<a href="{{ url_for('public.parent_store', tab='kid') }}" class="btn {% if active_tab == 'kid' %}primary{% endif %}">Kid Store</a>
+		<a href="{{ url_for('public.parent_store', tab='family') }}" class="btn {% if active_tab == 'family' %}primary{% endif %}">Family Goals</a>
+	</div>
 
-    {% include 'private/parents/components/navbar.html' %}
+	{% if active_tab == 'kid' %}
+		<div class="dashboard-grid">
+			<div class="dashboard-card">
+				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+					<h2>Kid Store Items</h2>
+					<button type="button" class="btn primary" data-open-create-modal>Create Kid Item</button>
+				</div>
+				<div class="card-body">
+					{% if kid_items %}
+						<div class="row g-3">
+							{% for item in kid_items %}
+								<div class="col-12 col-md-6 col-lg-4">
+									<div class="store-item d-flex flex-column gap-2">
+										<div class="d-flex flex-wrap gap-2 align-items-center">
+											<strong>{{ item.name }}</strong>
+											<span class="pill">{% if item.item_type == 'timed_session' %}⏱ Timed{% else %}🛒 Basic{% endif %}</span>
+										</div>
+										{% if item.description %}<p class="muted m-0">{{ item.description }}</p>{% endif %}
+										{% if item.item_type == 'timed_session' %}
+											<div class="d-flex flex-wrap gap-2">
+												<span class="pill">Count-up Turns</span>
+												{% if item.session_rate_type == 'flat' %}
+													<span class="coin-badge">🪙 {{ item.session_flat_cost }} flat</span>
+												{% else %}
+													<span class="coin-badge">🪙 {{ item.session_coin_per_minute }}/min</span>
+												{% endif %}
+											</div>
+										{% else %}
+											<span class="coin-badge">🪙 {{ item.kid_coin_cost }} coins</span>
+										{% endif %}
+										{% if item.stock_qty == -1 %}
+											<span class="pill">∞ Unlimited</span>
+										{% elif item.stock_qty == 0 %}
+											<span class="pill" style="color:var(--danger);">Out of stock</span>
+										{% else %}
+											<span class="pill">📦 {{ item.stock_qty }} left</span>
+										{% endif %}
+									<div class="d-flex gap-2 flex-wrap mt-auto">
+										<form method="post" action="{{ url_for('public.parent_store_toggle_item', item_id=item.id) }}">
+											<button type="submit" class="btn">{{ 'Pause' if item.is_active else 'Activate' }}</button>
+										</form>
+										<button type="button" class="btn"
+											data-open-edit-modal
+											data-item-id="{{ item.id }}"
+											data-item-scope="{{ item.item_scope }}"
+											data-item-type="{{ item.item_type }}"
+											data-name="{{ item.name | e }}"
+											data-description="{{ item.description | e if item.description else '' }}"
+											data-kid-coin-cost="{{ item.kid_coin_cost }}"
+											data-family-point-cost="{{ item.family_point_cost }}"
+											data-session-rate-type="{{ item.session_rate_type or 'flat' }}"
+											data-session-flat-cost="{{ item.session_flat_cost }}"
+											data-session-coin-per-minute="{{ item.session_coin_per_minute }}"
+											data-session-max-participants="{{ item.session_max_participants }}"
+											data-stock-qty="{{ item.stock_qty }}">Edit</button>
+										<form method="post" action="{{ url_for('public.parent_store_delete_item', item_id=item.id) }}" onsubmit="return confirm('Delete {{ item.name | e }}? This cannot be undone.');">
+											<button type="submit" class="btn-danger">Delete</button>
+										</form>
+									</div>
+									</div>
+							</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<div class="empty-state">No kid store items yet.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
 
-    <!-- Tabs (Desktop) -->
-    <ul class="my-tabs">
-        <li class="my-tab-item">
-            <a href="#setup-tab" class="my-tab-link active" data-my-target="#setup-tab">Setup Items</a>
-        </li>
-        <li class="my-tab-item">
-            <a href="#pending-tab" class="my-tab-link" data-my-target="#pending-tab">Pending Purchases ({{ pending_purchases|length }})</a>
-        </li>
-        <li class="my-tab-item">
-            <a href="#fulfilled-tab" class="my-tab-link" data-my-target="#fulfilled-tab">Fulfilled Purchases</a>
-        </li>
-    </ul>
+		{% if active_sessions %}
+		<div class="dashboard-grid" style="margin-top:12px;">
+			<div class="dashboard-card">
+				<div class="card-header"><h2>⏱ Active Sessions</h2></div>
+				<div class="card-body">
+					<div class="d-flex flex-column gap-2">
+							{% for s in active_sessions %}
+								{% set current_turn = s.current_turn %}
+								<div class="store-item d-flex flex-column gap-2">
+									<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+										<div>
+											<strong>{{ s.store_item.name }}</strong>
+											<div class="muted">
+												{% if current_turn %}Turn for {{ current_turn.participant.display_name }}{% else %}Session ready{% endif %}
+												at {{ s.started_at.strftime('%I:%M %p') }}
+											</div>
+											{% if s.participants %}
+												<div class="d-flex flex-wrap gap-2 mt-1">
+													{% for participant in s.participants %}
+														<span class="pill">{{ participant.display_name }}</span>
+													{% endfor %}
+												</div>
+											{% endif %}
+										</div>
+										<span class="status-badge active">ACTIVE</span>
+									</div>
+								<form method="post" action="{{ url_for('public.parent_cancel_store_session', timed_session_id=s.id) }}">
+									<button type="submit" class="btn-danger">Cancel & Refund</button>
+								</form>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+	{% else %}
+		<div class="dashboard-grid">
+			<div class="dashboard-card">
+				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+					<h2>Family Goals</h2>
+					<button type="button" class="btn primary" data-open-create-modal>Create Family Goal</button>
+				</div>
+				<div class="card-body">
+					{% if family_items %}
+						<div class="row g-3">
+							{% for item in family_items %}
+								<div class="col-12 col-md-6 col-lg-4">
+									<div class="store-item">
+										<strong>{{ item.name }}</strong>
+										{% if item.description %}<p class="muted" style="margin:6px 0;">{{ item.description }}</p>{% endif %}
+										<p class="m-0">⭐ {{ item.family_point_cost }} family points</p>
+										<div class="d-flex gap-2 flex-wrap mt-2">
+											<form method="post" action="{{ url_for('public.parent_store_toggle_item', item_id=item.id) }}">
+												<button type="submit" class="btn">{{ 'Pause' if item.is_active else 'Activate' }}</button>
+											</form>
+											<button type="button" class="btn"
+												data-open-edit-modal
+												data-item-id="{{ item.id }}"
+												data-item-scope="{{ item.item_scope }}"
+												data-item-type="{{ item.item_type }}"
+												data-name="{{ item.name | e }}"
+												data-description="{{ item.description | e if item.description else '' }}"
+												data-kid-coin-cost="{{ item.kid_coin_cost }}"
+												data-family-point-cost="{{ item.family_point_cost }}"
+												data-session-rate-type="{{ item.session_rate_type or 'flat' }}"
+												data-session-flat-cost="{{ item.session_flat_cost }}"
+												data-session-coin-per-minute="{{ item.session_coin_per_minute }}"
+												data-session-max-participants="{{ item.session_max_participants }}"
+												data-stock-qty="{{ item.stock_qty }}">Edit</button>
+											<form method="post" action="{{ url_for('public.parent_store_delete_item', item_id=item.id) }}" onsubmit="return confirm('Delete {{ item.name | e }}? This cannot be undone.');">
+												<button type="submit" class="btn-danger">Delete</button>
+											</form>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<div class="empty-state">No family goals yet.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
 
-    <!-- Dropdown (Mobile) -->
-    <div class="my-tabs-dropdown">
-        <select>
-            <option value="#setup-tab">Setup Items</option>
-            <option value="#pending-tab">Pending Purchases ({{ pending_purchases|length }})</option>
-            <option value="#fulfilled-tab">Fulfilled Purchases</option>
-        </select>
-    </div>
-
-    <div class="my-tab-content">
-        <!-- Setup Items Tab -->
-        <div id="setup-tab" class="my-tab-pane active">
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>Store Items</h2>
-                <button onclick="toggleModal('addStoreItemModal')">+ Add Item</button>
-            </div>
-            <div class="card-body">
-                {% if store_items %}
-                <!-- Tag Filter -->
-                <div id="tagFilterSection" style="margin-bottom: var(--space-lg); display: none;">
-                    <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
-                        <strong style="color: var(--text-primary);">Filter by tag:</strong>
-                        <button class="tag-filter-btn active" data-tag="all" onclick="filterByTag('all')"
-                            style="padding: 0.375rem 0.75rem; background: var(--accent-primary); color: white; border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8125rem; box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark); transition: all 0.2s;">
-                            All
-                        </button>
-                        <div id="tagFilters" style="display: flex; gap: var(--space-sm); flex-wrap: wrap;"></div>
-                    </div>
-                </div>
-                <div class="row g-3">
-                    {% for item in store_items %}
-                    <div class="col-12 col-md-6 col-lg-4">
-                        {% include 'private/parents/store/components/cards.html' %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state text-center">
-                    <p style="font-size: 1.1rem; color: var(--text-muted, #666);">No store items created yet</p>
-                    <button class="btn-primary" onclick="toggleModal('addStoreItemModal')" style="margin-top: 1.5rem;">
-                        + Add First Item
-                    </button>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        </div>
-
-        <!-- Pending Purchases Tab -->
-        <div id="pending-tab" class="my-tab-pane">
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>Pending Purchase Requests</h2>
-            </div>
-            <div class="card-body">
-                {% if pending_purchases %}
-                    <div class="row g-3">
-                        {% for purchase in pending_purchases %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                        <div class="assignment-item">
-                            <div class="assignment-info">
-                                <strong>{{ purchase.kid.name }}</strong> wants to purchase 
-                                <strong>{{ purchase.item.name }}</strong>
-                                {% if purchase.item.description %}
-                                    <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">{{ purchase.item.description }}</p>
-                                {% endif %}
-                                <span class="timestamp">{{ purchase.purchased_at.strftime('%Y-%m-%d %H:%M') if purchase.purchased_at else 'Just now' }}</span>
-                                <div class="purchase-cost">{{ purchase.coin_cost }} coins</div>
-                            </div>
-                            <div class="assignment-actions">
-                                <form method="POST" action="{{ url_for('parent.fulfill_purchase', purchase_id=purchase.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-success">✓ Fulfill</button>
-                                </form>
-                                <form method="POST" action="{{ url_for('parent.cancel_purchase', purchase_id=purchase.id) }}" class="inline-form">
-                                    <button type="submit" class="btn-danger">✗ Cancel & Refund</button>
-                                </form>
-                            </div>
-                        </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="empty-state">No pending purchases</p>
-                {% endif %}
-            </div>
-        </div>
-        </div>
-
-        <!-- Fulfilled Purchases Tab -->
-        <div id="fulfilled-tab" class="my-tab-pane">
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>Fulfilled Purchase History</h2>
-            </div>
-            <div class="card-body">
-                {% if fulfilled_purchases %}
-                    <div class="row g-3">
-                        {% for purchase in fulfilled_purchases %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                        <div class="assignment-item">
-                            <div class="assignment-info">
-                                <strong>{{ purchase.kid.name }}</strong> purchased 
-                                <strong>{{ purchase.item.name }}</strong>
-                                {% if purchase.item.description %}
-                                    <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">{{ purchase.item.description }}</p>
-                                {% endif %}
-                                <span class="timestamp">Fulfilled: {{ purchase.fulfilled_at.strftime('%Y-%m-%d %H:%M') if purchase.fulfilled_at else 'N/A' }}</span>
-                                <div class="purchase-cost">{{ purchase.coin_cost }} coins</div>
-                            </div>
-                        </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="empty-state">No fulfilled purchases yet</p>
-                {% endif %}
-            </div>
-        </div>
-        </div>
-    </div>
+		<div class="dashboard-grid my-3">
+			<div class="dashboard-card">
+				<div class="card-header"><h2>Family Goal Requests</h2></div>
+				<div class="card-body">
+					{% if family_redemptions %}
+						<div class="d-flex flex-column gap-2">
+							{% for redemption in family_redemptions %}
+								<div class="chore-item">
+									<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+										<div>
+											<strong>{{ redemption.store_item.name }}</strong>
+											<div class="muted">Requested by {{ redemption.requested_by_kid.display_name }} • Votes: 👍 {{ vote_summary[redemption.id]['yes'] }} / 👎 {{ vote_summary[redemption.id]['no'] }}</div>
+										</div>
+										<span class="pill">{{ redemption.status|upper }}</span>
+									</div>
+									<div class="d-flex gap-2 mt-2">
+										{% if redemption.status == 'pending' %}
+											<form method="post" action="{{ url_for('public.parent_store_approve_family_redemption', redemption_id=redemption.id) }}"><button type="submit" class="btn">Approve</button></form>
+											<form method="post" action="{{ url_for('public.parent_store_reject_family_redemption', redemption_id=redemption.id) }}"><button type="submit" class="btn-danger">Reject</button></form>
+										{% elif redemption.status == 'approved' %}
+											<form method="post" action="{{ url_for('public.parent_store_fulfill_family_redemption', redemption_id=redemption.id) }}"><button type="submit" class="btn primary">Mark Fulfilled</button></form>
+										{% endif %}
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<div class="empty-state">No family goal requests yet.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	{% endif %}
 </div>
 
-<!-- Add Store Item Modal -->
-<div id="addStoreItemModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Add Store Item</h3>
-            <span class="close" onclick="toggleModal('addStoreItemModal')">&times;</span>
-        </div>
-        <form method="POST" action="{{ url_for('parent.add_store_item') }}">
-            <div class="form-group mb-3">
-                <label for="item_name">Item Name</label>
-                <input type="text" id="item_name" name="name" required placeholder="e.g., Extra TV time, Ice cream">
-            </div>
-            <div class="form-group mb-3">
-                <label for="item_description">Description (optional)</label>
-                <textarea id="item_description" name="description" rows="3"
-                    placeholder="Describe the reward..."></textarea>
-                <small class="help-text">Add details about this reward</small>
-            </div>
-            <div class="form-group mb-3">
-                <label for="item_tags">Tags (Optional)</label>
-                <input type="text" id="item_tags" name="tags" placeholder="e.g., treats, screentime, special">
-                <small class="help-text">Separate multiple tags with commas</small>
-            </div>
-            <div class="form-group mb-3">
-                <label for="item_coin_cost">Coin Cost</label>
-                <input type="number" id="item_coin_cost" name="coin_cost" min="0" value="50" required>
-            </div>
-            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
-                <button type="button" class="btn-secondary" onclick="toggleModal('addStoreItemModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Add Item</button>
-            </div>
-        </form>
-    </div>
+<div id="createItemModal" class="modal" aria-hidden="true">
+	<div class="modal-content">
+		<div class="modal-header d-flex justify-content-between align-items-center">
+			<h3>{% if active_tab == 'kid' %}Create Kid Store Item{% else %}Create Family Goal{% endif %}</h3>
+			<button type="button" class="btn" data-close-create-modal>Close</button>
+		</div>
+		<form method="post" action="{{ url_for('public.parent_store_create_item') }}" class="d-flex flex-column gap-2">
+			<div class="modal-body d-flex flex-column gap-3">
+				<input type="hidden" name="item_scope" value="{{ active_tab }}" />
+				<div>
+					<label for="create_name">Name</label>
+					<input id="create_name" name="name" type="text" required />
+				</div>
+				<div>
+					<label for="create_description">Description</label>
+					<textarea id="create_description" name="description" rows="2"></textarea>
+				</div>
+
+				{% if active_tab == 'kid' %}
+					<div>
+						<label>Item Type</label>
+						<div class="d-flex gap-3 flex-wrap" style="margin-top:6px;">
+							<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+								<input type="radio" name="item_type" value="basic" id="type_basic" checked style="width:auto;" />
+								🛒 Basic (one-time purchase)
+							</label>
+							<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+								<input type="radio" name="item_type" value="timed_session" id="type_timed" style="width:auto;" />
+								⏱ Turn Timer (count-up)
+							</label>
+						</div>
+					</div>
+
+					<div id="basic_cost_section">
+						<label for="create_kid_coin_cost">Kid Coin Cost</label>
+						<input id="create_kid_coin_cost" name="kid_coin_cost" type="number" min="1" value="10" />
+						<input type="hidden" name="family_point_cost" value="0" />
+									<label for="create_basic_stock" style="margin-top:8px;">Quantity (-1 for unlimited)</label>
+									<input id="create_basic_stock" name="stock_qty" type="number" min="-1" value="-1" />
+					</div>
+
+					<div id="timed_session_section" hidden>
+						<div class="d-flex flex-column gap-3">
+							<div>
+								<label>Cost Structure</label>
+								<div class="d-flex gap-3 flex-wrap" style="margin-top:6px;">
+									<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+										<input type="radio" name="session_rate_type" value="per_minute" id="rate_per_min" checked style="width:auto;" />
+										Per minute (charged at the start of each minute)
+									</label>
+									<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+										<input type="radio" name="session_rate_type" value="flat" id="rate_flat" style="width:auto;" />
+										Flat cost (charged when turn starts)
+									</label>
+								</div>
+							</div>
+							<div id="flat_cost_section" hidden>
+								<label for="create_session_flat_cost">Flat Cost (coins)</label>
+								<input id="create_session_flat_cost" name="session_flat_cost" type="number" min="0" value="20" />
+							</div>
+							<div id="per_min_cost_section">
+								<label for="create_session_per_min">Coins Per Minute</label>
+								<input id="create_session_per_min" name="session_coin_per_minute" type="number" min="1" value="2" />
+							</div>
+							<input id="create_session_max_participants" name="session_max_participants" type="hidden" value="1" />
+							<input type="hidden" name="kid_coin_cost" value="0" />
+							<div>
+								<label for="create_timed_stock">Quantity (-1 for unlimited)</label>
+								<input id="create_timed_stock" name="stock_qty" type="number" min="-1" value="-1" />
+							</div>
+						</div>
+					</div>
+				{% else %}
+					<div>
+						<label for="create_family_point_cost">Family Point Cost</label>
+						<input id="create_family_point_cost" name="family_point_cost" type="number" min="1" value="1" required />
+						<input type="hidden" name="kid_coin_cost" value="0" />
+						<input type="hidden" name="item_type" value="basic" />
+					</div>
+				{% endif %}
+			</div>
+			<div class="modal-footer d-flex justify-content-end gap-2">
+				<button type="button" class="btn" data-close-create-modal>Cancel</button>
+				<button type="submit" class="btn primary">Create Item</button>
+			</div>
+		</form>
+	</div>
 </div>
 
-<!-- Edit Store Item Modal -->
-<div id="editStoreItemModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit Store Item</h3>
-            <span class="close" onclick="toggleModal('editStoreItemModal')">&times;</span>
-        </div>
-        <form id="editStoreItemForm" method="POST">
-            <div class="form-group mb-3">
-                <label for="edit_item_name">Item Name</label>
-                <input type="text" id="edit_item_name" name="name" required placeholder="e.g., Extra TV time, Ice cream">
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_item_description">Description (optional)</label>
-                <textarea id="edit_item_description" name="description" rows="3"
-                    placeholder="Describe the reward..."></textarea>
-                <small class="help-text">Add details about this reward</small>
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_item_tags">Tags (Optional)</label>
-                <input type="text" id="edit_item_tags" name="tags" placeholder="e.g., treats, screentime, special">
-                <small class="help-text">Separate multiple tags with commas</small>
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_item_coin_cost">Coin Cost</label>
-                <input type="number" id="edit_item_coin_cost" name="coin_cost" min="0" required>
-            </div>
-            <div class="form-group mb-3">
-                <label style="display: flex; align-items: center; gap: var(--space-sm); text-transform: none; cursor: pointer;">
-                    <input type="checkbox" id="edit_is_available" name="is_available" style="width: auto; cursor: pointer;">
-                    <span>Available (visible to kids)</span>
-                </label>
-                <small class="help-text">Uncheck to hide this item from kids</small>
-            </div>
-            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
-                <button type="button" class="btn-secondary" onclick="toggleModal('editStoreItemModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
+<div id="editItemModal" class="modal" aria-hidden="true">
+	<div class="modal-content">
+		<div class="modal-header d-flex justify-content-between align-items-center">
+			<h3>Edit Store Item</h3>
+			<button type="button" class="btn" data-close-edit-modal>Close</button>
+		</div>
+		<form method="post" id="editItemForm" action="" class="d-flex flex-column gap-2">
+			<div class="modal-body d-flex flex-column gap-3">
+				<div>
+					<label for="edit_name">Name</label>
+					<input id="edit_name" name="name" type="text" required />
+				</div>
+				<div>
+					<label for="edit_description">Description</label>
+					<textarea id="edit_description" name="description" rows="2"></textarea>
+				</div>
 
+				<div id="edit_kid_sections">
+					<div class="mb-2">
+						<label>Item Type</label>
+						<div class="d-flex gap-3 flex-wrap" style="margin-top:6px;">
+							<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+								<input type="radio" name="item_type" value="basic" id="edit_type_basic" style="width:auto;" />
+								🛒 Basic (one-time purchase)
+							</label>
+							<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+								<input type="radio" name="item_type" value="timed_session" id="edit_type_timed" style="width:auto;" />
+								⏱ Turn Timer (count-up)
+							</label>
+						</div>
+					</div>
+
+					<div id="edit_basic_cost_section">
+						<label for="edit_kid_coin_cost">Kid Coin Cost</label>
+						<input id="edit_kid_coin_cost" name="kid_coin_cost" type="number" min="1" value="10" />
+						<input type="hidden" name="family_point_cost" value="0" />
+						<label for="edit_basic_stock" style="margin-top:8px;">Quantity (-1 for unlimited)</label>
+						<input id="edit_basic_stock" name="stock_qty" type="number" min="-1" value="-1" />
+					</div>
+
+					<div id="edit_timed_session_section" hidden>
+						<div class="d-flex flex-column gap-3">
+							<div>
+								<label>Cost Structure</label>
+								<div class="d-flex gap-3 flex-wrap" style="margin-top:6px;">
+									<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+										<input type="radio" name="session_rate_type" value="per_minute" id="edit_rate_per_min" style="width:auto;" />
+										Per minute (charged at the start of each minute)
+									</label>
+									<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+										<input type="radio" name="session_rate_type" value="flat" id="edit_rate_flat" style="width:auto;" />
+										Flat cost (charged when turn starts)
+									</label>
+								</div>
+							</div>
+							<div id="edit_flat_cost_section">
+								<label for="edit_session_flat_cost">Flat Cost (coins)</label>
+								<input id="edit_session_flat_cost" name="session_flat_cost" type="number" min="0" value="20" />
+							</div>
+							<div id="edit_per_min_cost_section" hidden>
+								<label for="edit_session_per_min">Coins Per Minute</label>
+								<input id="edit_session_per_min" name="session_coin_per_minute" type="number" min="1" value="2" />
+							</div>
+							<input id="edit_session_max_participants" name="session_max_participants" type="hidden" value="1" />
+							<input type="hidden" name="kid_coin_cost" value="0" />
+							<div>
+								<label for="edit_timed_stock">Quantity (-1 for unlimited)</label>
+								<input id="edit_timed_stock" name="stock_qty" type="number" min="-1" value="-1" />
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div id="edit_family_sections" hidden>
+					<label for="edit_family_point_cost">Family Point Cost</label>
+					<input id="edit_family_point_cost" name="family_point_cost" type="number" min="1" value="1" />
+					<input type="hidden" name="kid_coin_cost" value="0" />
+					<input type="hidden" name="item_type" value="basic" />
+				</div>
+			</div>
+			<div class="modal-footer d-flex justify-content-end gap-2">
+				<button type="button" class="btn" data-close-edit-modal>Cancel</button>
+				<button type="submit" class="btn primary">Save Changes</button>
+			</div>
+		</form>
+	</div>
+</div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/api.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/tabs.js') }}"></script>
 <script>
-    function toggleModal(modalId) {
-        document.getElementById(modalId).classList.toggle('active');
-    }
+document.addEventListener('DOMContentLoaded', function () {
+	const modal = document.getElementById('createItemModal');
+	const openButtons = document.querySelectorAll('[data-open-create-modal]');
+	const closeButtons = document.querySelectorAll('[data-close-create-modal]');
 
-    // Tag filtering system for store items
-    document.addEventListener('DOMContentLoaded', function () {
-        // Setup AJAX for add store item form
-        setupAjaxForm('#addStoreItemModal form', {
-            closeModal: 'addStoreItemModal',
-            onSuccess: () => {
-                location.reload();
-            }
-        });
+	function setSectionDisabled(section, disabled) {
+		if (!section) return;
+		section.querySelectorAll('input, select, textarea').forEach(function (field) {
+			field.disabled = disabled;
+		});
+	}
 
-        // Setup AJAX for edit store item form
-        setupAjaxForm('#editStoreItemForm', {
-            closeModal: 'editStoreItemModal',
-            onSuccess: () => {
-                location.reload();
-            }
-        });
+	// Item type toggle
+	const typeRadios = modal ? modal.querySelectorAll('input[name="item_type"]') : [];
+	const basicSection = document.getElementById('basic_cost_section');
+	const timedSection = document.getElementById('timed_session_section');
 
-        // Handle toggle store item forms
-        document.querySelectorAll('form[action*="toggle-store-item"]').forEach(form => {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
+	// Rate type toggle
+	const rateRadios = modal ? modal.querySelectorAll('input[name="session_rate_type"]') : [];
+	const flatCostSection = document.getElementById('flat_cost_section');
+	const perMinSection = document.getElementById('per_min_cost_section');
 
-                await submitForm(form, {
-                    onSuccess: (data) => {
-                        // Update the button text
-                        const button = form.querySelector('button[type="submit"]');
-                        if (button) {
-                            button.textContent = data.is_available ? '✓ Available' : '👁️ Hidden';
-                            button.className = `status-badge ${data.is_available ? 'active' : 'inactive'}`;
-                            button.title = `Click to ${data.is_available ? 'hide' : 'show'}`;
-                        }
-                    }
-                });
-            });
-        });
+	function syncItemType() {
+		const selected = modal ? modal.querySelector('input[name="item_type"]:checked') : null;
+		if (!selected) return;
+		const isTimed = selected.value === 'timed_session';
+		if (basicSection) basicSection.hidden = isTimed;
+		if (timedSection) timedSection.hidden = !isTimed;
+		setSectionDisabled(basicSection, isTimed);
+		setSectionDisabled(timedSection, !isTimed);
+		syncRateType();
+	}
 
-        // Handle view details buttons
-        document.querySelectorAll('.view-item-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                const itemId = this.dataset.itemId;
-                toggleModal('itemDetailsModal-' + itemId);
-            });
-        });
+	function syncRateType() {
+		const selected = modal ? modal.querySelector('input[name="session_rate_type"]:checked') : null;
+		if (!selected) return;
+		const isFlat = selected.value === 'flat';
+		const selectedType = modal ? modal.querySelector('input[name="item_type"]:checked') : null;
+		const isTimed = selectedType && selectedType.value === 'timed_session';
+		if (flatCostSection) flatCostSection.hidden = !isFlat;
+		if (perMinSection) perMinSection.hidden = isFlat;
+		setSectionDisabled(flatCostSection, !isTimed || !isFlat);
+		setSectionDisabled(perMinSection, !isTimed || isFlat);
+	}
 
-        // Handle edit buttons
-        document.querySelectorAll('.edit-item-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                const itemId = this.dataset.itemId;
-                const name = this.dataset.itemName;
-                const description = this.dataset.itemDescription;
-                const tags = this.dataset.itemTags;
-                const cost = this.dataset.itemCost;
-                const isAvailable = this.dataset.itemAvailable === 'true';
+	typeRadios.forEach(function (r) { r.addEventListener('change', syncItemType); });
+	rateRadios.forEach(function (r) { r.addEventListener('change', syncRateType); });
+	syncItemType();
+	syncRateType();
 
-                // Set form action
-                document.getElementById('editStoreItemForm').action = '/parent/edit-store-item/' + itemId;
+	function openModal() {
+		if (!modal) return;
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+	}
 
-                // Populate form fields
-                document.getElementById('edit_item_name').value = name;
-                document.getElementById('edit_item_description').value = description || '';
-                document.getElementById('edit_item_tags').value = tags || '';
-                document.getElementById('edit_item_coin_cost').value = cost;
-                document.getElementById('edit_is_available').checked = isAvailable;
+	function closeModal() {
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
 
-                // Open modal
-                toggleModal('editStoreItemModal');
-            });
-        });
+	openButtons.forEach(function (button) {
+		button.addEventListener('click', openModal);
+	});
 
-        // Handle delete buttons
-        document.querySelectorAll('.delete-item-btn').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const itemId = this.dataset.itemId;
-                const itemName = this.dataset.itemName;
-                if (confirm('Delete ' + itemName + '? This cannot be undone.')) {
-                    const form = document.getElementById('delete-item-form-' + itemId);
-                    await submitForm(form, {
-                        onSuccess: () => {
-                            // Remove the item card
-                            const itemCard = form.closest('.col-12, .col-md-6');
-                            if (itemCard) {
-                                removeElement(itemCard);
-                            }
-                        }
-                    });
-                }
-            });
-        });
+	closeButtons.forEach(function (button) {
+		button.addEventListener('click', closeModal);
+	});
 
-        const allTags = new Set();
+	if (modal) {
+		modal.addEventListener('click', function (event) {
+			if (event.target === modal) { closeModal(); }
+		});
+	}
 
-        // Collect all unique tags from store items
-        document.querySelectorAll('.store-item').forEach(function (item) {
-            const tags = item.dataset.itemTags;
-            if (tags) {
-                tags.split(',').forEach(function (tag) {
-                    const trimmed = tag.trim();
-                    if (trimmed) {
-                        allTags.add(trimmed);
-                    }
-                });
-            }
-        });
+	// ── Edit modal ──────────────────────────────────────────────────────────
+	const editModal = document.getElementById('editItemModal');
+	const editForm  = document.getElementById('editItemForm');
+	const editOpenButtons  = document.querySelectorAll('[data-open-edit-modal]');
+	const editCloseButtons = document.querySelectorAll('[data-close-edit-modal]');
 
-        // Populate filter buttons if tags exist
-        if (allTags.size > 0) {
-            const tagFilters = document.getElementById('tagFilters');
-            allTags.forEach(function (tag) {
-                const btn = document.createElement('button');
-                btn.className = 'tag-filter-btn';
-                btn.dataset.tag = tag;
-                btn.textContent = '#' + tag;
-                btn.style.cssText = 'padding: 0.375rem 0.75rem; background: var(--bg-light); color: var(--text-primary); border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease;';
-                btn.onclick = function () { filterByTag(tag); };
-                tagFilters.appendChild(btn);
-            });
+	const editKidSections    = document.getElementById('edit_kid_sections');
+	const editFamilySections = document.getElementById('edit_family_sections');
+	const editBasicSection   = document.getElementById('edit_basic_cost_section');
+	const editTimedSection   = document.getElementById('edit_timed_session_section');
+	const editFlatSection    = document.getElementById('edit_flat_cost_section');
+	const editPerMinSection  = document.getElementById('edit_per_min_cost_section');
 
-            // Show filter section
-            document.getElementById('tagFilterSection').style.display = 'block';
-        }
+	function syncEditItemType() {
+		const sel = editModal ? editModal.querySelector('input[name="item_type"]:checked') : null;
+		if (!sel) return;
+		const isTimed = sel.value === 'timed_session';
+		editBasicSection.hidden = isTimed;
+		editTimedSection.hidden = !isTimed;
+		setSectionDisabled(editBasicSection, isTimed);
+		setSectionDisabled(editTimedSection, !isTimed);
+		syncEditRateType();
+	}
 
-        // Filter function
-        window.filterByTag = function (tag) {
-            document.querySelectorAll('.store-item').forEach(function (item) {
-                const tags = item.dataset.itemTags;
-                const col = item.closest('.col-12, .col-md-6');
+	function syncEditRateType() {
+		const sel = editModal ? editModal.querySelector('input[name="session_rate_type"]:checked') : null;
+		if (!sel) return;
+		const selectedType = editModal ? editModal.querySelector('input[name="item_type"]:checked') : null;
+		const isTimed = selectedType && selectedType.value === 'timed_session';
+		editFlatSection.hidden   = sel.value !== 'flat';
+		editPerMinSection.hidden = sel.value !== 'per_minute';
+		setSectionDisabled(editFlatSection, !isTimed || sel.value !== 'flat');
+		setSectionDisabled(editPerMinSection, !isTimed || sel.value !== 'per_minute');
+	}
 
-                if (tag === 'all') {
-                    col.style.display = 'block';
-                } else if (tags && tags.split(',').some(function (t) { return t.trim() === tag; })) {
-                    col.style.display = 'block';
-                } else {
-                    col.style.display = 'none';
-                }
-            });
+	document.querySelectorAll('#editItemModal input[name="item_type"]').forEach(function (r) {
+		r.addEventListener('change', syncEditItemType);
+	});
+	document.querySelectorAll('#editItemModal input[name="session_rate_type"]').forEach(function (r) {
+		r.addEventListener('change', syncEditRateType);
+	});
 
-            // Update active button styling
-            document.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
-                if (btn.dataset.tag === tag) {
-                    btn.classList.add('active');
-                    btn.style.background = 'var(--accent-primary)';
-                    btn.style.color = 'white';
-                } else {
-                    btn.classList.remove('active');
-                    btn.style.background = 'var(--bg-light)';
-                    btn.style.color = 'var(--text-primary)';
-                }
-            });
-        };
+	function openEditModal(btn) {
+		if (!editModal || !editForm) return;
+		var id    = btn.dataset.itemId;
+		var scope = btn.dataset.itemScope;
+		var type  = btn.dataset.itemType;
 
-        // Purchase Fulfillment/Cancellation Forms
-        document.querySelectorAll('form[action*="fulfill-purchase"], form[action*="cancel-purchase"]').forEach(form => {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const purchaseItem = form.closest('.assignment-item');
-                await submitForm(form, {
-                    onSuccess: (data) => {
-                        // Reload to update counts and lists
-                        location.reload();
-                    }
-                });
-            });
-        });
-    });
+		editForm.action = '/parent/store/items/' + id + '/edit';
+
+		document.getElementById('edit_name').value        = btn.dataset.name        || '';
+		document.getElementById('edit_description').value = btn.dataset.description || '';
+
+		// Scope sections
+		editKidSections.hidden    = (scope === 'family');
+		editFamilySections.hidden = (scope !== 'family');
+		setSectionDisabled(editKidSections, scope === 'family');
+		setSectionDisabled(editFamilySections, scope !== 'family');
+
+		if (scope === 'family') {
+			document.getElementById('edit_family_point_cost').value = btn.dataset.familyPointCost || '1';
+		} else {
+			// Set item type radio
+			var typeRadio = editModal.querySelector('input[name="item_type"][value="' + type + '"]');
+			if (typeRadio) typeRadio.checked = true;
+
+			if (type === 'basic') {
+				document.getElementById('edit_kid_coin_cost').value = btn.dataset.kidCoinCost || '10';
+				document.getElementById('edit_basic_stock').value   = btn.dataset.stockQty    || '-1';
+			} else {
+				var rateType  = btn.dataset.sessionRateType || 'per_minute';
+				var rateRadio = editModal.querySelector('input[name="session_rate_type"][value="' + rateType + '"]');
+				if (rateRadio) rateRadio.checked = true;
+
+				document.getElementById('edit_session_flat_cost').value       = btn.dataset.sessionFlatCost       || '0';
+				document.getElementById('edit_session_per_min').value         = btn.dataset.sessionCoinPerMinute  || '0';
+				document.getElementById('edit_session_max_participants').value = btn.dataset.sessionMaxParticipants || '1';
+				document.getElementById('edit_timed_stock').value             = btn.dataset.stockQty              || '-1';
+			}
+			syncEditItemType();
+			syncEditRateType();
+		}
+
+		editModal.classList.add('open');
+		editModal.setAttribute('aria-hidden', 'false');
+	}
+
+	function closeEditModal() {
+		if (!editModal) return;
+		editModal.classList.remove('open');
+		editModal.setAttribute('aria-hidden', 'true');
+	}
+
+	editOpenButtons.forEach(function (btn) {
+		btn.addEventListener('click', function () { openEditModal(btn); });
+	});
+	editCloseButtons.forEach(function (btn) {
+		btn.addEventListener('click', closeEditModal);
+	});
+	if (editModal) {
+		editModal.addEventListener('click', function (e) {
+			if (e.target === editModal) { closeEditModal(); }
+		});
+	}});
 </script>
 {% endblock %}

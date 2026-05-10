@@ -1,539 +1,448 @@
 {% extends "bases/private.html" %}
 
-{% block title %}Manage Chores - Stewardwell{% endblock %}
+{% block title %}Parent Chores - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Chores</h1>
+    <div class="d-flex gap-2 align-items-center">
+        <a href="{{ url_for('public.parent_settings') }}" class="btn">⚙️ Settings</a>
+        <form method="post" action="{{ url_for('public.parent_logout') }}">
+            <button type="submit" class="btn">Logout</button>
+        </form>
+    </div>
+</div>
+{% include 'private/parents/components/navbar.html' %}
+{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>Manage Chores</h1>
-        <p>Create and assign family tasks</p>
-    </div>
+    <style>
+        .chore-collapsible > summary {
+            list-style: none;
+            cursor: pointer;
+        }
 
-    {% include 'private/parents/components/navbar.html' %}
+        .chore-collapsible > summary::-webkit-details-marker {
+            display: none;
+        }
 
-    <!-- Tabs (Desktop) -->
-    <ul class="my-tabs">
-        <li class="my-tab-item">
-            <a href="#setup-tab" class="my-tab-link active" data-my-target="#setup-tab">Setup Chores</a>
-        </li>
-        <li class="my-tab-item">
-            <a href="#active-tab" class="my-tab-link" data-my-target="#active-tab">Active Chores ({{ active_assignments|length }})</a>
-        </li>
-        <li class="my-tab-item">
-            <a href="#pending-tab" class="my-tab-link" data-my-target="#pending-tab">Pending Approval ({{ pending_assignments|length }})</a>
-        </li>
-    </ul>
+        .chore-collapsible[open] > summary .toggle-label::after {
+            content: "Hide";
+        }
 
-    <!-- Dropdown (Mobile) -->
-    <div class="my-tabs-dropdown">
-        <select>
-            <option value="#setup-tab">Setup Chores</option>
-            <option value="#active-tab">Active Chores ({{ active_assignments|length }})</option>
-            <option value="#pending-tab">Pending Approval ({{ pending_assignments|length }})</option>
-        </select>
-    </div>
+        .chore-collapsible:not([open]) > summary .toggle-label::after {
+            content: "Show";
+        }
+    </style>
 
-    <div class="my-tab-content">
-        <!-- Setup Chores Tab -->
-        <div id="setup-tab" class="my-tab-pane active">
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>All Chores</h2>
-                <button onclick="toggleModal('createChoreModal')">+ Create Chore</button>
+    <section class="dashboard-grid">
+        <div class="row g-3">
+            <div class="col-12 col-md-6 col-lg-4">
+                <article class="dashboard-card">
+                    <div class="card-body">
+                        <div class="metric-label">Total chores</div>
+                        <div class="metric-value">{{ chores|length }}</div>
+                        <p class="muted" style="margin-top:6px;">Includes both scheduled and unscheduled chores.</p>
+                    </div>
+                </article>
             </div>
-            <div class="card-body">
-                {% if chores %}
-                <!-- Tag Filter -->
-                <div id="tagFilterSection" style="margin-bottom: var(--space-lg); display: none;">
-                    <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
-                        <strong style="color: var(--text-primary);">Filter by tag:</strong>
-                        <button class="tag-filter-btn active" data-tag="all" onclick="filterByTag('all')"
-                            style="padding: 0.375rem 0.75rem; background: var(--accent-primary); color: white; border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8125rem; box-shadow: var(--shadow-sm) var(--shadow-sm) 0 var(--accent-dark); transition: all 0.2s;">
-                            All
-                        </button>
-                        <div id="tagFilters" style="display: flex; gap: var(--space-sm); flex-wrap: wrap;"></div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <article class="dashboard-card">
+                    <div class="card-body">
+                        <div class="metric-label">Kids in family</div>
+                        <div class="metric-value">{{ kids|length }}</div>
+                        <p class="muted" style="margin-top:6px;">Chores will be assignable per kid in next step.</p>
                     </div>
-                </div>
-                <div class="row g-3">
-                    {% for chore in chores %}
-                    <div class="col-12 col-md-6 col-lg-4">
-                        {% include 'private/parents/chores/components/chore_item.html' %}
+                </article>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <article class="dashboard-card">
+                    <div class="card-body">
+                        <div class="metric-label">Family points value</div>
+                        <div class="metric-value">{{ total_family_points }}</div>
+                        <p class="muted" style="margin-top:6px;">Points available from active chores toward family goals.</p>
                     </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state text-center">
-                    <p style="font-size: 1.1rem; color: var(--text-muted, #666);">No chores created yet</p>
-                    <button class="btn-primary" onclick="toggleModal('createChoreModal')" style="margin-top: 1.5rem;">
-                        + Create First Chore
-                    </button>
-                </div>
-                {% endif %}
+                </article>
             </div>
         </div>
-        </div>
+    </section>
 
-        <!-- Active Chores Tab -->
-        <div id="active-tab" class="my-tab-pane">
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>Active Chore Assignments</h2>
-            </div>
-            <div class="card-body">
-                {% if active_assignments %}
-                    <div class="row g-3">
-                        {% for assignment in active_assignments %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="assignment-item">
-                                <div class="assignment-info">
-                                    <strong>{{ assignment.kid.name }}</strong> - <strong>{{ assignment.chore.name }}</strong>
-                                    {% if assignment.chore.description %}
-                                        <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">{{ assignment.chore.description }}</p>
-                                    {% endif %}
-                                    <span class="timestamp">Assigned {{ assignment.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                                    <div class="coin-badge" style="margin-top: 0.5rem;">{{ assignment.chore.coin_value }} coins</div>
+    <section class="dashboard-grid">
+        <article class="dashboard-card full-width">
+            <details class="chore-collapsible">
+                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
+                    <h2>Pending Chore Approvals</h2>
+                    <span class="pill">{{ pending_submissions|length }} pending</span>
+                </summary>
+                <div class="card-body">
+                    {% if pending_submissions %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for submission in pending_submissions %}
+                                <div class="store-item">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div>
+                                            <strong>{{ submission.chore.name }}</strong>
+                                            <div class="muted">Submitted by {{ submission.kid.display_name }} on {{ submission.submitted_at.strftime('%b %d, %Y %I:%M %p') if submission.submitted_at else '—' }}</div>
+                                        </div>
+                                        <span class="status-badge active">SUBMITTED</span>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        {% if submission.before_photo_path %}
+                                            <a class="btn" target="_blank" rel="noopener" href="{{ url_for('public.parent_view_chore_submission_photo', submission_id=submission.id, photo_type='before') }}">View Before Photo</a>
+                                        {% else %}
+                                            <span class="pill">No before photo</span>
+                                        {% endif %}
+
+                                        {% if submission.after_photo_path %}
+                                            <a class="btn" target="_blank" rel="noopener" href="{{ url_for('public.parent_view_chore_submission_photo', submission_id=submission.id, photo_type='after') }}">View After Photo</a>
+                                        {% else %}
+                                            <span class="pill">No after photo</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <form method="post" action="{{ url_for('public.parent_chore_submission_decision', submission_id=submission.id) }}" class="d-flex flex-wrap gap-2 mt-2 align-items-end">
+                                        <div style="flex:1; min-width:220px;">
+                                            <label for="resolution-note-{{ submission.id }}">Note (optional)</label>
+                                            <input id="resolution-note-{{ submission.id }}" name="resolution_note" type="text" placeholder="Great work, but next time tighten corners." />
+                                        </div>
+                                        <button type="submit" name="action" value="approve" class="btn primary">Approve</button>
+                                        <button type="submit" name="action" value="reject" class="btn-danger">Reject</button>
+                                    </form>
                                 </div>
-                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="empty-state">No active chore assignments</p>
-                {% endif %}
-            </div>
-        </div>
-        </div>
+                    {% else %}
+                        <div class="empty-state">No submissions are waiting for approval.</div>
+                    {% endif %}
+                </div>
+            </details>
+        </article>
+    </section>
 
-        <!-- Pending Approval Tab -->
-        <div id="pending-tab" class="my-tab-pane">
-        <div class="dashboard-card full-width">
-            <div class="card-header">
-                <h2>Pending Chore Approvals</h2>
-            </div>
-            <div class="card-body">
-                {% if pending_assignments %}
-                    <div class="row g-3">
-                        {% for assignment in pending_assignments %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                        <div class="assignment-item">
-                            <div class="assignment-info">
-                                <strong>{{ assignment.kid.name }}</strong> completed 
-                                <strong>{{ assignment.chore.name }}</strong>
-                                <span class="timestamp">{{ assignment.completed_at.strftime('%Y-%m-%d %H:%M') if assignment.completed_at else 'Just now' }}</span>
-                            </div>
-                            <div class="assignment-actions">
-                                <form method="POST" action="{{ url_for('parent.confirm_chore', assignment_id=assignment.id) }}" class="inline-form">
-                                    <input type="hidden" name="coin_adjustment" value="{{ assignment.chore.coin_value }}">
-                                    <button type="submit" class="btn-success">
-                                        ✓ Approve (+{{ assignment.chore.coin_value }} coins)
-                                    </button>
-                                </form>
-                                <button type="button" class="btn-primary" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">
-                                    ⚖️ Adjust & Approve
-                                </button>
-                                <button type="button" class="btn-danger" onclick="toggleModal('rejectModal{{ assignment.id }}')">
-                                    ✗ Reject
-                                </button>
-                            </div>
-                        </div>
-                        </div>
-                        {% endfor %}
+    <section class="dashboard-grid">
+        <article class="dashboard-card full-width">
+            <details class="chore-collapsible">
+                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
+                    <h2>Saved Chores</h2>
+                    <span class="pill toggle-label"></span>
+                </summary>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap" style="margin-bottom:12px;">
+                        <button id="open-create-chore-modal" class="btn primary" type="button">Create chore</button>
                     </div>
-                {% else %}
-                    <p class="empty-state">No pending chores</p>
-                {% endif %}
-            </div>
-        </div>
-        </div>
-    </div>
+                    <div style="min-width: 220px; margin-bottom:12px;">
+                        <label for="chore-category-filter">Filter by category</label>
+                        <select id="chore-category-filter">
+                            <option value="all">All categories</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if chores %}
+                        <div class="chore-square-grid">
+                            {% for chore in chores %}
+                                {% set category_ids_csv = chore.categories | map(attribute='id') | join(',') %}
+                                <div class="chore-item chore-square-card" data-category-ids="{{ category_ids_csv }}">
+                                    <div class="d-flex flex-column gap-2">
+                                        <strong>{{ chore.name }}</strong>
+                                        {% if chore.description %}
+                                            <span class="muted">{{ chore.description }}</span>
+                                        {% endif %}
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <span class="coin-badge">🪙 {{ chore.coin_reward }}</span>
+                                            <span class="point-badge">⭐ {{ chore.point_value }}</span>
+                                            <span class="status-badge {% if not chore.is_active %}inactive{% else %}active{% endif %}">
+                                                {% if chore.is_active %}Active{% else %}Paused{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap mt-auto">
+                                        <a class="btn" href="{{ url_for('public.parent_edit_chore', chore_id=chore.id) }}">Edit</a>
+                                        <form method="post" action="{{ url_for('public.parent_reset_chore_day', chore_id=chore.id) }}">
+                                            <button type="submit" class="btn">Reset Today</button>
+                                        </form>
+                                        <form method="post" action="{{ url_for('public.parent_toggle_chore', chore_id=chore.id) }}">
+                                            <button type="submit" class="{% if chore.is_active %}btn-danger{% else %}btn{% endif %}">
+                                                {% if chore.is_active %}Pause{% else %}Reactivate{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div id="chore-filter-empty" class="empty-state" style="margin-top:12px;" hidden>
+                            No chores match this category filter.
+                        </div>
+                    {% else %}
+                        <div class="empty-state">No chores yet. Create your first chore above.</div>
+                    {% endif %}
+                </div>
+            </details>
+        </article>
+    </section>
 </div>
 
-<!-- Adjust & Approve Modals -->
-{% for assignment in pending_assignments %}
-<div id="adjustApproveModal{{ assignment.id }}" class="modal">
+<div id="create-chore-modal" class="modal" aria-hidden="true">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3>Adjust Coins & Approve</h3>
-            <span class="close" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">&times;</span>
-        </div>
-        <form method="POST" action="{{ url_for('parent.confirm_chore', assignment_id=assignment.id) }}" data-assignment-id="{{ assignment.id }}">
-            <div class="form-group">
-                <label for="coin_adjustment_{{ assignment.id }}">Coin Amount</label>
-                <input type="number" id="coin_adjustment_{{ assignment.id }}" name="coin_adjustment" 
-                       value="{{ assignment.chore.coin_value }}" min="0" required placeholder="Enter coin amount">
-                <small style="color: #666; font-size: 0.85em;">Original value: {{ assignment.chore.coin_value }} coins</small>
-            </div>
-            <div class="form-group">
-                <strong>Kid:</strong> {{ assignment.kid.name }}<br>
-                <strong>Chore:</strong> {{ assignment.chore.name }}
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="toggleModal('adjustApproveModal{{ assignment.id }}')">Cancel</button>
-                <button type="submit" class="btn-success">✓ Approve with Adjusted Amount</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="rejectModal{{ assignment.id }}" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Reject Chore</h3>
-            <span class="close" onclick="toggleModal('rejectModal{{ assignment.id }}')">&times;</span>
-        </div>
-        <div class="form-group">
-            <strong>Kid:</strong> {{ assignment.kid.name }}<br>
-            <strong>Chore:</strong> {{ assignment.chore.name }}<br>
-            <strong>Current Value:</strong> {{ assignment.chore.coin_value }} coins
-        </div>
-        <div class="form-group">
-            <label style="display: block; margin-bottom: 15px;">
-                <strong>What would you like to do?</strong>
-            </label>
-            
-            <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" data-assignment-id="{{ assignment.id }}" class="reject-form-cancel" style="margin-bottom: 15px;">
-                <input type="hidden" name="reject_action" value="cancel">
-                <button type="submit" class="btn btn-danger" style="width: 100%;">
-                    ✗ Cancel Chore Completely
-                </button>
-            </form>
-            
-            <div style="border-top: 1px solid #ddd; padding-top: 15px;">
-                <form method="POST" action="{{ url_for('parent.reject_chore', assignment_id=assignment.id) }}" data-assignment-id="{{ assignment.id }}" class="reject-form-redo">
-                    <input type="hidden" name="reject_action" value="redo">
-                    <div class="form-group">
-                        <label for="new_coin_value_{{ assignment.id }}">Adjust Coins & Send Back for Redo</label>
-                        <input type="number" id="new_coin_value_{{ assignment.id }}" name="new_coin_value" 
-                               value="{{ assignment.chore.coin_value }}" min="0" required placeholder="New coin amount">
-                        <small style="color: #666; font-size: 0.85em;">They'll need to redo it for this amount</small>
-                    </div>
-                    <button type="submit" class="btn btn-warning" style="width: 100%;">
-                        ↩️ Send Back for Redo
-                    </button>
-                </form> 
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="toggleModal('rejectModal{{ assignment.id }}')">Cancel</button>
-        </div>
-    </div>
-</div>
-{% endfor %}
-
-<!-- Create Chore Modal -->
-<div id="createChoreModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header d-flex justify-content-between align-items-center">
             <h3>Create Chore</h3>
-            <span class="close" onclick="toggleModal('createChoreModal')">&times;</span>
+            <button id="close-create-chore-modal" class="btn" type="button">Close</button>
         </div>
-        <form method="POST" action="{{ url_for('parent.create_chore') }}">
-            <div class="form-group mb-3">
-                <label for="chore_name">Chore Name</label>
-                <input type="text" id="chore_name" name="name" required placeholder="e.g., Clean room">
-            </div>
-            <div class="form-group mb-3">
-                <label for="chore_description">Description (Optional)</label>
-                <textarea id="chore_description" name="description" rows="3"
-                    placeholder="Add details about what needs to be done..."
-                    style="resize: vertical; min-height: 4rem;"></textarea>
-            </div>
-            <div class="form-group mb-3">
-                <label for="chore_tags">Tags (Optional)</label>
-                <input type="text" id="chore_tags" name="tags" placeholder="e.g., cleaning, outdoor, weekly">
-                <small class="help-text">Separate multiple tags with commas</small>
-            </div>
-            <div class="form-group mb-3">
-                <label for="coin_value">Coin Value</label>
-                <input type="number" id="coin_value" name="coin_value" min="0" value="10" required>
-            </div>
-            <div class="form-group mb-3">
-                <label for="point_value">Point Value</label>
-                <input type="number" id="point_value" name="point_value" min="0" value="1" required>
-            </div>
-            <div class="form-group mb-3">
-                <label for="frequency">Frequency</label>
-                <select id="frequency" name="frequency" required>
-                    <option value="unlimited">Unlimited (anytime)</option>
-                    <option value="daily">Daily (once per day)</option>
-                    <option value="weekly">Weekly (once per week)</option>
-                    <option value="monthly">Monthly (once per month)</option>
-                    <option value="one_time">One Time Only</option>
-                </select>
-                <small class="help-text">How often can this chore be done?</small>
-            </div>
-            <div class="form-group mb-3">
-                <label
-                    style="display: flex; align-items: center; gap: var(--space-sm); text-transform: none; cursor: pointer;">
-                    <input type="checkbox" id="is_active" name="is_active" checked
-                        style="width: auto; cursor: pointer;">
-                    <span>Active (visible to kids)</span>
-                </label>
-                <small class="help-text">Uncheck to hide this chore from kids</small>
-            </div>
-            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
-                <button type="button" class="btn-secondary" onclick="toggleModal('createChoreModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Create Chore</button>
-            </div>
-        </form>
-    </div>
-</div>
+        <div class="modal-body">
+            <form method="post" action="{{ url_for('public.parent_create_chore') }}" class="d-flex flex-column gap-3">
+                    <input type="hidden" id="schedule_kind_fallback" name="schedule_kind" value="unscheduled" />
 
-<!-- Edit Chore Modal -->
-<div id="editChoreModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit Chore</h3>
-            <span class="close" onclick="toggleModal('editChoreModal')">&times;</span>
+                    <div class="row g-3" style="grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end;">
+                        <div class="col-12">
+                            <label for="name">Chore name</label>
+                            <input id="name" name="name" type="text" placeholder="Clean room" required />
+                        </div>
+                        <div class="col-12">
+                            <label for="coin_reward">Coin reward</label>
+                            <input id="coin_reward" name="coin_reward" type="number" min="0" value="5" required />
+                        </div>
+                        <div class="col-12">
+                            <label for="point_value">Point value</label>
+                            <input id="point_value" name="point_value" type="number" min="0" value="10" required />
+                        </div>
+                        <div class="col-12">
+                            <label for="max_concurrent_claims">Kids at same time</label>
+                            <input id="max_concurrent_claims" name="max_concurrent_claims" type="number" min="1" value="1" required />
+                        </div>
+                        <div class="col-12">
+                            <label>Scheduling</label>
+                            <button id="toggle-schedule-builder" class="btn" type="button" aria-expanded="false" aria-controls="schedule-builder">
+                                Add schedule
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" placeholder="Optional notes for the family"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label style="display:flex; align-items:center; gap:8px; width:fit-content;">
+                            <input name="requires_photo_proof" type="checkbox" style="width:auto;" checked />
+                            Require before and after photos for approval
+                        </label>
+                    </div>
+
+                    <div class="panel" style="padding:14px;">
+                        <h3 style="font-size:1.05rem;">Categories</h3>
+                        <p class="muted" style="margin:6px 0 10px;">Pick existing categories and/or add new ones (comma separated).</p>
+
+                        {% if categories %}
+                            <div class="d-flex flex-wrap gap-2" style="margin-bottom:10px;">
+                                {% for category in categories %}
+                                    <label class="pill" style="cursor:pointer;">
+                                        <input type="checkbox" name="category_ids" value="{{ category.id }}" style="width:auto; margin-right:6px;" />
+                                        {{ category.name }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="muted" style="margin-bottom:10px;">No categories yet. Add your first below.</div>
+                        {% endif %}
+
+                        <div>
+                            <label for="new_category_name">Add new category</label>
+                            <input id="new_category_name" name="new_category_name" type="text" placeholder="House, Outside" />
+                        </div>
+                    </div>
+
+                    <div id="schedule-builder" class="panel" style="padding:14px;" hidden>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <h3 style="font-size:1.1rem;">Schedule Setup</h3>
+                                <p class="muted" style="margin-top:4px;">Leave schedule slots empty for unscheduled chores. For alternating chores, Week A and Week B swap each cycle.</p>
+                            </div>
+                            <div style="min-width: 220px;">
+                                <label for="schedule_kind">Schedule type</label>
+                                <select id="schedule_kind" name="schedule_kind" data-schedule-field disabled>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="alternating">Alternating weeks</option>
+                                </select>
+                            </div>
+                            <div style="min-width: 220px;">
+                                <label for="anchor_date">Start week date</label>
+                                <input id="anchor_date" name="anchor_date" type="date" data-schedule-field disabled />
+                            </div>
+                        </div>
+
+                        <div class="row g-3" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                            <div class="col-12">
+                                <article class="metric-card">
+                                    <div class="metric-label">Week A</div>
+                                    <div class="d-flex flex-column gap-2" style="margin-top:10px;">
+                                        {% for label in weekday_labels %}
+                                            <div>
+                                                <label for="week0_day_{{ loop.index0 }}">{{ label }}</label>
+                                                <select id="week0_day_{{ loop.index0 }}" name="week0_day_{{ loop.index0 }}" data-schedule-field disabled>
+                                                    <option value="">Unassigned</option>
+                                                    {% for kid in kids %}
+                                                        <option value="{{ kid.id }}">{{ kid.display_name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </article>
+                            </div>
+                            <div id="week-b-panel" class="col-12" hidden>
+                                <article class="metric-card">
+                                    <div class="metric-label">Week B</div>
+                                    <div class="d-flex flex-column gap-2" style="margin-top:10px;">
+                                        {% for label in weekday_labels %}
+                                            <div>
+                                                <label for="week1_day_{{ loop.index0 }}">{{ label }}</label>
+                                                <select id="week1_day_{{ loop.index0 }}" name="week1_day_{{ loop.index0 }}" data-schedule-field disabled>
+                                                    <option value="">Unassigned</option>
+                                                    {% for kid in kids %}
+                                                        <option value="{{ kid.id }}">{{ kid.display_name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <button class="btn primary" type="submit">Create Chore</button>
+                    </div>
+                </form>
         </div>
-        <form id="editChoreForm" method="POST">
-            <div class="form-group mb-3">
-                <label for="edit_chore_name">Chore Name</label>
-                <input type="text" id="edit_chore_name" name="name" required placeholder="e.g., Clean room">
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_chore_description">Description (Optional)</label>
-                <textarea id="edit_chore_description" name="description" rows="3"
-                    placeholder="Add details about what needs to be done..."
-                    style="resize: vertical; min-height: 4rem;"></textarea>
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_chore_tags">Tags (Optional)</label>
-                <input type="text" id="edit_chore_tags" name="tags" placeholder="e.g., cleaning, outdoor, weekly">
-                <small class="help-text">Separate multiple tags with commas</small>
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_coin_value">Coin Value</label>
-                <input type="number" id="edit_coin_value" name="coin_value" min="0" required>
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_point_value">Point Value</label>
-                <input type="number" id="edit_point_value" name="point_value" min="0" required>
-            </div>
-            <div class="form-group mb-3">
-                <label for="edit_frequency">Frequency</label>
-                <select id="edit_frequency" name="frequency" required>
-                    <option value="unlimited">Unlimited (anytime)</option>
-                    <option value="daily">Daily (once per day)</option>
-                    <option value="weekly">Weekly (once per week)</option>
-                    <option value="monthly">Monthly (once per month)</option>
-                    <option value="one_time">One Time Only</option>
-                </select>
-                <small class="help-text">How often can this chore be done?</small>
-            </div>
-            <div class="form-group mb-3">
-                <label
-                    style="display: flex; align-items: center; gap: var(--space-sm); text-transform: none; cursor: pointer;">
-                    <input type="checkbox" id="edit_is_active" name="is_active" style="width: auto; cursor: pointer;">
-                    <span>Active (visible to kids)</span>
-                </label>
-                <small class="help-text">Uncheck to hide this chore from kids</small>
-            </div>
-            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-end">
-                <button type="button" class="btn-secondary" onclick="toggleModal('editChoreModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Save Changes</button>
-            </div>
-        </form>
     </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/api.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/tabs.js') }}"></script>
 <script>
-    function toggleModal(modalId) {
-        document.getElementById(modalId).classList.toggle('active');
+document.addEventListener('DOMContentLoaded', function () {
+    const createModal = document.getElementById('create-chore-modal');
+    const openCreateModalButton = document.getElementById('open-create-chore-modal');
+    const closeCreateModalButton = document.getElementById('close-create-chore-modal');
+    const toggleButton = document.getElementById('toggle-schedule-builder');
+    const scheduleBuilder = document.getElementById('schedule-builder');
+    const fallbackField = document.getElementById('schedule_kind_fallback');
+    const scheduleFields = Array.from(document.querySelectorAll('[data-schedule-field]'));
+    const scheduleKindSelect = document.getElementById('schedule_kind');
+    const weekBPanel = document.getElementById('week-b-panel');
+    const weekBFields = Array.from(document.querySelectorAll('[id^="week1_day_"]'));
+    const categoryFilter = document.getElementById('chore-category-filter');
+    const choreCards = Array.from(document.querySelectorAll('.chore-square-card'));
+    const choreFilterEmpty = document.getElementById('chore-filter-empty');
+
+    function openCreateModal() {
+        createModal.classList.add('open');
+        createModal.setAttribute('aria-hidden', 'false');
     }
 
-    // Edit chore buttons - use event delegation
-    document.addEventListener('DOMContentLoaded', function () {
-        // Setup AJAX for create chore form
-        setupAjaxForm('#createChoreModal form', {
-            closeModal: 'createChoreModal',
-            onSuccess: () => {
-                location.reload();
-            }
-        });
-        
-        // Setup AJAX for edit chore form
-        setupAjaxForm('#editChoreForm', {
-            closeModal: 'editChoreModal',
-            onSuccess: () => {
-                location.reload();
-            }
-        });
-        
-        // Handle toggle chore forms (in cards and modals)
-        document.querySelectorAll('form[action*="toggle-chore"]').forEach(form => {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                await submitForm(form, {
-                    onSuccess: (data) => {
-                        // Update the button text
-                        const button = form.querySelector('button[type="submit"]');
-                        if (button) {
-                            button.textContent = data.is_active ? '✓ Active' : '👁️ Hidden';
-                            button.className = `status-badge ${data.is_active ? 'active' : 'inactive'}`;
-                            button.title = `Click to ${data.is_active ? 'hide' : 'show'}`;
-                        }
-                    }
-                });
-            });
-        });
-        
-        // Handle delete buttons
-        document.querySelectorAll('.delete-chore-btn').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const choreId = this.dataset.choreId;
-                const choreName = this.dataset.choreName;
-                if (confirm('Delete ' + choreName + '? This cannot be undone.')) {
-                    const form = document.getElementById('delete-form-' + choreId);
-                    await submitForm(form, {
-                        onSuccess: () => {
-                            // Remove the chore card
-                            const choreCard = form.closest('.col-12, .col-md-6');
-                            if (choreCard) {
-                                removeElement(choreCard);
-                            }
-                        }
-                    });
-                }
-            });
-        });
-        
-        // Handle edit buttons
-        document.querySelectorAll('.edit-chore-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                const choreId = this.dataset.choreId;
-                const name = this.dataset.choreName;
-                const description = this.dataset.choreDescription;
-                const tags = this.dataset.choreTags;
-                const coinValue = this.dataset.choreCoin;
-                const pointValue = this.dataset.chorePoint;
-                const frequency = this.dataset.choreFrequency;
-                const isActive = this.dataset.choreActive === 'true';
+    function closeCreateModal() {
+        createModal.classList.remove('open');
+        createModal.setAttribute('aria-hidden', 'true');
+    }
 
-                // Set form action
-                document.getElementById('editChoreForm').action = '/parent/edit-chore/' + choreId;
-
-                // Populate form fields
-                document.getElementById('edit_chore_name').value = name;
-                document.getElementById('edit_chore_description').value = description || '';
-                document.getElementById('edit_chore_tags').value = tags || '';
-                document.getElementById('edit_coin_value').value = coinValue;
-                document.getElementById('edit_point_value').value = pointValue;
-                document.getElementById('edit_frequency').value = frequency;
-                document.getElementById('edit_is_active').checked = isActive;
-
-                // Open modal
-                toggleModal('editChoreModal');
-            });
-        });
-
-        // Handle view details buttons
-        document.querySelectorAll('.view-chore-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                const choreId = this.dataset.choreId;
-                toggleModal('choreDetailsModal-' + choreId);
-            });
-        });
-
-        // Tag filtering system
-        const allTags = new Set();
-
-        // Collect all unique tags from chores
-        document.querySelectorAll('.chore-item').forEach(function (item) {
-            const tags = item.dataset.choreTags;
-            if (tags) {
-                tags.split(',').forEach(function (tag) {
-                    const trimmed = tag.trim();
-                    if (trimmed) {
-                        allTags.add(trimmed);
-                    }
-                });
-            }
-        });
-
-        // Populate filter buttons if tags exist
-        if (allTags.size > 0) {
-            const tagFilters = document.getElementById('tagFilters');
-            allTags.forEach(function (tag) {
-                const btn = document.createElement('button');
-                btn.className = 'tag-filter-btn';
-                btn.dataset.tag = tag;
-                btn.textContent = '#' + tag;
-                btn.style.cssText = 'padding: 0.375rem 0.75rem; background: var(--bg-light); color: var(--text-primary); border: var(--border-sm) solid var(--accent-dark); font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease;';
-                btn.onclick = function () { filterByTag(tag); };
-                tagFilters.appendChild(btn);
-            });
-
-            // Show filter section
-            document.getElementById('tagFilterSection').style.display = 'block';
+    function applyCategoryFilter() {
+        if (!categoryFilter) {
+            return;
         }
 
-        // Filter function
-        window.filterByTag = function (tag) {
-            document.querySelectorAll('.chore-item').forEach(function (item) {
-                const tags = item.dataset.choreTags;
-                const col = item.closest('.col-12, .col-md-6');
+        const selectedCategory = (categoryFilter.value || '').trim();
+        let visibleCount = 0;
 
-                if (tag === 'all') {
-                    col.style.display = 'block';
-                } else if (tags && tags.split(',').some(function (t) { return t.trim() === tag; })) {
-                    col.style.display = 'block';
-                } else {
-                    col.style.display = 'none';
+        choreCards.forEach(function (card) {
+            const categoryIds = (card.dataset.categoryIds || '')
+                .split(',')
+                .map(function (id) { return id.trim(); })
+                .filter(Boolean);
+            const isVisible = selectedCategory === 'all' || categoryIds.includes(selectedCategory);
+            card.hidden = !isVisible;
+            card.style.display = isVisible ? '' : 'none';
+            if (isVisible) {
+                visibleCount += 1;
+            }
+        });
+
+        if (choreFilterEmpty) {
+            choreFilterEmpty.hidden = visibleCount > 0;
+        }
+    }
+
+    function syncWeekBVisibility() {
+        const showWeekB = !scheduleBuilder.hidden && scheduleKindSelect.value === 'alternating';
+        weekBPanel.hidden = !showWeekB;
+        weekBFields.forEach(function (field) {
+            field.disabled = !showWeekB;
+        });
+    }
+
+    function setScheduleEnabled(enabled) {
+        scheduleBuilder.hidden = !enabled;
+        toggleButton.setAttribute('aria-expanded', String(enabled));
+        toggleButton.textContent = enabled ? 'Remove schedule' : 'Add schedule';
+        fallbackField.disabled = enabled;
+
+        scheduleFields.forEach(function (field) {
+            field.disabled = !enabled;
+        });
+
+        syncWeekBVisibility();
+    }
+
+    toggleButton.addEventListener('click', function () {
+        setScheduleEnabled(scheduleBuilder.hidden);
+    });
+
+    if (openCreateModalButton) {
+        openCreateModalButton.addEventListener('click', openCreateModal);
+    }
+
+    if (closeCreateModalButton) {
+        closeCreateModalButton.addEventListener('click', closeCreateModal);
+    }
+
+    if (createModal) {
+        createModal.addEventListener('click', function (event) {
+            if (event.target === createModal) {
+                closeCreateModal();
+            }
+        });
+    }
+
+    if (scheduleKindSelect) {
+        scheduleKindSelect.addEventListener('change', syncWeekBVisibility);
+    }
+
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', applyCategoryFilter);
+        applyCategoryFilter();
+    }
+
+    const collapsibleSections = Array.from(document.querySelectorAll('.chore-collapsible'));
+    collapsibleSections.forEach(function (section) {
+        section.addEventListener('toggle', function () {
+            if (!section.open) {
+                return;
+            }
+
+            collapsibleSections.forEach(function (otherSection) {
+                if (otherSection !== section) {
+                    otherSection.open = false;
                 }
-            });
-
-            // Update active button styling
-            document.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
-                if (btn.dataset.tag === tag) {
-                    btn.classList.add('active');
-                    btn.style.background = 'var(--accent-primary)';
-                    btn.style.color = 'white';
-                } else {
-                    btn.classList.remove('active');
-                    btn.style.background = 'var(--bg-light)';
-                    btn.style.color = 'var(--text-primary)';
-                }
-            });
-        };
-
-        // Chore Approval/Rejection Forms
-        document.querySelectorAll('form[action*="confirm-chore"], form[action*="reject-chore"]').forEach(form => {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const assignmentId = form.getAttribute('data-assignment-id');
-                const assignment = form.closest('.assignment-item');
-                
-                await submitForm(form, {
-                    onSuccess: (data) => {
-                        // Close modal if this was from a modal form
-                        if (assignmentId) {
-                            let modalId = 'adjustApproveModal' + assignmentId;
-                            let modal = document.getElementById(modalId);
-                            if (modal && modal.classList.contains('active')) {
-                                modal.classList.remove('active');
-                            }
-                            
-                            modalId = 'rejectModal' + assignmentId;
-                            modal = document.getElementById(modalId);
-                            if (modal && modal.classList.contains('active')) {
-                                modal.classList.remove('active');
-                            }
-                        }
-                        
-                        // Reload to update counts and lists
-                        location.reload();
-                    }
-                });
             });
         });
     });
+
+    setScheduleEnabled(false);
+});
 </script>
 {% endblock %}

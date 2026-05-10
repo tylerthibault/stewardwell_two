@@ -1,0 +1,375 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Settings - Stewardwell{% endblock %}
+
+{% block nav %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">⚙️ Settings</h1>
+    <form method="post" action="{{ url_for('public.parent_logout') }}">
+        <button type="submit" class="btn">Logout</button>
+    </form>
+</div>
+{% include 'private/parents/components/navbar.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <style>
+        .settings-collapsible > summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .settings-collapsible > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .settings-collapsible[open] > summary .toggle-label::after {
+            content: "Hide";
+        }
+
+        .settings-collapsible:not([open]) > summary .toggle-label::after {
+            content: "Show";
+        }
+    </style>
+
+    {# ── Profile ──────────────────────────────────────────────────────────── #}
+    <section class="dashboard-grid">
+        <article class="dashboard-card full-width">
+            <details class="settings-collapsible">
+                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2>Your Profile</h2>
+                        <p class="muted" style="margin-top:2px;">Update your name, email, or password. Your current password is required to save any change.</p>
+                    </div>
+                    <span class="pill toggle-label"></span>
+                </summary>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('public.parent_update_profile') }}" class="d-flex flex-column gap-3">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="profile-name">Full name</label>
+                                <input id="profile-name" name="name" type="text" value="{{ parent.name }}" required />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="profile-email">Email</label>
+                                <input id="profile-email" name="email" type="email" value="{{ parent.email }}" required />
+                            </div>
+                        </div>
+
+                        <hr style="border:none; border-top:1px solid var(--duo-border); margin:4px 0;">
+
+                        <p class="muted" style="font-size:13px; margin:0;">Leave <em>New password</em> blank to keep your current password.</p>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label for="current-password">Current password <span style="color:var(--duo-danger,#e53935);">*</span></label>
+                                <input id="current-password" name="current_password" type="password" placeholder="Required to save" required />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="new-password">New password</label>
+                                <input id="new-password" name="new_password" type="password" placeholder="Leave blank to keep" minlength="8" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="confirm-new-password">Confirm new password</label>
+                                <input id="confirm-new-password" name="confirm_new_password" type="password" placeholder="Repeat new password" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit" class="btn btn-primary">Save Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </details>
+        </article>
+    </section>
+
+    {# ── Kids ─────────────────────────────────────────────────────────────── #}
+    <section class="dashboard-grid">
+        <article class="dashboard-card full-width">
+            <details class="settings-collapsible">
+                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2>Kids</h2>
+                        <p class="muted" style="margin-top:2px;">Add kids, update their profile/PIN, and manage kid + family balances.</p>
+                    </div>
+                    <span class="pill toggle-label"></span>
+                </summary>
+                <div class="card-body d-flex flex-column gap-4">
+
+                    <div class="panel" style="padding:14px;">
+                        <h3 style="font-size:1rem; margin-bottom:10px;">Balances</h3>
+                        <div class="row g-3" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                            <div class="col-12">
+                                <h4 style="font-size:0.95rem; margin-bottom:8px;">Family Points</h4>
+                                <p class="muted" style="margin: 0 0 8px;">Current pool: <strong>{{ family.family_points_balance }}</strong></p>
+                                <form method="post" action="{{ url_for('public.parent_store_add_family_points') }}" class="d-flex gap-2">
+                                    <input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
+                                    <input name="points" type="number" min="1" value="10" required />
+                                    <button type="submit" class="btn">Add Points</button>
+                                </form>
+                            </div>
+                            <div class="col-12">
+                                <h4 style="font-size:0.95rem; margin-bottom:8px;">Kid Coins</h4>
+                                <form method="post" action="{{ url_for('public.parent_store_add_kid_coins') }}" class="d-flex flex-column gap-2">
+                                    <input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
+                                    <select name="kid_id" required>
+                                        <option value="">Select Kid</option>
+                                        {% for kid in kids %}
+                                            <option value="{{ kid.id }}">{{ kid.display_name }} ({{ kid.coin_balance }} coins)</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="d-flex gap-2">
+                                        <input name="coins" type="number" min="1" value="5" required />
+                                        <button type="submit" class="btn">Add Coins</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Current kids list #}
+                    {% if kids %}
+                        <ul class="settings-list">
+                            {% for kid in kids %}
+                                <li class="settings-list-item">
+                                    <div class="settings-list-info" style="width: 100%;">
+                                        <span class="settings-list-name">{{ kid.display_name }}</span>
+                                        <span class="muted" style="font-size:12px;">Added {{ kid.created_at.strftime('%b %d, %Y') }} • {{ kid.coin_balance }} coins</span>
+
+                                        <form method="post" action="{{ url_for('public.parent_settings_update_kid', kid_id=kid.id) }}" class="d-flex flex-wrap gap-2 mt-2 align-items-end">
+                                            <div style="flex:1; min-width:160px;">
+                                                <label for="kid-name-{{ kid.id }}">Display name</label>
+                                                <input id="kid-name-{{ kid.id }}" name="display_name" type="text" value="{{ kid.display_name }}" required />
+                                            </div>
+                                            <div style="flex:0 0 170px;">
+                                                <label for="kid-pin-{{ kid.id }}">New PIN (optional)</label>
+                                                <input id="kid-pin-{{ kid.id }}" name="pin" type="text" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="Leave blank" />
+                                            </div>
+                                            <div>
+                                                <button type="submit" class="btn btn-sm">Save</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div>
+                                        <form method="post" action="{{ url_for('public.parent_settings_remove_kid', kid_id=kid.id) }}"
+                                              onsubmit="return confirm('Remove {{ kid.display_name }} from your family?')">
+                                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="muted empty-state">No kids added yet.</p>
+                    {% endif %}
+
+                    {# Add kid form #}
+                    <div>
+                        <h3 style="font-size:1rem; margin-bottom:10px;">Add a Kid</h3>
+                        <form method="post" action="{{ url_for('public.parent_settings_add_kid') }}" class="d-flex flex-wrap gap-3 align-items-end">
+                            <div style="flex:1; min-width:160px;">
+                                <label for="kid-name">Kid's name</label>
+                                <input id="kid-name" name="display_name" type="text" placeholder="e.g. Alex" required />
+                            </div>
+                            <div style="flex:0 0 120px;">
+                                <label for="kid-pin">4-digit PIN</label>
+                                <input id="kid-pin" name="pin" type="text" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="1234" required />
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary">Add Kid</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </details>
+        </article>
+    </section>
+
+    {# ── Devices ───────────────────────────────────────────────────────────── #}
+    <section class="dashboard-grid">
+        <article class="dashboard-card full-width">
+            <details class="settings-collapsible">
+                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2>Devices</h2>
+                        <p class="muted" style="margin-top:2px;">Register this browser/device so kids can log in with just their name and PIN — no family code needed.</p>
+                    </div>
+                    <span class="pill toggle-label"></span>
+                </summary>
+                <div class="card-body d-flex flex-column gap-4">
+
+                    <form method="post" action="{{ url_for('public.parent_register_device') }}" class="d-flex flex-wrap gap-3 align-items-end">
+                        <div style="flex:1; min-width:200px;">
+                            <label for="device_label">Device name</label>
+                            <input id="device_label" name="device_label" type="text" placeholder="e.g. Kitchen iPad" />
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-primary">Register This Device</button>
+                        </div>
+                    </form>
+
+                    {% if active_devices %}
+                        <div>
+                            <h3 style="font-size:1rem; margin-bottom:10px;">Active Devices <span class="pill">{{ active_devices|length }}</span></h3>
+                            <ul class="settings-list">
+                                {% for device in active_devices %}
+                                    <li class="settings-list-item">
+                                        <div class="settings-list-info">
+                                            <span class="settings-list-name">{{ device.device_label }}</span>
+                                            <span class="muted" style="font-size:12px;">Last seen {{ device.last_seen_at.strftime('%b %d, %Y') }} &middot; Expires {{ device.expires_at.strftime('%b %d, %Y') }}</span>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% else %}
+                        <p class="muted empty-state">No registered devices yet.</p>
+                    {% endif %}
+
+                    <div>
+                        <h3 style="font-size:1rem; margin-bottom:6px;">Revoke This Device</h3>
+                        <p class="muted" style="font-size:13px; margin-bottom:10px;">Remove trust for this browser and clear the local device token.</p>
+                        <form method="post" action="{{ url_for('public.parent_revoke_this_device') }}">
+                            <button type="submit" class="btn btn-danger">Revoke This Device</button>
+                        </form>
+                    </div>
+
+                </div>
+            </details>
+        </article>
+    </section>
+
+    {# ── Guardians & Family ───────────────────────────────────────────────── #}
+    <section class="dashboard-grid">
+        <article class="dashboard-card full-width">
+            <details class="settings-collapsible">
+                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2>Guardians &amp; Family</h2>
+                        <p class="muted" style="margin-top:2px;">Manage co-guardians in <strong>{{ family.name }}</strong> and review join requests.</p>
+                    </div>
+                    <span class="pill toggle-label"></span>
+                </summary>
+                <div class="card-body d-flex flex-column gap-5">
+
+                    {# Family code management #}
+                    <div>
+                        <h3 style="font-size:1rem; margin-bottom:6px;">Family Code</h3>
+                        <p class="muted" style="font-size:13px; margin-bottom:10px;">
+                            Use this code for guardian invites and family linking. Rotating creates a new code and deactivates the old one.
+                        </p>
+
+                        <div class="panel" style="padding:14px; margin-bottom:10px;">
+                            <div class="settings-list-name" style="font-size:0.95rem; margin-bottom:6px;">Current Code</div>
+                            {% if family.family_code_plain %}
+                                <div style="font-size:1.15rem; font-weight:800; letter-spacing:0.08em;">{{ family.family_code_plain }}</div>
+                            {% else %}
+                                <div class="muted" style="font-size:13px;">Code not available yet. Generate a new code to display it here.</div>
+                            {% endif %}
+                        </div>
+
+                        <form method="post" action="{{ url_for('public.parent_settings_rotate_family_code') }}"
+                              onsubmit="return confirm('Generate a new family code? Your current code will stop working.')">
+                            <button type="submit" class="btn btn-primary">🔑 Generate New Family Code</button>
+                        </form>
+                    </div>
+
+                    {# Co-guardians list #}
+                    <div>
+                        <h3 style="font-size:1rem; margin-bottom:10px;">Co-guardians</h3>
+                        {% if co_guardians %}
+                            <ul class="settings-list">
+                                {% for guardian in co_guardians %}
+                                    <li class="settings-list-item">
+                                        <div class="settings-list-info">
+                                            <span class="settings-list-name">{{ guardian.name }}</span>
+                                            <span class="muted" style="font-size:12px;">{{ guardian.email }}</span>
+                                        </div>
+                                        <span class="badge badge-success">Guardian</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="muted empty-state">You are the only guardian in this family so far.</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        {# Pending join requests #}
+                        {% if pending_requests %}
+                            <h3 style="font-size:1rem; margin-bottom:10px;">
+                                Pending Join Requests
+                                <span class="badge badge-warning" style="margin-left:6px;">{{ pending_requests|length }}</span>
+                            </h3>
+                            <ul class="settings-list">
+                                {% for req in pending_requests %}
+                                    <li class="settings-list-item">
+                                        <div class="settings-list-info">
+                                            <span class="settings-list-name">{{ req.requester.name }}</span>
+                                            <span class="muted" style="font-size:12px;">{{ req.requester.email }} &middot; requested {{ req.created_at.strftime('%b %d, %Y') }}</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <form method="post" action="{{ url_for('public.parent_accept_guardian', request_id=req.id) }}">
+                                                <button type="submit" class="btn btn-sm btn-primary">Accept</button>
+                                            </form>
+                                            <form method="post" action="{{ url_for('public.parent_reject_guardian', request_id=req.id) }}"
+                                                  onsubmit="return confirm('Decline this request?')">
+                                                <button type="submit" class="btn btn-sm btn-danger">Decline</button>
+                                            </form>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    {# Request to join another family #}
+                    <div>
+                        <h3 style="font-size:1rem; margin-bottom:6px;">Request to Join Another Family</h3>
+                        <p class="muted" style="font-size:13px; margin-bottom:10px;">
+                            Have a family code from another guardian? Enter it here to send a join request.
+                            Once accepted you will move to their family.
+                        </p>
+                        <form method="post" action="{{ url_for('public.parent_request_join_family') }}" class="d-flex flex-wrap gap-3 align-items-end">
+                            <div style="flex:1; min-width:200px;">
+                                <label for="join-family-code">Family code</label>
+                                <input id="join-family-code" name="family_code" type="text" placeholder="e.g. AB3XY7QN"
+                                       autocomplete="off" spellcheck="false" style="text-transform:uppercase;" required />
+                            </div>
+                            <div>
+                                <button type="submit" class="btn">Send Request</button>
+                            </div>
+                        </form>
+                    </div>
+
+                        </div>
+            </details>
+        </article>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sections = Array.from(document.querySelectorAll('.settings-collapsible'));
+
+    sections.forEach(function (section) {
+        section.addEventListener('toggle', function () {
+            if (!section.open) {
+                return;
+            }
+
+            sections.forEach(function (otherSection) {
+                if (otherSection !== section) {
+                    otherSection.open = false;
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

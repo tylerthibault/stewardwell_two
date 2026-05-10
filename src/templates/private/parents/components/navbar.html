@@ -1,14 +1,17 @@
 <div class="parent-nav d-flex flex-wrap gap-2 gap-md-3 mb-4">
-    <a href="{{ url_for('parent.dashboard') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.dashboard' %}active{% endif %}" style="min-width: fit-content;">
+    <a href="{{ url_for('public.parent_dashboard') }}" class="nav-btn flex-fill {% if request.endpoint == 'public.parent_dashboard' %}active{% endif %}" style="min-width: fit-content;">
         🏠 <span class="d-none d-sm-inline">Dashboard</span>
     </a>
-    <a href="{{ url_for('parent.chores') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.chores' %}active{% endif %}" style="min-width: fit-content;">
+    <a href="{{ url_for('public.parent_chores') }}" class="nav-btn flex-fill {% if request.endpoint == 'public.parent_chores' %}active{% endif %}" style="min-width: fit-content;">
         📋 <span class="d-none d-sm-inline">Chores</span>
     </a>
-    <a href="{{ url_for('parent.store') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.store' %}active{% endif %}" style="min-width: fit-content;">
+    <a href="{{ url_for('public.parent_store') }}" class="nav-btn flex-fill {% if request.endpoint == 'public.parent_store' %}active{% endif %}" style="min-width: fit-content;">
         🛒 <span class="d-none d-sm-inline">Store</span>
     </a>
-    <a href="{{ url_for('parent.history') }}" class="nav-btn flex-fill {% if request.endpoint == 'parent.history' %}active{% endif %}" style="min-width: fit-content;">
+    <a href="{{ url_for('public.parent_activities') }}" class="nav-btn flex-fill {% if request.endpoint == 'public.parent_activities' %}active{% endif %}" style="min-width: fit-content;">
+        ⏱️ <span class="d-none d-sm-inline">Activities</span>
+    </a>
+    <a href="{{ url_for('public.parent_history') }}" class="nav-btn flex-fill {% if request.endpoint == 'public.parent_history' %}active{% endif %}" style="min-width: fit-content;">
         📊 <span class="d-none d-sm-inline">History</span>
     </a>
 </div>
