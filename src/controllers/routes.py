@@ -18,6 +18,7 @@ from src.models.main import (
 	GuardianJoinRequest,
 	Kid,
 	Parent,
+	PasswordResetToken,
 	StoreItem,
 	StoreRedemption,
 	StoreRedemptionVote,
@@ -28,6 +29,7 @@ from src.models.main import (
 	db,
 	generate_family_code,
 )
+from src.utils.email import send_email
 
 
 public_bp = Blueprint("public", __name__)
@@ -667,6 +669,94 @@ def register():
 	response = redirect(url_for("public.parent_dashboard"))
 	flash(f"Account created! Save your family code: {family_code}", "success")
 	return response
+
+
+# ---------------------------------------------------------------------------
+# Forgot / Reset Password
+# ---------------------------------------------------------------------------
+
+@public_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+	if request.method == "GET":
+		return render_template("public/auth/forgot_password.html")
+
+	email = request.form.get("email", "").strip().lower()
+	if not email:
+		flash("Please enter your email address.", "error")
+		return render_template("public/auth/forgot_password.html")
+
+	# Always show the same success message to avoid email enumeration.
+	parent = Parent.query.filter_by(email=email).first()
+	if parent:
+		# Invalidate any existing unused tokens for this parent.
+		from datetime import datetime as _dt
+		PasswordResetToken.query.filter_by(parent_id=parent.id).filter(
+			PasswordResetToken.used_at.is_(None)
+		).delete()
+
+		token_record, plain_token = PasswordResetToken.create_for_parent(parent.id)
+		db.session.add(token_record)
+		db.session.commit()
+
+		base_url = os.environ.get("APP_BASE_URL", request.host_url.rstrip("/"))
+		reset_url = f"{base_url}/reset-password/{plain_token}"
+
+		html = f"""
+		<p>Hi {parent.name},</p>
+		<p>We received a request to reset your Stewardwell password.
+		Click the button below to choose a new password. This link expires in 1 hour.</p>
+		<p style="text-align:center;margin:24px 0;">
+			<a href="{reset_url}"
+			   style="background:#4f8ef7;color:#fff;padding:12px 28px;border-radius:8px;
+			          text-decoration:none;font-weight:700;font-size:15px;">
+				Reset my password
+			</a>
+		</p>
+		<p>Or copy this link into your browser:<br>
+		<a href="{reset_url}">{reset_url}</a></p>
+		<p style="color:#888;font-size:12px;">
+			If you didn't request this, you can safely ignore this email.
+		</p>
+		"""
+		send_email(
+			to_email=parent.email,
+			to_name=parent.name,
+			subject="Reset your Stewardwell password",
+			html_content=html,
+		)
+
+	flash("If that email is registered, you'll receive a reset link shortly.", "success")
+	return redirect(url_for("public.forgot_password"))
+
+
+@public_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token: str):
+	token_record = PasswordResetToken.find_valid(token)
+	if not token_record:
+		flash("This reset link is invalid or has expired. Please request a new one.", "error")
+		return redirect(url_for("public.forgot_password"))
+
+	if request.method == "GET":
+		return render_template("public/auth/reset_password.html", token=token)
+
+	password = request.form.get("password", "").strip()
+	confirm = request.form.get("confirm_password", "").strip()
+
+	if not password or len(password) < 8:
+		flash("Password must be at least 8 characters.", "error")
+		return render_template("public/auth/reset_password.html", token=token)
+
+	if password != confirm:
+		flash("Passwords do not match.", "error")
+		return render_template("public/auth/reset_password.html", token=token)
+
+	parent = token_record.parent
+	parent.set_password(password)
+	token_record.used_at = datetime.utcnow()
+	db.session.commit()
+
+	flash("Password updated! Please log in with your new password.", "success")
+	return redirect(url_for("public.login"))
 
 
 @public_bp.get("/health")

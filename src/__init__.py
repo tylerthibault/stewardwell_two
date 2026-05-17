@@ -1,5 +1,9 @@
 from flask import Flask
 from sqlalchemy import inspect, text
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 from src.models.main import db
 
@@ -86,8 +90,8 @@ def _apply_sqlite_schema_fixes() -> None:
 
 def create_app() -> Flask:
 	app = Flask(__name__)
-	app.config["SECRET_KEY"] = "dev-secret-key"
-	app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///stewardwell.db"
+	app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+	app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL") or "sqlite:///stewardwell.db"
 	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 	from src.controllers.routes import public_bp

@@ -519,6 +519,42 @@ class StoreSessionTurn(db.Model):
 		return max(0, int((end - self.started_at).total_seconds()))
 
 
+class PasswordResetToken(db.Model):
+	"""Single-use, time-limited token for parent password resets."""
+
+	__tablename__ = "password_reset_tokens"
+
+	id = db.Column(db.Integer, primary_key=True)
+	parent_id = db.Column(db.Integer, db.ForeignKey("parents.id"), nullable=False, index=True)
+	token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	expires_at = db.Column(db.DateTime, nullable=False)
+	used_at = db.Column(db.DateTime)
+
+	parent = db.relationship("Parent", backref=db.backref("password_reset_tokens", lazy=True, cascade="all, delete-orphan"))
+
+	@classmethod
+	def create_for_parent(cls, parent_id: int, ttl_minutes: int = 60) -> tuple["PasswordResetToken", str]:
+		plain_token = secrets.token_urlsafe(48)
+		token_hash = hashlib.sha256(plain_token.encode()).hexdigest()
+		record = cls(
+			parent_id=parent_id,
+			token_hash=token_hash,
+			expires_at=datetime.utcnow() + timedelta(minutes=ttl_minutes),
+		)
+		return record, plain_token
+
+	@classmethod
+	def find_valid(cls, plain_token: str) -> "PasswordResetToken | None":
+		token_hash = hashlib.sha256(plain_token.encode()).hexdigest()
+		now = datetime.utcnow()
+		return cls.query.filter(
+			cls.token_hash == token_hash,
+			cls.used_at.is_(None),
+			cls.expires_at > now,
+		).first()
+
+
 class CoinTransaction(db.Model):
 	"""Ledger entry for every coin credit or debit."""
 
