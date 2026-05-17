@@ -1,0 +1,72 @@
+<div class="dashboard-card full-width">
+    <div class="card-header">
+        <h2>💳 Purchase History</h2>
+    </div>
+    <div class="card-body">
+        {% if purchase_history %}
+        <div class="d-flex flex-wrap gap-3 mb-4">
+            <div>
+                <label class="form-label" for="purchaseKidFilter">Kid</label>
+                <select id="purchaseKidFilter" class="form-control">
+                    <option value="all">All Kids</option>
+                    {% for k in kids %}
+                    <option value="{{ k.id }}">{{ k.display_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" for="purchaseStatusFilter">Status</label>
+                <select id="purchaseStatusFilter" class="form-control">
+                    <option value="all">All Statuses</option>
+                    <option value="fulfilled">Fulfilled</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Kid</th>
+                        <th>Item</th>
+                        <th>Coins</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in purchase_history %}
+                    <tr class="purchase-row" data-kid-id="{{ r.requested_by_kid_id }}" data-status="{{ r.status }}">
+                        <td><strong>{{ r.requested_by_kid.display_name if r.requested_by_kid else '—' }}</strong></td>
+                        <td>{{ r.store_item.name if r.store_item else '—' }}</td>
+                        <td>
+                            {% if r.store_item %}
+                            <span class="coin-badge">🪙 {{ r.store_item.kid_coin_cost }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>{{ r.requested_at.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            {% if r.status == 'fulfilled' %}
+                            <span style="color:var(--success-primary,#27ae60);font-weight:700;">✓ Fulfilled</span>
+                            {% elif r.status == 'approved' %}
+                            <span style="color:var(--success-primary,#27ae60);font-weight:700;">✓ Approved</span>
+                            {% elif r.status == 'pending' %}
+                            <span style="color:var(--warning-primary,#e67e22);font-weight:700;">⏳ Pending</span>
+                            {% elif r.status == 'rejected' %}
+                            <span style="color:var(--danger-primary,#e74c3c);font-weight:700;">✕ Rejected</span>
+                            {% else %}
+                            {{ r.status }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">No purchases yet.</div>
+        {% endif %}
+    </div>
+</div>

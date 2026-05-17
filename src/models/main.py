@@ -519,6 +519,30 @@ class StoreSessionTurn(db.Model):
 		return max(0, int((end - self.started_at).total_seconds()))
 
 
+class CoinTransaction(db.Model):
+	"""Ledger entry for every coin credit or debit."""
+
+	__tablename__ = "coin_transactions"
+
+	id = db.Column(db.Integer, primary_key=True)
+	kid_id = db.Column(db.Integer, db.ForeignKey("kids.id"), nullable=False, index=True)
+	family_id = db.Column(db.Integer, db.ForeignKey("families.id"), nullable=False, index=True)
+	# positive = credit, negative = debit
+	amount = db.Column(db.Integer, nullable=False)
+	# fine | chore_reward | store_purchase | timed_session | manual_add
+	kind = db.Column(db.String(30), nullable=False)
+	# Human-readable label; required for fines
+	reason = db.Column(db.Text)
+	ref_type = db.Column(db.String(50))   # e.g. "chore_submission", "store_redemption"
+	ref_id = db.Column(db.Integer)        # soft reference to the related record id
+	created_by_parent_id = db.Column(db.Integer, db.ForeignKey("parents.id"))
+	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+	kid = db.relationship("Kid", backref=db.backref("coin_transactions", lazy=True, order_by="CoinTransaction.created_at.desc()"))
+	family = db.relationship("Family", backref=db.backref("coin_transactions", lazy=True))
+	created_by_parent = db.relationship("Parent", backref=db.backref("coin_transactions_issued", lazy=True))
+
+
 class StoreSessionPreference(db.Model):
 	"""Saves the last timer setup a kid used for a timed item."""
 

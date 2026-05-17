@@ -13,6 +13,7 @@ from src.models.main import (
 	ChoreCategory,
 	ChoreScheduleSlot,
 	ChoreSubmission,
+	CoinTransaction,
 	Family,
 	GuardianJoinRequest,
 	Kid,
@@ -171,6 +172,15 @@ def _charge_next_turn_minute(turn: StoreSessionTurn) -> bool:
 
 	kid.coin_balance -= rate
 	turn.coins_charged += rate
+	db.session.add(CoinTransaction(
+		kid_id=kid.id,
+		family_id=turn.family_id,
+		amount=-rate,
+		kind="timed_session",
+		reason="Timed session charge (per minute)",
+		ref_type="store_session_turn",
+		ref_id=turn.id,
+	))
 	return True
 
 
@@ -185,6 +195,15 @@ def _charge_turn_start(turn: StoreSessionTurn) -> bool:
 
 	kid.coin_balance -= cost
 	turn.coins_charged += cost
+	db.session.add(CoinTransaction(
+		kid_id=kid.id,
+		family_id=turn.family_id,
+		amount=-cost,
+		kind="timed_session",
+		reason="Timed session charge (start cost)",
+		ref_type="store_session_turn",
+		ref_id=turn.id,
+	))
 	return True
 
 
@@ -543,6 +562,16 @@ def _recalculate_chore_split_rewards(chore: Chore, reset_version: int, claimed_d
 		if coin_delta:
 			approved_submission.kid.coin_balance += coin_delta
 			approved_submission.awarded_coin_amount = target_coin_award
+			db.session.add(CoinTransaction(
+				kid_id=approved_submission.kid.id,
+				family_id=approved_submission.family_id,
+				amount=coin_delta,
+				kind="chore_reward",
+				reason=f"Chore approved: {approved_submission.chore.name}",
+				ref_type="chore_submission",
+				ref_id=approved_submission.id,
+				created_by_parent_id=approved_submission.resolved_by_parent_id,
+			))
 
 		if point_delta:
 			approved_submission.family.family_points_balance += point_delta
@@ -1247,6 +1276,14 @@ def parent_store_add_kid_coins():
 		return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
 
 	kid.coin_balance += coins
+	db.session.add(CoinTransaction(
+		kid_id=kid.id,
+		family_id=kid.family_id,
+		amount=coins,
+		kind="manual_add",
+		reason="Manually added by parent",
+		created_by_parent_id=session.get("parent_id"),
+	))
 	db.session.commit()
 	flash(f"Added {coins} coins to {kid.display_name}.", "success")
 	return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
@@ -1385,7 +1422,36 @@ def parent_activities():
 @public_bp.get("/parent/history")
 @parent_web_login_required
 def parent_history():
-	return render_template("private/parents/coming_soon.html", page_title="History")
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	kids = Kid.query.filter_by(family_id=family.id, is_active=True).order_by(Kid.display_name.asc()).all()
+
+	purchase_history = (
+		StoreRedemption.query.filter_by(family_id=family.id)
+		.order_by(StoreRedemption.requested_at.desc())
+		.all()
+	)
+	chore_submissions = (
+		ChoreSubmission.query.filter_by(family_id=family.id)
+		.order_by(ChoreSubmission.claimed_at.desc())
+		.all()
+	)
+	chores = Chore.query.filter_by(family_id=family.id, is_active=True).order_by(Chore.name.asc()).all()
+
+	return render_template(
+		"private/parents/history/index.html",
+		parent=parent,
+		family=family,
+		kids=kids,
+		purchase_history=purchase_history,
+		chore_submissions=chore_submissions,
+		chores=chores,
+		game_sessions=[],
+	)
 
 
 @public_bp.post("/parent/add-kid")
@@ -1868,6 +1934,16 @@ def kid_purchase_store_item(item_id: int):
 		resolved_at=datetime.utcnow(),
 	)
 	db.session.add(redemption)
+	db.session.flush()  # get redemption.id before logging
+	db.session.add(CoinTransaction(
+		kid_id=kid.id,
+		family_id=kid.family_id,
+		amount=-item.kid_coin_cost,
+		kind="store_purchase",
+		reason=f"Store purchase: {item.name}",
+		ref_type="store_redemption",
+		ref_id=redemption.id,
+	))
 	db.session.commit()
 
 	flash(f'Purchased "{item.name}" for {item.kid_coin_cost} coins.', "success")

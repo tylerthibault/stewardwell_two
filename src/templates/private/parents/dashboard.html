@@ -73,9 +73,17 @@
 						{% if kids %}
 							<div class="d-flex flex-column gap-2">
 								{% for kid in kids %}
-									<div class="chore-item">
+								<div class="chore-item d-flex justify-content-between align-items-center">
+									<div>
 										<strong>{{ kid.display_name }}</strong>
-										<span class="muted">Joined {{ kid.created_at.strftime('%b %d, %Y') }} • 🪙 {{ kid.coin_balance }} coins</span>
+										<span class="muted" id="kid-balance-label-{{ kid.id }}">Joined {{ kid.created_at.strftime('%b %d, %Y') }} • 🪙 <span id="kid-balance-{{ kid.id }}">{{ kid.coin_balance }}</span> coins</span>
+									</div>
+									<button
+										type="button"
+										class="btn btn-sm"
+										style="background:var(--danger-primary,#e74c3c);color:#fff;border:none;"
+										onclick="openFineModal({{ kid.id }}, '{{ kid.display_name }}')"
+									>🚨 Fine</button>
 									</div>
 								{% endfor %}
 							</div>
@@ -88,4 +96,96 @@
 		</div>
 	</section>
 </div>
+
+<!-- Fine Modal -->
+<div id="fineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
+	<div style="background:var(--card-bg,#fff);border-radius:12px;max-width:440px;width:90%;padding:2rem;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+		<h3 style="margin:0 0 1rem;">🚨 Fine <span id="fineKidName"></span></h3>
+		<div style="margin-bottom:1rem;">
+			<label class="form-label" for="fineAmount">Coin amount to deduct</label>
+			<input id="fineAmount" type="number" min="1" class="form-control" placeholder="e.g. 10">
+		</div>
+		<div style="margin-bottom:1.25rem;">
+			<label class="form-label" for="fineReason">Reason <span style="color:var(--danger-primary,#e74c3c);">*</span></label>
+			<textarea id="fineReason" class="form-control" rows="3" placeholder="Describe what the child did…"></textarea>
+		</div>
+		<div id="fineError" style="display:none;color:var(--danger-primary,#e74c3c);margin-bottom:.75rem;font-size:.9rem;"></div>
+		<div class="d-flex gap-2 justify-content-end">
+			<button type="button" class="btn" onclick="closeFineModal()">Cancel</button>
+			<button type="button" class="btn" id="fineSubmitBtn" style="background:var(--danger-primary,#e74c3c);color:#fff;border:none;" onclick="submitFine()">Issue Fine</button>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	let _fineKidId = null;
+
+	function openFineModal(kidId, kidName) {
+		_fineKidId = kidId;
+		document.getElementById('fineKidName').textContent = kidName;
+		document.getElementById('fineAmount').value = '';
+		document.getElementById('fineReason').value = '';
+		document.getElementById('fineError').style.display = 'none';
+		const modal = document.getElementById('fineModal');
+		modal.style.display = 'flex';
+	}
+
+	function closeFineModal() {
+		document.getElementById('fineModal').style.display = 'none';
+		_fineKidId = null;
+	}
+
+	async function submitFine() {
+		const amount = parseInt(document.getElementById('fineAmount').value, 10);
+		const reason = document.getElementById('fineReason').value.trim();
+		const errEl = document.getElementById('fineError');
+		errEl.style.display = 'none';
+
+		if (!amount || amount < 1) {
+			errEl.textContent = 'Please enter a coin amount greater than 0.';
+			errEl.style.display = '';
+			return;
+		}
+		if (!reason) {
+			errEl.textContent = 'A reason is required.';
+			errEl.style.display = '';
+			return;
+		}
+
+		const btn = document.getElementById('fineSubmitBtn');
+		btn.disabled = true;
+		btn.textContent = 'Issuing…';
+
+		try {
+			const resp = await fetch(`/api/parent/kids/${_fineKidId}/fines`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ amount, reason }),
+			});
+			const data = await resp.json();
+			if (data.success) {
+				// Update coin balance displayed on the page
+				const balanceEl = document.getElementById(`kid-balance-${_fineKidId}`);
+				if (balanceEl) balanceEl.textContent = data.coin_balance;
+				closeFineModal();
+			} else {
+				errEl.textContent = data.message || 'Failed to issue fine.';
+				errEl.style.display = '';
+			}
+		} catch (e) {
+			errEl.textContent = 'Network error. Please try again.';
+			errEl.style.display = '';
+		} finally {
+			btn.disabled = false;
+			btn.textContent = 'Issue Fine';
+		}
+	}
+
+	// Close modal when clicking backdrop
+	document.getElementById('fineModal').addEventListener('click', function(e) {
+		if (e.target === this) closeFineModal();
+	});
+</script>
 {% endblock %}

@@ -3,6 +3,7 @@ from functools import wraps
 from flask import Blueprint, jsonify, make_response, request, session
 
 from src.models.main import (
+    CoinTransaction,
     Family,
     Kid,
     Parent,
@@ -23,6 +24,36 @@ def parent_login_required(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def _record_coin_transaction(
+    kid: Kid,
+    family_id: int,
+    amount: int,
+    kind: str,
+    reason: str | None = None,
+    ref_type: str | None = None,
+    ref_id: int | None = None,
+    parent_id: int | None = None,
+) -> CoinTransaction:
+    """Mutate kid.coin_balance by *amount* and append a CoinTransaction row.
+
+    The caller is responsible for calling db.session.commit().
+    Amount should be negative for debits (e.g. fines, purchases).
+    """
+    kid.coin_balance += amount
+    tx = CoinTransaction(
+        kid_id=kid.id,
+        family_id=family_id,
+        amount=amount,
+        kind=kind,
+        reason=reason,
+        ref_type=ref_type,
+        ref_id=ref_id,
+        created_by_parent_id=parent_id,
+    )
+    db.session.add(tx)
+    return tx
 
 
 def _find_family_by_code(raw_code: str) -> Family | None:
@@ -237,3 +268,96 @@ def revoke_device():
     device.revoked_at = db.func.now()
     db.session.commit()
     return jsonify({"success": True, "message": "Device revoked."})
+
+
+# ---------------------------------------------------------------------------
+# Coin Fines
+# ---------------------------------------------------------------------------
+
+@parent_bp.post("/kids/<int:kid_id>/fines")
+@parent_login_required
+def fine_kid(kid_id: int):
+    """Deduct coins from a kid as a fine, with a required reason."""
+    payload = request.get_json(silent=True) or {}
+    amount_raw = payload.get("amount")
+    reason = (payload.get("reason") or "").strip()
+
+    if not reason:
+        return jsonify({"success": False, "message": "A reason is required for a fine."}), 400
+
+    try:
+        amount = int(amount_raw)
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "amount must be a positive integer."}), 400
+
+    if amount <= 0:
+        return jsonify({"success": False, "message": "amount must be greater than zero."}), 400
+
+    family_id = session["family_id"]
+    parent_id = session["parent_id"]
+    kid = Kid.query.get(kid_id)
+    if not kid or kid.family_id != family_id:
+        return jsonify({"success": False, "message": "Kid not found."}), 404
+
+    tx = _record_coin_transaction(
+        kid=kid,
+        family_id=family_id,
+        amount=-amount,
+        kind="fine",
+        reason=reason,
+        parent_id=parent_id,
+    )
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"Fined {kid.display_name} {amount} coins.",
+        "coin_balance": kid.coin_balance,
+        "transaction_id": tx.id,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Transaction Log
+# ---------------------------------------------------------------------------
+
+@parent_bp.get("/transactions")
+@parent_login_required
+def list_transactions():
+    """Return all coin transactions for the parent's family, newest first."""
+    from datetime import datetime
+
+    family_id = session["family_id"]
+    query = CoinTransaction.query.filter_by(family_id=family_id)
+
+    kid_id_raw = request.args.get("kid_id")
+    if kid_id_raw:
+        try:
+            query = query.filter_by(kid_id=int(kid_id_raw))
+        except ValueError:
+            pass
+
+    kind_filter = request.args.get("kind")
+    if kind_filter:
+        query = query.filter_by(kind=kind_filter)
+
+    transactions = query.order_by(CoinTransaction.created_at.desc()).all()
+
+    return jsonify({
+        "success": True,
+        "transactions": [
+            {
+                "id": tx.id,
+                "kid_id": tx.kid_id,
+                "kid_name": tx.kid.display_name if tx.kid else None,
+                "amount": tx.amount,
+                "kind": tx.kind,
+                "reason": tx.reason,
+                "ref_type": tx.ref_type,
+                "ref_id": tx.ref_id,
+                "created_by_parent_id": tx.created_by_parent_id,
+                "created_at": tx.created_at.isoformat(),
+            }
+            for tx in transactions
+        ],
+    })

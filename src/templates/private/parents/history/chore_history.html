@@ -1,0 +1,81 @@
+<div class="dashboard-card full-width">
+    <div class="card-header">
+        <h2>✅ Chore History</h2>
+    </div>
+    <div class="card-body">
+        {% if chore_submissions %}
+        <div class="d-flex flex-wrap gap-3 mb-4">
+            <div>
+                <label class="form-label" for="choreKidFilter">Kid</label>
+                <select id="choreKidFilter" class="form-control">
+                    <option value="all">All Kids</option>
+                    {% for k in kids %}
+                    <option value="{{ k.id }}">{{ k.display_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" for="choreChoreFilter">Chore</label>
+                <select id="choreChoreFilter" class="form-control">
+                    <option value="all">All Chores</option>
+                    {% for c in chores %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" for="choreStatusFilter">Status</label>
+                <select id="choreStatusFilter" class="form-control">
+                    <option value="all">All Statuses</option>
+                    <option value="approved">Approved</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="claimed">Claimed</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Kid</th>
+                        <th>Chore</th>
+                        <th>Coins Earned</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in chore_submissions %}
+                    <tr class="chore-row" data-kid-id="{{ s.kid_id }}" data-chore-id="{{ s.chore_id }}" data-status="{{ s.status }}">
+                        <td><strong>{{ s.kid.display_name if s.kid else '—' }}</strong></td>
+                        <td>{{ s.chore.name if s.chore else '—' }}</td>
+                        <td>
+                            {% if s.status == 'approved' and s.awarded_coin_amount %}
+                            <span class="coin-badge">🪙 {{ s.awarded_coin_amount }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>{{ s.claimed_at.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            {% if s.status == 'approved' %}
+                            <span style="color:var(--success-primary,#27ae60);font-weight:700;">✓ Approved</span>
+                            {% elif s.status == 'submitted' %}
+                            <span style="color:var(--warning-primary,#e67e22);font-weight:700;">⏳ Submitted</span>
+                            {% elif s.status == 'rejected' %}
+                            <span style="color:var(--danger-primary,#e74c3c);font-weight:700;">✕ Rejected</span>
+                            {% elif s.status == 'claimed' %}
+                            <span style="color:var(--muted,#888);">📋 Claimed</span>
+                            {% else %}
+                            {{ s.status }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">No chore history yet.</div>
+        {% endif %}
+    </div>
+</div>

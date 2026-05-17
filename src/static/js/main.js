@@ -56,3 +56,39 @@
     rafId = requestAnimationFrame(step);
   });
 }());
+
+/* ── Custom tab system ─────────────────────────────────────────────────────
+   Handles [data-my-toggle="tab"] buttons with [data-my-target="#pane-id"].
+   Adds/removes the `active` class on both the button and its target pane.
+─────────────────────────────────────────────────────────────────────────── */
+(function () {
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-my-toggle="tab"]');
+    if (!btn) return;
+
+    var targetSelector = btn.getAttribute('data-my-target');
+    if (!targetSelector) return;
+
+    var targetPane = document.querySelector(targetSelector);
+    if (!targetPane) return;
+
+    // Deactivate all sibling tab buttons in the same list
+    var tabList = btn.closest('[role="tablist"]');
+    if (tabList) {
+      tabList.querySelectorAll('[data-my-toggle="tab"]').forEach(function (b) {
+        b.classList.remove('active');
+      });
+    }
+
+    // Deactivate all sibling panes (look inside the nearest .my-tab-content)
+    var tabContent = targetPane.closest('.my-tab-content');
+    if (tabContent) {
+      tabContent.querySelectorAll('.my-tab-pane').forEach(function (p) {
+        p.classList.remove('active');
+      });
+    }
+
+    btn.classList.add('active');
+    targetPane.classList.add('active');
+  });
+}());

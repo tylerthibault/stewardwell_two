@@ -28,6 +28,11 @@
                 ⏱️ Sessions
             </button>
         </li>
+        <li class="my-tab-item" role="presentation">
+            <button class="my-tab-link" data-my-toggle="tab" data-my-target="#transactions" type="button" role="tab">
+                🪙 Transactions
+            </button>
+        </li>
     </ul>
 
     <!-- Tab Content -->
@@ -52,7 +57,7 @@
                             <select id="sessionKidFilter" class="form-control">
                                 <option value="all">All Kids</option>
                                 {% for k in kids %}
-                                <option value="{{ k.id }}">{{ k.name }}</option>
+                                <option value="{{ k.id }}">{{ k.display_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -100,6 +105,56 @@
                     {% else %}
                     <div class="empty-state">No session history yet. Kids haven't used the timer!</div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Tab -->
+        <div class="my-tab-pane" id="transactions" role="tabpanel">
+            <div class="dashboard-card full-width">
+                <div class="card-header">
+                    <h2>🪙 Coin Transactions</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="d-flex flex-wrap gap-3 mb-4">
+                        <div>
+                            <label class="form-label" for="txKidFilter">Kid</label>
+                            <select id="txKidFilter" class="form-control">
+                                <option value="all">All Kids</option>
+                                {% for k in kids %}
+                                <option value="{{ k.id }}">{{ k.display_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="txKindFilter">Type</label>
+                            <select id="txKindFilter" class="form-control">
+                                <option value="all">All Types</option>
+                                <option value="fine">Fine</option>
+                                <option value="chore_reward">Chore Reward</option>
+                                <option value="store_purchase">Store Purchase</option>
+                                <option value="timed_session">Timed Session</option>
+                                <option value="manual_add">Manual Add</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span id="txLoading" style="display:none;" class="muted">Loading…</span>
+                    <div id="txEmpty" style="display:none;" class="empty-state">No transactions found.</div>
+                    <div class="table-responsive" id="txTableWrap" style="display:none;">
+                        <table class="table table-striped" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Kid</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Reason / Reference</th>
+                                </tr>
+                            </thead>
+                            <tbody id="txTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -176,5 +231,80 @@
     }
 
     if (sessionKidFilter) sessionKidFilter.addEventListener('change', filterSessionTable);
+
+    // -----------------------------------------------------------------------
+    // Transactions tab — fetch from API and render
+    // -----------------------------------------------------------------------
+    const KIND_LABELS = {
+        fine: { label: 'Fine', color: '#e74c3c' },
+        chore_reward: { label: 'Chore Reward', color: '#27ae60' },
+        store_purchase: { label: 'Store Purchase', color: '#8e44ad' },
+        timed_session: { label: 'Timed Session', color: '#2980b9' },
+        manual_add: { label: 'Manual Add', color: '#27ae60' },
+    };
+
+    let allTransactions = [];
+    let txLoaded = false;
+
+    function renderTransactions() {
+        const kidFilter = document.getElementById('txKidFilter').value;
+        const kindFilter = document.getElementById('txKindFilter').value;
+
+        const filtered = allTransactions.filter(tx => {
+            const kidMatch = kidFilter === 'all' || String(tx.kid_id) === kidFilter;
+            const kindMatch = kindFilter === 'all' || tx.kind === kindFilter;
+            return kidMatch && kindMatch;
+        });
+
+        const tbody = document.getElementById('txTableBody');
+        const tableWrap = document.getElementById('txTableWrap');
+        const emptyEl = document.getElementById('txEmpty');
+
+        if (filtered.length === 0) {
+            tableWrap.style.display = 'none';
+            emptyEl.style.display = '';
+        } else {
+            emptyEl.style.display = 'none';
+            tableWrap.style.display = '';
+            tbody.innerHTML = filtered.map(tx => {
+                const kindInfo = KIND_LABELS[tx.kind] || { label: tx.kind, color: '#555' };
+                const amountSign = tx.amount >= 0 ? '+' : '';
+                const amountColor = tx.amount >= 0 ? '#27ae60' : '#e74c3c';
+                const date = new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const reason = tx.reason ? tx.reason : (tx.ref_type ? tx.ref_type.replace(/_/g, ' ') : '—');
+                return `<tr>
+                    <td>${date}</td>
+                    <td><strong>${tx.kid_name || '—'}</strong></td>
+                    <td><span style="background:${kindInfo.color}22;color:${kindInfo.color};padding:2px 8px;border-radius:99px;font-size:0.8rem;font-weight:700;">${kindInfo.label}</span></td>
+                    <td style="color:${amountColor};font-weight:700;">🪙 ${amountSign}${tx.amount}</td>
+                    <td>${reason}</td>
+                </tr>`;
+            }).join('');
+        }
+    }
+
+    async function loadTransactions() {
+        if (txLoaded) { renderTransactions(); return; }
+        const loadingEl = document.getElementById('txLoading');
+        loadingEl.style.display = '';
+        try {
+            const resp = await fetch('/api/parent/transactions');
+            const data = await resp.json();
+            if (data.success) {
+                allTransactions = data.transactions;
+                txLoaded = true;
+            }
+        } catch (e) { console.error('Failed to load transactions', e); }
+        loadingEl.style.display = 'none';
+        renderTransactions();
+    }
+
+    // Load when tab is clicked
+    document.querySelectorAll('[data-my-target="#transactions"]').forEach(btn => {
+        btn.addEventListener('click', loadTransactions);
+    });
+
+    document.getElementById('txKidFilter').addEventListener('change', renderTransactions);
+    document.getElementById('txKindFilter').addEventListener('change', renderTransactions);
 </script>
 {% endblock %}
