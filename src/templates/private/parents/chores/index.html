@@ -3,16 +3,8 @@
 {% block title %}Parent Chores - Stewardwell{% endblock %}
 
 {% block nav %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Chores</h1>
-    <div class="d-flex gap-2 align-items-center">
-        <a href="{{ url_for('public.parent_settings') }}" class="btn">⚙️ Settings</a>
-        <form method="post" action="{{ url_for('public.parent_logout') }}">
-            <button type="submit" class="btn">Logout</button>
-        </form>
-    </div>
-</div>
-{% include 'private/parents/components/navbar.html' %}
+{% set page_title = "Chores" %}
+{% include 'private/parents/components/page_header.html' %}
 {% endblock %}
 
 {% block content %}
@@ -67,6 +59,38 @@
             </div>
         </div>
     </section>
+
+    {% if not chores %}
+    <section style="margin-bottom:20px;">
+        <article class="dashboard-card" style="border-left:4px solid var(--duo-green,#58cc02);">
+            <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+                <div>
+                    <div style="font-weight:800;font-size:.95rem;margin-bottom:4px;">🚀 No chores yet — load some starters</div>
+                    <p style="margin:0;font-size:.82rem;color:var(--duo-muted);">Add 8 ready-made chores (bed, dishes, vacuuming and more) in one click. You can edit or remove them at any time.</p>
+                </div>
+                <form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+                    <input type="hidden" name="category" value="chores">
+                    <button type="submit" class="btn primary" style="white-space:nowrap;">Add Starter Chores</button>
+                </form>
+            </div>
+        </article>
+    </section>
+    {% else %}
+    <section style="margin-bottom:20px;">
+        <article class="dashboard-card" style="border:2px dashed var(--duo-border);background:transparent;">
+            <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+                <p style="margin:0;font-size:.82rem;color:var(--duo-muted);">💡 Need more ideas? Load starter chores — existing ones won't be duplicated.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+                        <input type="hidden" name="category" value="chores">
+                        <button type="submit" class="btn" style="font-size:.82rem;padding:7px 14px;">Add Starter Chores</button>
+                    </form>
+                    <a href="{{ url_for('public.parent_getting_started') }}" class="btn" style="font-size:.82rem;padding:7px 14px;">View All Starters</a>
+                </div>
+            </div>
+        </article>
+    </section>
+    {% endif %}
 
     <section class="dashboard-grid">
         <article class="dashboard-card full-width">
@@ -145,32 +169,37 @@
                         <div class="chore-square-grid">
                             {% for chore in chores %}
                                 {% set category_ids_csv = chore.categories | map(attribute='id') | join(',') %}
-                                <div class="chore-item chore-square-card" data-category-ids="{{ category_ids_csv }}">
-                                    <div class="d-flex flex-column gap-2">
-                                        <strong>{{ chore.name }}</strong>
-                                        {% if chore.description %}
-                                            <span class="muted">{{ chore.description }}</span>
-                                        {% endif %}
-                                        <div class="d-flex flex-wrap gap-2">
-                                            <span class="coin-badge">🪙 {{ chore.coin_reward }}</span>
-                                            <span class="point-badge">⭐ {{ chore.point_value }}</span>
-                                            <span class="status-badge {% if not chore.is_active %}inactive{% else %}active{% endif %}">
-                                                {% if chore.is_active %}Active{% else %}Paused{% endif %}
-                                            </span>
-                                        </div>
+                                <article class="dashboard-card chore-item chore-square-card" data-category-ids="{{ category_ids_csv }}">
+                                    <div class="chore-card-top">
+                                        <span class="chore-card-name">{{ chore.name }}</span>
+                                        <span class="status-badge {% if not chore.is_active %}inactive{% else %}active{% endif %}" style="white-space:nowrap;">
+                                            {% if chore.is_active %}Active{% else %}Paused{% endif %}
+                                        </span>
                                     </div>
-                                    <div class="d-flex gap-2 flex-wrap mt-auto">
+                                    {% if chore.description %}
+                                        <span class="chore-card-desc">{{ chore.description }}</span>
+                                    {% endif %}
+                                    <div class="chore-card-badges">
+                                        <span class="coin-badge">🪙 {{ chore.coin_reward }}</span>
+                                        <span class="point-badge">⭐ {{ chore.point_value }}</span>
+                                        {% if chore.schedule_kind == 'weekly' %}
+                                            <span class="pill" style="font-size:.7rem;background:color-mix(in srgb,var(--duo-blue,#1cb0f6) 12%,var(--duo-panel));color:var(--duo-blue,#1cb0f6);border:1px solid color-mix(in srgb,var(--duo-blue,#1cb0f6) 30%,transparent);">🔁 Weekly</span>
+                                        {% elif chore.schedule_kind == 'alternating' %}
+                                            <span class="pill" style="font-size:.7rem;background:color-mix(in srgb,var(--duo-blue,#1cb0f6) 12%,var(--duo-panel));color:var(--duo-blue,#1cb0f6);border:1px solid color-mix(in srgb,var(--duo-blue,#1cb0f6) 30%,transparent);">🔁 Alternating</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="chore-card-actions">
                                         <a class="btn" href="{{ url_for('public.parent_edit_chore', chore_id=chore.id) }}">Edit</a>
-                                        <form method="post" action="{{ url_for('public.parent_reset_chore_day', chore_id=chore.id) }}">
+                                        <form method="post" action="{{ url_for('public.parent_reset_chore_day', chore_id=chore.id) }}" style="display:contents;">
                                             <button type="submit" class="btn">Reset Today</button>
                                         </form>
-                                        <form method="post" action="{{ url_for('public.parent_toggle_chore', chore_id=chore.id) }}">
+                                        <form method="post" action="{{ url_for('public.parent_toggle_chore', chore_id=chore.id) }}" style="display:contents;">
                                             <button type="submit" class="{% if chore.is_active %}btn-danger{% else %}btn{% endif %}">
                                                 {% if chore.is_active %}Pause{% else %}Reactivate{% endif %}
                                             </button>
                                         </form>
                                     </div>
-                                </div>
+                                </article>
                             {% endfor %}
                         </div>
                         <div id="chore-filter-empty" class="empty-state" style="margin-top:12px;" hidden>

@@ -3,373 +3,717 @@
 {% block title %}Settings - Stewardwell{% endblock %}
 
 {% block nav %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">⚙️ Settings</h1>
-    <form method="post" action="{{ url_for('public.parent_logout') }}">
-        <button type="submit" class="btn">Logout</button>
-    </form>
-</div>
-{% include 'private/parents/components/navbar.html' %}
+{% set page_title = "Settings" %}
+{% include 'private/parents/components/page_header.html' %}
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <style>
-        .settings-collapsible > summary {
-            list-style: none;
-            cursor: pointer;
-        }
 
-        .settings-collapsible > summary::-webkit-details-marker {
-            display: none;
-        }
+	{# ── Setup Wizard shortcut ────────────────────────────────────────────── #}
+	<article class="dashboard-card" style="border-left:4px solid var(--duo-blue,#1cb0f6);">
+		<div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+			<div style="display:flex;align-items:center;gap:12px;">
+				<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--duo-blue,#1cb0f6),#0e8ec4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;">🧙</div>
+				<div>
+					<div style="font-weight:800;font-size:.95rem;">Setup Wizard</div>
+					<div style="font-size:.78rem;color:var(--duo-muted);margin-top:2px;">Step through creating chores, challenges, store rewards, family goals, and your coin-to-cash rate at your own pace.</div>
+				</div>
+			</div>
+			<button type="button" onclick="openWizardModal()" class="btn primary" style="white-space:nowrap;padding:9px 20px;font-size:.88rem;">Run Setup Wizard →</button>
+		</div>
+	</article>
 
-        .settings-collapsible[open] > summary .toggle-label::after {
-            content: "Hide";
-        }
+	{# ── Getting Started ──────────────────────────────────────────────────── #}
+	<article class="dashboard-card">
+		<details class="settings-collapsible">
+			<summary class="card-header" style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+				<div style="display:flex;align-items:center;gap:12px;">
+					<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--duo-green,#58cc02),#38a800);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+					</div>
+					<div>
+						<h2 style="font-size:1rem;margin:0;">Getting Started</h2>
+						<p style="font-size:.78rem;color:var(--duo-muted);margin:2px 0 0;">Load starter chores, kid rewards &amp; family goals</p>
+					</div>
+				</div>
+				<span class="pill toggle-label" style="flex-shrink:0;"></span>
+			</summary>
+			<div class="card-body" style="display:flex;flex-direction:column;gap:28px;">
 
-        .settings-collapsible:not([open]) > summary .toggle-label::after {
-            content: "Show";
-        }
-    </style>
+				<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 16px;background:color-mix(in srgb,var(--duo-green,#58cc02) 8%,var(--duo-panel));border:2px solid color-mix(in srgb,var(--duo-green,#58cc02) 30%,transparent);border-radius:12px;">
+					<p style="margin:0;font-size:.85rem;color:var(--duo-muted);">Apply everything at once — existing items are never duplicated.</p>
+					<div style="display:flex;gap:8px;flex-wrap:wrap;">
+						<button type="button" onclick="openWizardModal()" class="btn" style="font-size:.82rem;padding:7px 16px;white-space:nowrap;">🧙 Setup Wizard</button>
+						<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+							<input type="hidden" name="category" value="all">
+							<button type="submit" class="btn primary" style="font-size:.82rem;padding:7px 18px;white-space:nowrap;">Apply All Starters</button>
+						</form>
+					</div>
+				</div>
 
-    {# ── Profile ──────────────────────────────────────────────────────────── #}
-    <section class="dashboard-grid">
-        <article class="dashboard-card full-width">
-            <details class="settings-collapsible">
-                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <div>
-                        <h2>Your Profile</h2>
-                        <p class="muted" style="margin-top:2px;">Update your name, email, or password. Your current password is required to save any change.</p>
-                    </div>
-                    <span class="pill toggle-label"></span>
-                </summary>
-                <div class="card-body">
-                    <form method="post" action="{{ url_for('public.parent_update_profile') }}" class="d-flex flex-column gap-3">
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <label for="profile-name">Full name</label>
-                                <input id="profile-name" name="name" type="text" value="{{ parent.name }}" required />
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label for="profile-email">Email</label>
-                                <input id="profile-email" name="email" type="email" value="{{ parent.email }}" required />
-                            </div>
-                        </div>
+				{# Reward Economy Guide #}
+				<details>
+					<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;background:color-mix(in srgb,var(--duo-yellow,#ffd900) 8%,var(--duo-panel));border:1px solid color-mix(in srgb,var(--duo-yellow,#ffd900) 30%,transparent);border-radius:12px;">
+						<span style="font-size:1.1rem;">💡</span>
+						<div style="flex:1;">
+							<div style="font-size:.88rem;font-weight:800;">How to Design Your Reward Economy</div>
+							<div style="font-size:.75rem;color:var(--duo-muted);margin-top:1px;">Coin &amp; point benchmarks for chores, store items, goals, and challenges.</div>
+						</div>
+						<span style="font-size:.75rem;font-weight:700;color:var(--duo-muted);padding:3px 9px;border:1px solid var(--duo-border);border-radius:8px;white-space:nowrap;">Show guide</span>
+					</summary>
+					<div style="margin-top:14px;display:flex;flex-direction:column;gap:16px;">
 
-                        <hr style="border:none; border-top:1px solid var(--duo-border); margin:4px 0;">
+						<article class="dashboard-card" style="border-left:4px solid var(--duo-yellow,#ffd900);background:color-mix(in srgb,var(--duo-panel) 90%,#fffbe6 10%);">
+							<div class="card-body">
+								<div style="font-weight:800;font-size:.88rem;margin-bottom:6px;">🏦 The two-currency system</div>							<div style="display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--duo-yellow,#ffd900) 15%,var(--duo-panel));border:1px solid color-mix(in srgb,var(--duo-yellow,#ffd900) 40%,transparent);border-radius:10px;padding:6px 11px;margin-bottom:10px;font-size:.8rem;font-weight:700;">
+								<span>🪙 10 coins = 💵 $1</span>
+								<span style="font-weight:400;color:var(--duo-muted);font-size:.75rem;">— recommended real-money exchange rate</span>
+							</div>								<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;">
+									<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:10px 12px;">
+										<div style="font-weight:800;font-size:.82rem;margin-bottom:3px;">🪙 Coins — personal rewards</div>
+										<p style="margin:0;font-size:.78rem;color:var(--duo-muted);">Belong to each kid individually. Spent in the <strong>Kid Store</strong> on personal rewards. Fosters <em>individual responsibility</em>.</p>
+									</div>
+									<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:10px 12px;">
+										<div style="font-weight:800;font-size:.82rem;margin-bottom:3px;">⭐ Points — family teamwork</div>
+										<p style="margin:0;font-size:.78rem;color:var(--duo-muted);">Accumulate across the whole family toward <strong>Family Goals</strong>. The whole family wins together.</p>
+									</div>
+								</div>
+							</div>
+						</article>
 
-                        <p class="muted" style="font-size:13px; margin:0;">Leave <em>New password</em> blank to keep your current password.</p>
+						<article class="dashboard-card">
+							<div class="card-body">
+								<div style="font-weight:800;font-size:.88rem;margin-bottom:8px;">🧹 Chore pricing benchmarks</div>
+								<div style="overflow-x:auto;">
+									<table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+										<thead>
+											<tr style="border-bottom:2px solid var(--duo-border);text-align:left;">
+												<th style="padding:5px 8px;font-weight:700;">Effort</th>
+												<th style="padding:5px 8px;font-weight:700;">Examples</th>
+												<th style="padding:5px 8px;font-weight:700;">🪙 Coins</th>
+												<th style="padding:5px 8px;font-weight:700;">⭐ Pts</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr style="border-bottom:1px solid var(--duo-border);"><td style="padding:5px 8px;font-weight:700;">Quick (&lt;5 min)</td><td style="padding:5px 8px;color:var(--duo-muted);">Make bed, wipe counter</td><td style="padding:5px 8px;">5–10</td><td style="padding:5px 8px;">5–10</td></tr>
+											<tr style="border-bottom:1px solid var(--duo-border);"><td style="padding:5px 8px;font-weight:700;">Medium (10–20 min)</td><td style="padding:5px 8px;color:var(--duo-muted);">Vacuum, sweep + mop</td><td style="padding:5px 8px;">15–25</td><td style="padding:5px 8px;">15–25</td></tr>
+											<tr style="border-bottom:1px solid var(--duo-border);"><td style="padding:5px 8px;font-weight:700;">Hard (20–40 min)</td><td style="padding:5px 8px;color:var(--duo-muted);">Clean bathroom, mow lawn</td><td style="padding:5px 8px;">30–50</td><td style="padding:5px 8px;">30–50</td></tr>
+											<tr><td style="padding:5px 8px;font-weight:700;">Big project (45+ min)</td><td style="padding:5px 8px;color:var(--duo-muted);">Garage cleanout, car wash</td><td style="padding:5px 8px;">50–100</td><td style="padding:5px 8px;">50–100</td></tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</article>
 
-                        <div class="row g-3">
-                            <div class="col-12 col-md-4">
-                                <label for="current-password">Current password <span style="color:var(--duo-danger,#e53935);">*</span></label>
-                                <input id="current-password" name="current_password" type="password" placeholder="Required to save" required />
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label for="new-password">New password</label>
-                                <input id="new-password" name="new_password" type="password" placeholder="Leave blank to keep" minlength="8" />
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label for="confirm-new-password">Confirm new password</label>
-                                <input id="confirm-new-password" name="confirm_new_password" type="password" placeholder="Repeat new password" />
-                            </div>
-                        </div>
+						<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+							<article class="dashboard-card">
+								<div class="card-body">
+									<div style="font-weight:800;font-size:.88rem;margin-bottom:8px;">🛍️ Kid store pricing</div>
+									<div style="display:flex;flex-direction:column;gap:7px;">
+										<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:700;">Small · <span style="color:var(--duo-green,#58cc02);">50–150 coins</span></div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Choose dinner, special snack, stay up 30 min late</p>
+										</div>
+										<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:700;">Medium · <span style="color:var(--duo-blue,#1cb0f6);">200–400 coins</span></div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Extra screen time, rent a movie, small toy</p>
+										</div>
+										<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:700;">Big · <span style="color:var(--duo-yellow,#ffd900);">500–1000 coins</span></div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Special outing, new book, dollars store trip</p>
+										</div>
+									</div>
+								</div>
+							</article>
+							<article class="dashboard-card">
+								<div class="card-body">
+									<div style="font-weight:800;font-size:.88rem;margin-bottom:8px;">🏆 Family goal sizing</div>
+									<div style="display:flex;flex-direction:column;gap:7px;">
+										<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:700;">Quick win · <span style="color:var(--duo-green,#58cc02);">200–400 pts</span></div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Movie night, pizza night · ~1 week (2 kids)</p>
+										</div>
+										<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:700;">Medium · <span style="color:var(--duo-blue,#1cb0f6);">600–1000 pts</span></div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Board game, bowling trip · 2–3 weeks</p>
+										</div>
+										<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:700;">Big goal · <span style="color:var(--duo-yellow,#ffd900);">1500–3000 pts</span></div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Amusement park, camping trip · 1–2 months</p>
+										</div>
+									</div>
+								</div>
+							</article>
+							<article class="dashboard-card">
+								<div class="card-body">
+									<div style="font-weight:800;font-size:.88rem;margin-bottom:8px;">⚡ Challenge difficulty</div>
+									<div style="display:flex;flex-direction:column;gap:7px;">
+										<div style="background:var(--duo-bg);border:1px solid #cd7f32;border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:800;color:#cd7f32;">🥉 Bronze · 25–50 coins &amp; pts</div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Single-day or simple behavior goal</p>
+										</div>
+										<div style="background:var(--duo-bg);border:1px solid #aaa;border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:800;color:#888;">🥈 Silver · 75–150 coins &amp; pts</div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">Multi-day or moderate difficulty</p>
+										</div>
+										<div style="background:var(--duo-bg);border:1px solid #d4af37;border-radius:10px;padding:9px 11px;">
+											<div style="font-size:.78rem;font-weight:800;color:#b8860b;">🥇 Gold · 200–400 coins &amp; pts</div>
+											<p style="margin:2px 0 0;font-size:.72rem;color:var(--duo-muted);">High effort or multi-week commitment</p>
+										</div>
+									</div>
+								</div>
+							</article>
+						</div>
 
-                        <div>
-                            <button type="submit" class="btn btn-primary">Save Profile</button>
-                        </div>
-                    </form>
-                </div>
-            </details>
-        </article>
-    </section>
+						<article class="dashboard-card" style="border-left:4px solid var(--duo-blue,#1cb0f6);">
+							<div class="card-body">
+								<div style="font-weight:800;font-size:.88rem;margin-bottom:8px;">✅ Quick tips</div>
+								<ul style="margin:0;padding-left:16px;font-size:.8rem;color:var(--duo-muted);display:flex;flex-direction:column;gap:6px;">
+									<li><strong>Start with 4–6 chores</strong> and add more once kids are engaged.</li>
+									<li><strong>Calibrate after week one</strong> — raise/lower prices based on what you observe.</li>
+									<li><strong>Never take coins away</strong> — keep the system trustworthy.</li>
+									<li><strong>Always have a quick-win goal active</strong> alongside a bigger one.</li>
+									<li><strong>Pause, don't delete</strong> when life gets busy.</li>
+								</ul>
+							</div>
+						</article>
 
-    {# ── Kids ─────────────────────────────────────────────────────────────── #}
-    <section class="dashboard-grid">
-        <article class="dashboard-card full-width">
-            <details class="settings-collapsible">
-                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <div>
-                        <h2>Kids</h2>
-                        <p class="muted" style="margin-top:2px;">Add kids, update their profile/PIN, and manage kid + family balances.</p>
-                    </div>
-                    <span class="pill toggle-label"></span>
-                </summary>
-                <div class="card-body d-flex flex-column gap-4">
+					</div>
+				</details>
 
-                    <div class="panel" style="padding:14px;">
-                        <h3 style="font-size:1rem; margin-bottom:10px;">Balances</h3>
-                        <div class="row g-3" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                            <div class="col-12">
-                                <h4 style="font-size:0.95rem; margin-bottom:8px;">Family Points</h4>
-                                <p class="muted" style="margin: 0 0 8px;">Current pool: <strong>{{ family.family_points_balance }}</strong></p>
-                                <form method="post" action="{{ url_for('public.parent_store_add_family_points') }}" class="d-flex gap-2">
-                                    <input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
-                                    <input name="points" type="number" min="1" value="10" required />
-                                    <button type="submit" class="btn">Add Points</button>
-                                </form>
-                            </div>
-                            <div class="col-12">
-                                <h4 style="font-size:0.95rem; margin-bottom:8px;">Kid Coins</h4>
-                                <form method="post" action="{{ url_for('public.parent_store_add_kid_coins') }}" class="d-flex flex-column gap-2">
-                                    <input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
-                                    <select name="kid_id" required>
-                                        <option value="">Select Kid</option>
-                                        {% for kid in kids %}
-                                            <option value="{{ kid.id }}">{{ kid.display_name }} ({{ kid.coin_balance }} coins)</option>
-                                        {% endfor %}
-                                    </select>
-                                    <div class="d-flex gap-2">
-                                        <input name="coins" type="number" min="1" value="5" required />
-                                        <button type="submit" class="btn">Add Coins</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+				{# Starter Chores #}
+				<div>
+					<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+						<h3 style="margin:0;font-size:.95rem;font-weight:800;">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+							Starter Chores
+						</h3>
+						<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+							<input type="hidden" name="category" value="chores">
+							<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add All Chores</button>
+						</form>
+					</div>
+					<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+						{% for chore in starter_chores %}
+						<div style="position:relative;border:2px solid var(--duo-border);border-radius:12px;padding:12px 14px;{% if chore.already_exists %}opacity:.55;{% endif %}">
+							{% if chore.already_exists %}
+							<span style="position:absolute;top:8px;right:10px;font-size:.68rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 7px;border-radius:99px;">Added</span>
+							{% endif %}
+							<div style="font-weight:800;font-size:.88rem;margin-bottom:3px;padding-right:{% if chore.already_exists %}50px{% else %}0{% endif %};">{{ chore.name }}</div>
+							<div style="display:flex;gap:8px;font-size:.75rem;font-weight:700;margin-bottom:10px;">
+								<span style="color:var(--duo-yellow,#fbbf24);">🪙 {{ chore.coin_reward }}</span>
+								<span style="color:var(--duo-blue,#4f8ef7);">⭐ {{ chore.point_value }} pts</span>
+							</div>
+							{% if not chore.already_exists %}
+							<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+								<input type="hidden" name="category" value="chores">
+								<input type="hidden" name="single_name" value="{{ chore.name }}">
+								<button type="submit" class="btn" style="font-size:.75rem;padding:4px 12px;">Add</button>
+							</form>
+							{% endif %}
+						</div>
+						{% endfor %}
+					</div>
+				</div>
 
-                    {# Current kids list #}
-                    {% if kids %}
-                        <ul class="settings-list">
-                            {% for kid in kids %}
-                                <li class="settings-list-item">
-                                    <div class="settings-list-info" style="width: 100%;">
-                                        <span class="settings-list-name">{{ kid.display_name }}</span>
-                                        <span class="muted" style="font-size:12px;">Added {{ kid.created_at.strftime('%b %d, %Y') }} • {{ kid.coin_balance }} coins</span>
+				{# Kid Store Rewards #}
+				<div>
+					<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+						<h3 style="margin:0;font-size:.95rem;font-weight:800;">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+							Kid Store Rewards
+						</h3>
+						<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+							<input type="hidden" name="category" value="kid_store">
+							<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add All Rewards</button>
+						</form>
+					</div>
+					<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+						{% for item in starter_kid_store %}
+						<div style="position:relative;border:2px solid var(--duo-border);border-radius:12px;padding:12px 14px;{% if item.already_exists %}opacity:.55;{% endif %}">
+							{% if item.already_exists %}
+							<span style="position:absolute;top:8px;right:10px;font-size:.68rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 7px;border-radius:99px;">Added</span>
+							{% endif %}
+							<div style="font-weight:800;font-size:.88rem;margin-bottom:3px;padding-right:{% if item.already_exists %}50px{% else %}0{% endif %};">{{ item.name }}</div>
+							<div style="font-size:.75rem;font-weight:700;color:var(--duo-yellow,#fbbf24);margin-bottom:10px;">🪙 {{ item.kid_coin_cost }} coins</div>
+							{% if not item.already_exists %}
+							<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+								<input type="hidden" name="category" value="kid_store">
+								<input type="hidden" name="single_name" value="{{ item.name }}">
+								<button type="submit" class="btn" style="font-size:.75rem;padding:4px 12px;">Add</button>
+							</form>
+							{% endif %}
+						</div>
+						{% endfor %}
+					</div>
+				</div>
 
-                                        <form method="post" action="{{ url_for('public.parent_settings_update_kid', kid_id=kid.id) }}" class="d-flex flex-wrap gap-2 mt-2 align-items-end">
-                                            <div style="flex:1; min-width:160px;">
-                                                <label for="kid-name-{{ kid.id }}">Display name</label>
-                                                <input id="kid-name-{{ kid.id }}" name="display_name" type="text" value="{{ kid.display_name }}" required />
-                                            </div>
-                                            <div style="flex:0 0 170px;">
-                                                <label for="kid-pin-{{ kid.id }}">New PIN (optional)</label>
-                                                <input id="kid-pin-{{ kid.id }}" name="pin" type="text" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="Leave blank" />
-                                            </div>
-                                            <div>
-                                                <button type="submit" class="btn btn-sm">Save</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div>
-                                        <form method="post" action="{{ url_for('public.parent_settings_remove_kid', kid_id=kid.id) }}"
-                                              onsubmit="return confirm('Remove {{ kid.display_name }} from your family?')">
-                                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
-                                        </form>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="muted empty-state">No kids added yet.</p>
-                    {% endif %}
+				{# Family Goals #}
+				<div>
+					<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+						<h3 style="margin:0;font-size:.95rem;font-weight:800;">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+							Family Goals
+						</h3>
+						<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+							<input type="hidden" name="category" value="family_store">
+							<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add All Goals</button>
+						</form>
+					</div>
+					<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+						{% for item in starter_family_store %}
+						<div style="position:relative;border:2px solid var(--duo-border);border-radius:12px;padding:12px 14px;{% if item.already_exists %}opacity:.55;{% endif %}">
+							{% if item.already_exists %}
+							<span style="position:absolute;top:8px;right:10px;font-size:.68rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 7px;border-radius:99px;">Added</span>
+							{% endif %}
+							<div style="font-weight:800;font-size:.88rem;margin-bottom:3px;padding-right:{% if item.already_exists %}50px{% else %}0{% endif %};">{{ item.name }}</div>
+							<div style="font-size:.75rem;font-weight:700;color:var(--duo-blue,#4f8ef7);margin-bottom:10px;">⭐ {{ item.family_point_cost }} pts</div>
+							{% if not item.already_exists %}
+							<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+								<input type="hidden" name="category" value="family_store">
+								<input type="hidden" name="single_name" value="{{ item.name }}">
+								<button type="submit" class="btn" style="font-size:.75rem;padding:4px 12px;">Add</button>
+							</form>
+							{% endif %}
+						</div>
+						{% endfor %}
+					</div>
+				</div>
 
-                    {# Add kid form #}
-                    <div>
-                        <h3 style="font-size:1rem; margin-bottom:10px;">Add a Kid</h3>
-                        <form method="post" action="{{ url_for('public.parent_settings_add_kid') }}" class="d-flex flex-wrap gap-3 align-items-end">
-                            <div style="flex:1; min-width:160px;">
-                                <label for="kid-name">Kid's name</label>
-                                <input id="kid-name" name="display_name" type="text" placeholder="e.g. Alex" required />
-                            </div>
-                            <div style="flex:0 0 120px;">
-                                <label for="kid-pin">4-digit PIN</label>
-                                <input id="kid-pin" name="pin" type="text" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="1234" required />
-                            </div>
-                            <div>
-                                <button type="submit" class="btn btn-primary">Add Kid</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </details>
-        </article>
-    </section>
+				{# Starter Challenges #}
+				<div>
+					<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+						<h3 style="margin:0;font-size:.95rem;font-weight:800;">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+							Starter Challenges
+						</h3>
+						<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+							<input type="hidden" name="category" value="challenges">
+							<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add All Challenges</button>
+						</form>
+					</div>
+					<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+						{% for ch in starter_challenges %}
+						<div style="position:relative;border:2px solid var(--duo-border);border-radius:12px;padding:12px 14px;{% if ch.already_exists %}opacity:.55;{% endif %}">
+							{% if ch.already_exists %}
+							<span style="position:absolute;top:8px;right:10px;font-size:.68rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 7px;border-radius:99px;">Added</span>
+							{% endif %}
+							<div style="font-weight:800;font-size:.88rem;margin-bottom:3px;padding-right:{% if ch.already_exists %}50px{% else %}0{% endif %};">{{ ch.title }}</div>
+							<div style="display:flex;gap:8px;font-size:.75rem;font-weight:700;margin-bottom:4px;">
+								<span style="color:var(--duo-yellow,#fbbf24);">🪙 {{ ch.coin_reward }}</span>
+								<span style="color:var(--duo-blue,#4f8ef7);">⭐ {{ ch.point_value }} pts</span>
+								<span style="text-transform:capitalize;color:var(--duo-muted);">{{ ch.difficulty }}</span>
+							</div>
+							{% if ch.is_repeatable %}<div style="font-size:.72rem;color:var(--duo-muted);margin-bottom:8px;">🔁 Repeatable</div>{% else %}<div style="margin-bottom:8px;"></div>{% endif %}
+							{% if not ch.already_exists %}
+							<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+								<input type="hidden" name="category" value="challenges">
+								<input type="hidden" name="single_name" value="{{ ch.title }}">
+								<button type="submit" class="btn" style="font-size:.75rem;padding:4px 12px;">Add</button>
+							</form>
+							{% endif %}
+						</div>
+						{% endfor %}
+					</div>
+				</div>
 
-    {# ── Devices ───────────────────────────────────────────────────────────── #}
-    <section class="dashboard-grid">
-        <article class="dashboard-card full-width">
-            <details class="settings-collapsible">
-                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <div>
-                        <h2>Devices</h2>
-                        <p class="muted" style="margin-top:2px;">Register this browser/device so kids can log in with just their name and PIN — no family code needed.</p>
-                    </div>
-                    <span class="pill toggle-label"></span>
-                </summary>
-                <div class="card-body d-flex flex-column gap-4">
+			</div>
+		</details>
+	</article>
+	<article class="dashboard-card">
+		<details class="settings-collapsible">
+			<summary class="card-header" style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+				<div style="display:flex;align-items:center;gap:12px;">
+					<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--duo-blue),#0f98d8);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+					</div>
+					<div>
+						<h2 style="font-size:1rem;margin:0;">Your Profile</h2>
+						<p style="font-size:.78rem;color:var(--duo-muted);margin:2px 0 0;">Name, email and password</p>
+					</div>
+				</div>
+				<span class="pill toggle-label" style="flex-shrink:0;"></span>
+			</summary>
+			<div class="card-body" style="display:flex;flex-direction:column;gap:20px;">
+				<form method="post" action="{{ url_for('public.parent_update_profile') }}" style="display:flex;flex-direction:column;gap:16px;">
+					<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+						<div>
+							<label style="display:block;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="profile-name">Full name</label>
+							<input id="profile-name" name="name" type="text" value="{{ parent.name }}" required />
+						</div>
+						<div>
+							<label style="display:block;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="profile-email">Email</label>
+							<input id="profile-email" name="email" type="email" value="{{ parent.email }}" required />
+						</div>
+					</div>
 
-                    <form method="post" action="{{ url_for('public.parent_register_device') }}" class="d-flex flex-wrap gap-3 align-items-end">
-                        <div style="flex:1; min-width:200px;">
-                            <label for="device_label">Device name</label>
-                            <input id="device_label" name="device_label" type="text" placeholder="e.g. Kitchen iPad" />
-                        </div>
-                        <div>
-                            <button type="submit" class="btn btn-primary">Register This Device</button>
-                        </div>
-                    </form>
+					<hr style="border:none;border-top:2px solid var(--duo-border);margin:0;">
 
-                    {% if active_devices %}
-                        <div>
-                            <h3 style="font-size:1rem; margin-bottom:10px;">Active Devices <span class="pill">{{ active_devices|length }}</span></h3>
-                            <ul class="settings-list">
-                                {% for device in active_devices %}
-                                    <li class="settings-list-item">
-                                        <div class="settings-list-info">
-                                            <span class="settings-list-name">{{ device.device_label }}</span>
-                                            <span class="muted" style="font-size:12px;">Last seen {{ device.last_seen_at.strftime('%b %d, %Y') }} &middot; Expires {{ device.expires_at.strftime('%b %d, %Y') }}</span>
-                                        </div>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% else %}
-                        <p class="muted empty-state">No registered devices yet.</p>
-                    {% endif %}
+					<p style="font-size:.78rem;color:var(--duo-muted);margin:0;">Leave <em>New password</em> blank to keep your current password.</p>
 
-                    <div>
-                        <h3 style="font-size:1rem; margin-bottom:6px;">Revoke This Device</h3>
-                        <p class="muted" style="font-size:13px; margin-bottom:10px;">Remove trust for this browser and clear the local device token.</p>
-                        <form method="post" action="{{ url_for('public.parent_revoke_this_device') }}">
-                            <button type="submit" class="btn btn-danger">Revoke This Device</button>
-                        </form>
-                    </div>
+					<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+						<div>
+							<label style="display:block;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="current-password">Current password <span style="color:var(--duo-red);">*</span></label>
+							<input id="current-password" name="current_password" type="password" placeholder="Required to save" required />
+						</div>
+						<div>
+							<label style="display:block;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="new-password">New password</label>
+							<input id="new-password" name="new_password" type="password" placeholder="Leave blank to keep" minlength="8" />
+						</div>
+						<div>
+							<label style="display:block;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="confirm-new-password">Confirm new password</label>
+							<input id="confirm-new-password" name="confirm_new_password" type="password" placeholder="Repeat new password" />
+						</div>
+					</div>
 
-                </div>
-            </details>
-        </article>
-    </section>
+					<div>
+						<button type="submit" class="btn primary">Save Profile</button>
+					</div>
+				</form>
+			</div>
+		</details>
+	</article>
 
-    {# ── Guardians & Family ───────────────────────────────────────────────── #}
-    <section class="dashboard-grid">
-        <article class="dashboard-card full-width">
-            <details class="settings-collapsible">
-                <summary class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <div>
-                        <h2>Guardians &amp; Family</h2>
-                        <p class="muted" style="margin-top:2px;">Manage co-guardians in <strong>{{ family.name }}</strong> and review join requests.</p>
-                    </div>
-                    <span class="pill toggle-label"></span>
-                </summary>
-                <div class="card-body d-flex flex-column gap-5">
+	{# ── Coin Exchange Rate ───────────────────────────────────────────────── #}
+	<article class="dashboard-card">
+		<details class="settings-collapsible">
+			<summary class="card-header" style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+				<div style="display:flex;align-items:center;gap:12px;">
+					<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--duo-yellow,#ffd900),#f59e0b);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;">
+						💵
+					</div>
+					<div>
+						<h2 style="font-size:1rem;margin:0;">Cash-Out Rate</h2>
+						<p style="font-size:.78rem;color:var(--duo-muted);margin:2px 0 0;">Currently: <strong>{{ family.coins_per_dollar }} coins = $1</strong></p>
+					</div>
+				</div>
+				<span class="pill toggle-label" style="flex-shrink:0;"></span>
+			</summary>
+			<div class="card-body">
+				<p style="font-size:.85rem;color:var(--duo-muted);margin:0 0 16px;">Set how many coins a kid needs to cash out $1 of real money. The default is <strong>10 coins = $1</strong>. Kids will see this rate on the store.</p>
+				<form method="POST" action="{{ url_for('public.parent_settings_update_coin_rate') }}" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+					<div>
+						<label for="coins-per-dollar" style="font-size:.82rem;font-weight:700;display:block;margin-bottom:4px;">Coins per $1</label>
+						<input id="coins-per-dollar" name="coins_per_dollar" type="number" min="1" max="1000" value="{{ family.coins_per_dollar }}" style="width:110px;" />
+					</div>
+					<div style="padding-bottom:2px;">
+						<div style="font-size:.78rem;color:var(--duo-muted);margin-bottom:4px;">That means:</div>
+						<div id="coin-rate-preview" style="font-size:.9rem;font-weight:800;">{{ family.coins_per_dollar }} 🪙 = $1.00</div>
+					</div>
+					<button type="submit" class="btn primary" style="padding:8px 20px;">Save</button>
+				</form>
+			</div>
+		</details>
+	</article>
 
-                    {# Family code management #}
-                    <div>
-                        <h3 style="font-size:1rem; margin-bottom:6px;">Family Code</h3>
-                        <p class="muted" style="font-size:13px; margin-bottom:10px;">
-                            Use this code for guardian invites and family linking. Rotating creates a new code and deactivates the old one.
-                        </p>
+	<script>
+	(function () {
+		const input = document.getElementById('coins-per-dollar');
+		const preview = document.getElementById('coin-rate-preview');
+		if (!input || !preview) return;
+		function update() {
+			const v = parseInt(input.value, 10);
+			preview.textContent = isNaN(v) || v < 1 ? '— 🪙 = $1.00' : v + ' 🪙 = $1.00';
+		}
+		input.addEventListener('input', update);
+	}());
+	</script>
 
-                        <div class="panel" style="padding:14px; margin-bottom:10px;">
-                            <div class="settings-list-name" style="font-size:0.95rem; margin-bottom:6px;">Current Code</div>
-                            {% if family.family_code_plain %}
-                                <div style="font-size:1.15rem; font-weight:800; letter-spacing:0.08em;">{{ family.family_code_plain }}</div>
-                            {% else %}
-                                <div class="muted" style="font-size:13px;">Code not available yet. Generate a new code to display it here.</div>
-                            {% endif %}
-                        </div>
+	{# ── Kids ─────────────────────────────────────────────────────────────── #}
+	<article class="dashboard-card">
+		<details class="settings-collapsible">
+			<summary class="card-header" style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+				<div style="display:flex;align-items:center;gap:12px;">
+					<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--duo-green),var(--duo-green-dark));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+					</div>
+					<div>
+						<h2 style="font-size:1rem;margin:0;">Kids</h2>
+						<p style="font-size:.78rem;color:var(--duo-muted);margin:2px 0 0;">Manage kids, PINs and coin balances</p>
+					</div>
+				</div>
+				<span class="pill toggle-label" style="flex-shrink:0;"></span>
+			</summary>
+			<div class="card-body" style="display:flex;flex-direction:column;gap:24px;">
 
-                        <form method="post" action="{{ url_for('public.parent_settings_rotate_family_code') }}"
-                              onsubmit="return confirm('Generate a new family code? Your current code will stop working.')">
-                            <button type="submit" class="btn btn-primary">🔑 Generate New Family Code</button>
-                        </form>
-                    </div>
+				{# Balances #}
+				<div style="background:color-mix(in srgb,var(--duo-panel) 85%,var(--duo-bg) 15%);border:2px solid var(--duo-border);border-radius:12px;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+					<div>
+						<h3 style="font-size:.88rem;font-weight:900;margin:0 0 8px;">Family Points</h3>
+						<p style="font-size:.82rem;color:var(--duo-muted);margin:0 0 10px;">Current pool: <strong>{{ family.family_points_balance }}</strong></p>
+						<form method="post" action="{{ url_for('public.parent_store_add_family_points') }}" style="display:flex;gap:8px;">
+							<input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
+							<input name="points" type="number" min="1" value="10" required style="width:80px;" />
+							<button type="submit" class="btn" style="padding:8px 14px;font-size:.85rem;">Add Points</button>
+						</form>
+					</div>
+					<div>
+						<h3 style="font-size:.88rem;font-weight:900;margin:0 0 8px;">Kid Coins</h3>
+						<form method="post" action="{{ url_for('public.parent_store_add_kid_coins') }}" style="display:flex;flex-direction:column;gap:8px;">
+							<input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
+							<select name="kid_id" required>
+								<option value="">Select Kid</option>
+								{% for kid in kids %}
+									<option value="{{ kid.id }}">{{ kid.display_name }} ({{ kid.coin_balance }} coins)</option>
+								{% endfor %}
+							</select>
+							<div style="display:flex;gap:8px;">
+								<input name="coins" type="number" min="1" value="5" required style="width:80px;" />
+								<button type="submit" class="btn" style="padding:8px 14px;font-size:.85rem;">Add Coins</button>
+							</div>
+						</form>
+					</div>
+				</div>
 
-                    {# Co-guardians list #}
-                    <div>
-                        <h3 style="font-size:1rem; margin-bottom:10px;">Co-guardians</h3>
-                        {% if co_guardians %}
-                            <ul class="settings-list">
-                                {% for guardian in co_guardians %}
-                                    <li class="settings-list-item">
-                                        <div class="settings-list-info">
-                                            <span class="settings-list-name">{{ guardian.name }}</span>
-                                            <span class="muted" style="font-size:12px;">{{ guardian.email }}</span>
-                                        </div>
-                                        <span class="badge badge-success">Guardian</span>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="muted empty-state">You are the only guardian in this family so far.</p>
-                        {% endif %}
-                    </div>
+				{# Current kids #}
+				{% if kids %}
+					<div style="display:flex;flex-direction:column;gap:10px;">
+						{% for kid in kids %}
+							<div style="border:2px solid var(--duo-border);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
+								<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--duo-blue),var(--duo-purple));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;color:#fff;flex-shrink:0;">
+									{{ kid.display_name[0].upper() }}
+								</div>
+								<div style="flex:1;min-width:0;">
+									<div style="font-weight:900;font-size:.95rem;">{{ kid.display_name }}</div>
+									<div style="font-size:.75rem;color:var(--duo-muted);margin-bottom:10px;">Added {{ kid.created_at.strftime('%b %d, %Y') }} &middot; {{ kid.coin_balance }} coins</div>
+									<form method="post" action="{{ url_for('public.parent_settings_update_kid', kid_id=kid.id) }}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+										<div style="flex:1;min-width:150px;">
+											<label style="display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:4px;" for="kid-name-{{ kid.id }}">Display name</label>
+											<input id="kid-name-{{ kid.id }}" name="display_name" type="text" value="{{ kid.display_name }}" required />
+										</div>
+										<div style="flex:0 0 150px;">
+											<label style="display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:4px;" for="kid-pin-{{ kid.id }}">New PIN (optional)</label>
+											<input id="kid-pin-{{ kid.id }}" name="pin" type="text" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="Leave blank" />
+										</div>
+										<button type="submit" class="btn" style="padding:8px 16px;font-size:.85rem;">Save</button>
+									</form>
+								</div>
+								<form method="post" action="{{ url_for('public.parent_settings_remove_kid', kid_id=kid.id) }}"
+									  onsubmit="return confirm('Remove {{ kid.display_name }} from your family?')" style="margin:0;">
+									<button type="submit" class="btn btn-danger" style="padding:8px 14px;font-size:.82rem;">Remove</button>
+								</form>
+							</div>
+						{% endfor %}
+					</div>
+				{% else %}
+					<p style="color:var(--duo-muted);font-size:.88rem;text-align:center;padding:16px 0;">No kids added yet.</p>
+				{% endif %}
 
-                    <div>
-                        {# Pending join requests #}
-                        {% if pending_requests %}
-                            <h3 style="font-size:1rem; margin-bottom:10px;">
-                                Pending Join Requests
-                                <span class="badge badge-warning" style="margin-left:6px;">{{ pending_requests|length }}</span>
-                            </h3>
-                            <ul class="settings-list">
-                                {% for req in pending_requests %}
-                                    <li class="settings-list-item">
-                                        <div class="settings-list-info">
-                                            <span class="settings-list-name">{{ req.requester.name }}</span>
-                                            <span class="muted" style="font-size:12px;">{{ req.requester.email }} &middot; requested {{ req.created_at.strftime('%b %d, %Y') }}</span>
-                                        </div>
-                                        <div class="d-flex gap-2">
-                                            <form method="post" action="{{ url_for('public.parent_accept_guardian', request_id=req.id) }}">
-                                                <button type="submit" class="btn btn-sm btn-primary">Accept</button>
-                                            </form>
-                                            <form method="post" action="{{ url_for('public.parent_reject_guardian', request_id=req.id) }}"
-                                                  onsubmit="return confirm('Decline this request?')">
-                                                <button type="submit" class="btn btn-sm btn-danger">Decline</button>
-                                            </form>
-                                        </div>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </div>
+				{# Add kid #}
+				<div style="border-top:2px solid var(--duo-border);padding-top:18px;">
+					<h3 style="font-size:.95rem;font-weight:900;margin:0 0 12px;">Add a Kid</h3>
+					<form method="post" action="{{ url_for('public.parent_settings_add_kid') }}" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+						<div style="flex:1;min-width:150px;">
+							<label style="display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:4px;" for="kid-name">Kid's name</label>
+							<input id="kid-name" name="display_name" type="text" placeholder="e.g. Alex" required />
+						</div>
+						<div style="flex:0 0 120px;">
+							<label style="display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:4px;" for="kid-pin">4-digit PIN</label>
+							<input id="kid-pin" name="pin" type="text" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="1234" required />
+						</div>
+						<button type="submit" class="btn primary">Add Kid</button>
+					</form>
+				</div>
 
-                    {# Request to join another family #}
-                    <div>
-                        <h3 style="font-size:1rem; margin-bottom:6px;">Request to Join Another Family</h3>
-                        <p class="muted" style="font-size:13px; margin-bottom:10px;">
-                            Have a family code from another guardian? Enter it here to send a join request.
-                            Once accepted you will move to their family.
-                        </p>
-                        <form method="post" action="{{ url_for('public.parent_request_join_family') }}" class="d-flex flex-wrap gap-3 align-items-end">
-                            <div style="flex:1; min-width:200px;">
-                                <label for="join-family-code">Family code</label>
-                                <input id="join-family-code" name="family_code" type="text" placeholder="e.g. AB3XY7QN"
-                                       autocomplete="off" spellcheck="false" style="text-transform:uppercase;" required />
-                            </div>
-                            <div>
-                                <button type="submit" class="btn">Send Request</button>
-                            </div>
-                        </form>
-                    </div>
+			</div>
+		</details>
+	</article>
 
-                        </div>
-            </details>
-        </article>
-    </section>
+	{# ── Devices ───────────────────────────────────────────────────────────── #}
+	<article class="dashboard-card">
+		<details class="settings-collapsible">
+			<summary class="card-header" style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+				<div style="display:flex;align-items:center;gap:12px;">
+					<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+					</div>
+					<div>
+						<h2 style="font-size:1rem;margin:0;">Devices</h2>
+						<p style="font-size:.78rem;color:var(--duo-muted);margin:2px 0 0;">Trusted browsers for PIN-only kid login</p>
+					</div>
+				</div>
+				<span class="pill toggle-label" style="flex-shrink:0;"></span>
+			</summary>
+			<div class="card-body" style="display:flex;flex-direction:column;gap:20px;">
+
+				<form method="post" action="{{ url_for('public.parent_register_device') }}" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+					<div style="flex:1;min-width:200px;">
+						<label style="display:block;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="device_label">Device name</label>
+						<input id="device_label" name="device_label" type="text" placeholder="e.g. Kitchen iPad" />
+					</div>
+					<button type="submit" class="btn primary">Register This Device</button>
+				</form>
+
+				{% if active_devices %}
+					<div>
+						<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+							<h3 style="font-size:.95rem;font-weight:900;margin:0;">Active Devices</h3>
+							<span class="pill">{{ active_devices|length }}</span>
+						</div>
+						<div style="display:flex;flex-direction:column;gap:8px;">
+							{% for device in active_devices %}
+								<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid var(--duo-border);border-radius:10px;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--duo-muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+									<div style="flex:1;">
+										<div style="font-weight:900;font-size:.9rem;">{{ device.device_label }}</div>
+										<div style="font-size:.75rem;color:var(--duo-muted);">Last seen {{ device.last_seen_at.strftime('%b %d, %Y') }} &middot; Expires {{ device.expires_at.strftime('%b %d, %Y') }}</div>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				{% else %}
+					<p style="color:var(--duo-muted);font-size:.88rem;">No registered devices yet.</p>
+				{% endif %}
+
+				<div style="border-top:2px solid var(--duo-border);padding-top:16px;">
+					<h3 style="font-size:.95rem;font-weight:900;margin:0 0 4px;">Revoke This Device</h3>
+					<p style="font-size:.78rem;color:var(--duo-muted);margin:0 0 12px;">Remove trust for this browser and clear the local device token.</p>
+					<form method="post" action="{{ url_for('public.parent_revoke_this_device') }}" style="margin:0;">
+						<button type="submit" class="btn btn-danger">Revoke This Device</button>
+					</form>
+				</div>
+
+			</div>
+		</details>
+	</article>
+
+	{# ── Guardians & Family ───────────────────────────────────────────────── #}
+	<article class="dashboard-card">
+		<details class="settings-collapsible">
+			<summary class="card-header" style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+				<div style="display:flex;align-items:center;gap:12px;">
+					<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--duo-purple),#6d28d9);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+					</div>
+					<div>
+						<h2 style="font-size:1rem;margin:0;">Guardians &amp; Family</h2>
+						<p style="font-size:.78rem;color:var(--duo-muted);margin:2px 0 0;">Manage co-guardians in <strong>{{ family.name }}</strong></p>
+					</div>
+				</div>
+				<span class="pill toggle-label" style="flex-shrink:0;"></span>
+			</summary>
+			<div class="card-body" style="display:flex;flex-direction:column;gap:24px;">
+
+				{# Family code #}
+				<div>
+					<h3 style="font-size:.95rem;font-weight:900;margin:0 0 6px;">Family Code</h3>
+					<p style="font-size:.78rem;color:var(--duo-muted);margin:0 0 12px;">Use this code for guardian invites. Rotating creates a new code and deactivates the old one.</p>
+					<div style="background:color-mix(in srgb,var(--duo-panel) 85%,var(--duo-bg) 15%);border:2px solid var(--duo-border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+						<div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--duo-muted);margin-bottom:6px;">Current Code</div>
+						{% if family.family_code_plain %}
+							<div style="font-size:1.3rem;font-weight:900;letter-spacing:.12em;">{{ family.family_code_plain }}</div>
+						{% else %}
+							<div style="font-size:.82rem;color:var(--duo-muted);">Code not available yet. Generate a new code to display it here.</div>
+						{% endif %}
+					</div>
+					<form method="post" action="{{ url_for('public.parent_settings_rotate_family_code') }}"
+						  onsubmit="return confirm('Generate a new family code? Your current code will stop working.')" style="margin:0;">
+						<button type="submit" class="btn primary" style="display:inline-flex;align-items:center;gap:6px;">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.32"/></svg>
+							Generate New Family Code
+						</button>
+					</form>
+				</div>
+
+				{# Co-guardians #}
+				<div>
+					<h3 style="font-size:.95rem;font-weight:900;margin:0 0 10px;">Co-guardians</h3>
+					{% if co_guardians %}
+						<div style="display:flex;flex-direction:column;gap:8px;">
+							{% for guardian in co_guardians %}
+								<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid var(--duo-border);border-radius:10px;">
+									<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--duo-purple),#6d28d9);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:.9rem;flex-shrink:0;">
+										{{ guardian.name[0].upper() }}
+									</div>
+									<div style="flex:1;">
+										<div style="font-weight:900;font-size:.9rem;">{{ guardian.name }}</div>
+										<div style="font-size:.75rem;color:var(--duo-muted);">{{ guardian.email }}</div>
+									</div>
+									<span style="font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-green);background:color-mix(in srgb,var(--duo-green) 15%,transparent);border:2px solid color-mix(in srgb,var(--duo-green) 30%,transparent);border-radius:999px;padding:3px 10px;">Guardian</span>
+								</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<p style="color:var(--duo-muted);font-size:.88rem;">You are the only guardian in this family so far.</p>
+					{% endif %}
+				</div>
+
+				{# Pending join requests #}
+				{% if pending_requests %}
+					<div>
+						<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+							<h3 style="font-size:.95rem;font-weight:900;margin:0;">Pending Join Requests</h3>
+							<span style="font-size:.72rem;font-weight:900;background:var(--duo-yellow);color:var(--duo-ink);border-radius:999px;padding:3px 10px;">{{ pending_requests|length }}</span>
+						</div>
+						<div style="display:flex;flex-direction:column;gap:8px;">
+							{% for req in pending_requests %}
+								<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:2px solid var(--duo-border);border-radius:10px;">
+									<div style="flex:1;min-width:0;">
+										<div style="font-weight:900;font-size:.9rem;">{{ req.requester.name }}</div>
+										<div style="font-size:.75rem;color:var(--duo-muted);">{{ req.requester.email }} &middot; requested {{ req.created_at.strftime('%b %d, %Y') }}</div>
+									</div>
+									<div style="display:flex;gap:8px;">
+										<form method="post" action="{{ url_for('public.parent_accept_guardian', request_id=req.id) }}" style="margin:0;">
+											<button type="submit" class="btn primary" style="padding:7px 14px;font-size:.82rem;">Accept</button>
+										</form>
+										<form method="post" action="{{ url_for('public.parent_reject_guardian', request_id=req.id) }}"
+											  onsubmit="return confirm('Decline this request?')" style="margin:0;">
+											<button type="submit" class="btn btn-danger" style="padding:7px 14px;font-size:.82rem;">Decline</button>
+										</form>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				{% endif %}
+
+				{# Join another family #}
+				<div style="border-top:2px solid var(--duo-border);padding-top:18px;">
+					<h3 style="font-size:.95rem;font-weight:900;margin:0 0 6px;">Request to Join Another Family</h3>
+					<p style="font-size:.78rem;color:var(--duo-muted);margin:0 0 12px;">Have a family code from another guardian? Enter it here to send a join request. Once accepted you will move to their family.</p>
+					<form method="post" action="{{ url_for('public.parent_request_join_family') }}" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+						<div style="flex:1;min-width:200px;">
+							<label style="display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:4px;" for="join-family-code">Family code</label>
+							<input id="join-family-code" name="family_code" type="text" placeholder="e.g. AB3XY7QN"
+								   autocomplete="off" spellcheck="false" style="text-transform:uppercase;" required />
+						</div>
+						<button type="submit" class="btn">Send Request</button>
+					</form>
+				</div>
+
+			</div>
+		</details>
+	</article>
 
 </div>
 {% endblock %}
 
 {% block scripts %}
+<style>
+	.settings-collapsible > summary { list-style: none; }
+	.settings-collapsible > summary::-webkit-details-marker { display: none; }
+	.settings-collapsible[open] > summary .toggle-label::after { content: "Hide"; }
+	.settings-collapsible:not([open]) > summary .toggle-label::after { content: "Show"; }
+	/* Round bottom corners of card-header when collapsed */
+	details:not([open]) > summary.card-header { border-radius: var(--radius); border-bottom: none; }
+</style>
+
+{% include 'private/parents/components/_wizard_modal.html' %}
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const sections = Array.from(document.querySelectorAll('.settings-collapsible'));
-
-    sections.forEach(function (section) {
-        section.addEventListener('toggle', function () {
-            if (!section.open) {
-                return;
-            }
-
-            sections.forEach(function (otherSection) {
-                if (otherSection !== section) {
-                    otherSection.open = false;
-                }
-            });
-        });
-    });
+	const sections = Array.from(document.querySelectorAll('.settings-collapsible'));
+	sections.forEach(function (section) {
+		section.addEventListener('toggle', function () {
+			if (!section.open) return;
+			sections.forEach(function (other) {
+				if (other !== section) other.open = false;
+			});
+		});
+	});
 });
 </script>
 {% endblock %}
+

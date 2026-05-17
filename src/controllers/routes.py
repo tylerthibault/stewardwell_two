@@ -9,6 +9,8 @@ from werkzeug.utils import secure_filename
 import math
 
 from src.models.main import (
+	Challenge,
+	ChallengeSubmission,
 	Chore,
 	ChoreCategory,
 	ChoreScheduleSlot,
@@ -25,11 +27,14 @@ from src.models.main import (
 	StoreSessionParticipant,
 	StoreSessionTurn,
 	StoreTimedSession,
+	Task,
+	TaskClaim,
 	TrustedDevice,
 	db,
 	generate_family_code,
 )
 from src.utils.email import send_email
+from src.controllers.parent_controller import _record_coin_transaction
 
 
 public_bp = Blueprint("public", __name__)
@@ -764,6 +769,35 @@ def health():
 	return jsonify({"success": True, "message": "ok"})
 
 
+def _run_daily_chore_reset(family: "Family") -> None:
+	"""Lazy daily reset: bumps daily_reset_version on all active scheduled chores
+	and archives prior-day approved submissions. Runs at most once per family per
+	calendar day (checked via family.last_reset_date)."""
+	today = date.today()
+	if family.last_reset_date == today:
+		return  # already ran today
+
+	scheduled_chores = Chore.query.filter(
+		Chore.family_id == family.id,
+		Chore.schedule_kind != "unscheduled",
+		Chore.is_active == True,
+	).all()
+
+	for chore in scheduled_chores:
+		chore.daily_reset_version += 1
+
+	# Archive approved submissions from before today for all chores in this family
+	if family.last_reset_date is not None:
+		ChoreSubmission.query.filter(
+			ChoreSubmission.family_id == family.id,
+			ChoreSubmission.status == "approved",
+			ChoreSubmission.resolved_at < datetime.combine(today, datetime.min.time()),
+		).update({"status": "archived"}, synchronize_session=False)
+
+	family.last_reset_date = today
+	db.session.commit()
+
+
 @public_bp.get("/parent/dashboard")
 @parent_web_login_required
 def parent_dashboard():
@@ -774,8 +808,18 @@ def parent_dashboard():
 		flash("Session expired. Please log in again.", "error")
 		return redirect(url_for("public.login"))
 
+	_run_daily_chore_reset(family)
+
 	kids = Kid.query.filter_by(family_id=family.id, is_active=True).order_by(Kid.created_at.asc()).all()
-	pending_approvals_count = ChoreSubmission.query.filter_by(family_id=family.id, status="submitted").count()
+	pending_approvals_count = (
+		ChoreSubmission.query.filter_by(family_id=family.id, status="submitted").count()
+		+ ChallengeSubmission.query.filter_by(family_id=family.id, status="submitted").count()
+	)
+	is_new_family = (
+		Chore.query.filter_by(family_id=family.id).count() == 0
+		and StoreItem.query.filter_by(family_id=family.id).count() == 0
+		and Challenge.query.filter_by(family_id=family.id).count() == 0
+	)
 
 	return render_template(
 		"private/parents/dashboard.html",
@@ -783,6 +827,7 @@ def parent_dashboard():
 		family=family,
 		kids=kids,
 		pending_approvals_count=pending_approvals_count,
+		is_new_family=is_new_family,
 	)
 
 
@@ -795,6 +840,8 @@ def parent_chores():
 		session.clear()
 		flash("Session expired. Please log in again.", "error")
 		return redirect(url_for("public.login"))
+
+	_run_daily_chore_reset(family)
 
 	kids = Kid.query.filter_by(family_id=family.id, is_active=True).order_by(Kid.display_name.asc()).all()
 	chores = Chore.query.filter_by(family_id=family.id).order_by(Chore.created_at.desc()).all()
@@ -816,6 +863,63 @@ def parent_chores():
 		total_family_points=sum(chore.point_value for chore in chores if chore.is_active),
 		schedule_preview=_build_schedule_preview(scheduled_chores),
 		weekday_labels=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+	)
+
+
+@public_bp.get("/parent/schedule")
+@parent_web_login_required
+def parent_schedule():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	_run_daily_chore_reset(family)
+
+	try:
+		week_offset = int(request.args.get("week", 0))
+		week_offset = max(-52, min(52, week_offset))
+	except (ValueError, TypeError):
+		week_offset = 0
+
+	today = date.today()
+	# Monday of the target week
+	week_start = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
+	week_end = week_start + timedelta(days=6)
+	days = [week_start + timedelta(days=i) for i in range(7)]
+
+	kids = Kid.query.filter_by(family_id=family.id, is_active=True).order_by(Kid.display_name.asc()).all()
+	all_chores = Chore.query.filter_by(family_id=family.id, is_active=True).all()
+	scheduled_chores = [c for c in all_chores if c.schedule_kind != "unscheduled"]
+	unscheduled_count = len(all_chores) - len(scheduled_chores)
+
+	# Build grid: kid_id -> { date_iso -> [{chore_name, coin_reward, point_value}] }
+	grid = {kid.id: {day.isoformat(): [] for day in days} for kid in kids}
+	for chore in scheduled_chores:
+		for day in days:
+			for slot in chore.assignments_for_date(day):
+				if slot.kid_id in grid:
+					grid[slot.kid_id][day.isoformat()].append({
+						"chore_name": chore.name,
+						"coin_reward": chore.coin_reward,
+						"point_value": chore.point_value,
+					})
+
+	return render_template(
+		"private/parents/schedule/index.html",
+		parent=parent,
+		family=family,
+		kids=kids,
+		days=days,
+		week_start=week_start,
+		week_end=week_end,
+		week_offset=week_offset,
+		today=today,
+		grid=grid,
+		scheduled_chore_count=len(scheduled_chores),
+		unscheduled_count=unscheduled_count,
+		loop_colors=["#58cc02", "#1cb0f6", "#ff9600", "#a855f7", "#ef4444", "#14b8a6"],
 	)
 
 
@@ -1503,10 +1607,187 @@ def parent_cancel_store_session(timed_session_id: int):
 	return redirect(url_for("public.parent_store", tab="kid"))
 
 
+# ── CHALLENGES ─────────────────────────────────────────────────────────────────
+
+@public_bp.get("/parent/challenges")
+@parent_web_login_required
+def parent_challenges():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	challenges = Challenge.query.filter_by(family_id=family.id).order_by(Challenge.created_at.desc()).all()
+	pending_submissions = (
+		ChallengeSubmission.query.filter_by(family_id=family.id, status="submitted")
+		.order_by(ChallengeSubmission.submitted_at.desc())
+		.all()
+	)
+	return render_template(
+		"private/parents/challenges/index.html",
+		parent=parent,
+		family=family,
+		challenges=challenges,
+		pending_submissions=pending_submissions,
+	)
+
+
+@public_bp.post("/parent/challenges/create")
+@parent_web_login_required
+def parent_challenge_create():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return redirect(url_for("public.login"))
+
+	title = (request.form.get("title") or "").strip()
+	description = (request.form.get("description") or "").strip()
+	difficulty = (request.form.get("difficulty") or "bronze").strip()
+	coin_reward = int(request.form.get("coin_reward") or 0)
+	point_value = int(request.form.get("point_value") or 0)
+	requires_proof = request.form.get("requires_proof") == "1"
+	is_repeatable = request.form.get("is_repeatable") == "1"
+
+	if not title:
+		flash("Challenge title is required.", "error")
+		return redirect(url_for("public.parent_challenges"))
+
+	if difficulty not in {"bronze", "silver", "gold"}:
+		difficulty = "bronze"
+
+	challenge = Challenge(
+		family_id=family.id,
+		created_by_parent_id=parent.id,
+		title=title,
+		description=description or None,
+		difficulty=difficulty,
+		coin_reward=max(0, coin_reward),
+		point_value=max(0, point_value),
+		requires_proof=requires_proof,
+		is_repeatable=is_repeatable,
+	)
+	db.session.add(challenge)
+	db.session.commit()
+	flash(f"Challenge '{title}' created!", "success")
+	return redirect(url_for("public.parent_challenges"))
+
+
+@public_bp.post("/parent/challenges/<int:challenge_id>/toggle")
+@parent_web_login_required
+def parent_challenge_toggle(challenge_id: int):
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return redirect(url_for("public.login"))
+
+	challenge = Challenge.query.get(challenge_id)
+	if not challenge or challenge.family_id != family.id:
+		flash("Challenge not found.", "error")
+		return redirect(url_for("public.parent_challenges"))
+
+	challenge.is_active = not challenge.is_active
+	db.session.commit()
+	state = "activated" if challenge.is_active else "deactivated"
+	flash(f"'{challenge.title}' {state}.", "success")
+	return redirect(url_for("public.parent_challenges"))
+
+
+@public_bp.post("/parent/challenges/<int:challenge_id>/edit")
+@parent_web_login_required
+def parent_challenge_edit(challenge_id: int):
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return redirect(url_for("public.login"))
+
+	challenge = Challenge.query.get(challenge_id)
+	if not challenge or challenge.family_id != family.id:
+		flash("Challenge not found.", "error")
+		return redirect(url_for("public.parent_challenges"))
+
+	title = (request.form.get("title") or "").strip()
+	if title:
+		challenge.title = title
+	description = request.form.get("description")
+	if description is not None:
+		challenge.description = description.strip() or None
+	difficulty = (request.form.get("difficulty") or "").strip()
+	if difficulty in {"bronze", "silver", "gold"}:
+		challenge.difficulty = difficulty
+	coin_reward = request.form.get("coin_reward")
+	if coin_reward is not None:
+		challenge.coin_reward = max(0, int(coin_reward or 0))
+	point_value = request.form.get("point_value")
+	if point_value is not None:
+		challenge.point_value = max(0, int(point_value or 0))
+	challenge.requires_proof = request.form.get("requires_proof") == "1"
+	challenge.is_repeatable = request.form.get("is_repeatable") == "1"
+	db.session.commit()
+	flash(f"'{challenge.title}' updated.", "success")
+	return redirect(url_for("public.parent_challenges"))
+
+
+@public_bp.post("/parent/challenges/submissions/<int:submission_id>/decision")
+@parent_web_login_required
+def parent_challenge_submission_decision(submission_id: int):
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return redirect(url_for("public.login"))
+
+	submission = ChallengeSubmission.query.get(submission_id)
+	action = (request.form.get("action") or "").strip().lower()
+	resolution_note = (request.form.get("resolution_note") or "").strip()
+
+	if not submission or submission.family_id != family.id:
+		flash("Submission not found.", "error")
+		return redirect(url_for("public.parent_challenges"))
+
+	if submission.status != "submitted":
+		flash("Only submitted challenges can be reviewed.", "error")
+		return redirect(url_for("public.parent_challenges"))
+
+	if action not in {"approve", "reject"}:
+		flash("Invalid decision.", "error")
+		return redirect(url_for("public.parent_challenges"))
+
+	submission.resolved_at = datetime.utcnow()
+	submission.resolved_by_parent_id = parent.id
+	submission.resolution_note = resolution_note or None
+
+	if action == "reject":
+		submission.status = "rejected"
+		submission.awarded_coin_amount = 0
+		submission.awarded_point_amount = 0
+	else:
+		submission.status = "approved"
+		submission.awarded_coin_amount = submission.challenge.coin_reward
+		submission.awarded_point_amount = submission.challenge.point_value
+		kid = submission.kid
+		kid.coin_balance += submission.awarded_coin_amount
+		family.family_points_balance = (family.family_points_balance or 0) + submission.awarded_point_amount
+		tx = CoinTransaction(
+			kid_id=kid.id,
+			family_id=family.id,
+			amount=submission.awarded_coin_amount,
+			kind="challenge_reward",
+			reason=f"Challenge: {submission.challenge.title}",
+			ref_type="challenge_submission",
+			ref_id=submission.id,
+			created_by_parent_id=parent.id,
+		)
+		db.session.add(tx)
+
+	db.session.commit()
+	flash(
+		f"{submission.kid.display_name}'s challenge '{submission.challenge.title}' was {submission.status}.",
+		"success" if action == "approve" else "info",
+	)
+	return redirect(url_for("public.parent_challenges"))
+
+
 @public_bp.get("/parent/activities")
 @parent_web_login_required
 def parent_activities():
 	return render_template("private/parents/coming_soon.html", page_title="Activities")
+
 
 
 @public_bp.get("/parent/history")
@@ -1825,6 +2106,8 @@ def kid_chores():
 		flash("Session expired. Please log in again.", "error")
 		return redirect(url_for("public.kid_login"))
 
+	_run_daily_chore_reset(family)
+
 	chores = (
 		Chore.query.filter_by(family_id=family.id, is_active=True)
 		.order_by(Chore.created_at.desc())
@@ -1990,11 +2273,169 @@ def kid_submit_chore(submission_id: int):
 	return redirect(url_for("public.kid_chores"))
 
 
+# ── KID CHALLENGES ─────────────────────────────────────────────────────────────
+
+@public_bp.get("/kid/challenges")
+@kid_web_login_required
+def kid_challenges():
+	kid, family = _load_kid_and_family()
+	if not kid or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.kid_login"))
+
+	challenges = Challenge.query.filter_by(family_id=family.id, is_active=True).order_by(Challenge.created_at.desc()).all()
+
+	# Find submissions for this kid
+	my_submissions = (
+		ChallengeSubmission.query.filter_by(family_id=family.id, kid_id=kid.id)
+		.order_by(ChallengeSubmission.claimed_at.desc())
+		.all()
+	)
+	# Map challenge_id -> latest submission
+	my_sub_by_challenge = {}
+	for sub in my_submissions:
+		if sub.challenge_id not in my_sub_by_challenge:
+			my_sub_by_challenge[sub.challenge_id] = sub
+
+	return render_template(
+		"private/kids/challenges/index.html",
+		kid=kid,
+		family=family,
+		challenges=challenges,
+		my_sub_by_challenge=my_sub_by_challenge,
+	)
+
+
+@public_bp.post("/kid/challenges/<int:challenge_id>/claim")
+@kid_web_login_required
+def kid_claim_challenge(challenge_id: int):
+	kid = Kid.query.get(session.get("kid_id"))
+	challenge = Challenge.query.get(challenge_id)
+
+	if not kid or kid.family_id != session.get("family_id"):
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.kid_login"))
+
+	if not challenge or challenge.family_id != kid.family_id or not challenge.is_active:
+		flash("Challenge not available.", "error")
+		return redirect(url_for("public.kid_challenges"))
+
+	# Check if already has an active submission (unless repeatable & no open one)
+	existing = ChallengeSubmission.query.filter(
+		ChallengeSubmission.challenge_id == challenge_id,
+		ChallengeSubmission.kid_id == kid.id,
+		ChallengeSubmission.status.in_(["claimed", "submitted"]),
+	).first()
+	if existing:
+		flash("You already have this challenge in progress!", "info")
+		return redirect(url_for("public.kid_challenges"))
+
+	submission = ChallengeSubmission(
+		challenge_id=challenge_id,
+		family_id=kid.family_id,
+		kid_id=kid.id,
+		status="claimed",
+	)
+	db.session.add(submission)
+	db.session.commit()
+	flash(f"You picked up the '{challenge.title}' challenge! Submit it when done.", "success")
+	return redirect(url_for("public.kid_challenges"))
+
+
+@public_bp.post("/kid/challenges/submissions/<int:submission_id>/submit")
+@kid_web_login_required
+def kid_submit_challenge(submission_id: int):
+	kid = Kid.query.get(session.get("kid_id"))
+	submission = ChallengeSubmission.query.get(submission_id)
+
+	if not kid or kid.family_id != session.get("family_id"):
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.kid_login"))
+
+	if not submission or submission.kid_id != kid.id:
+		flash("Submission not found.", "error")
+		return redirect(url_for("public.kid_challenges"))
+
+	if submission.status != "claimed":
+		flash("This challenge is already submitted or resolved.", "info")
+		return redirect(url_for("public.kid_challenges"))
+
+	proof_note = (request.form.get("proof_note") or "").strip()
+
+	# Handle optional proof photo
+	proof_file = request.files.get("proof_photo")
+	proof_path = None
+	if proof_file and proof_file.filename:
+		upload_folder = os.path.join(current_app.instance_path, "uploads", "challenge_photos")
+		os.makedirs(upload_folder, exist_ok=True)
+		ext = os.path.splitext(secure_filename(proof_file.filename))[1].lower()
+		filename = f"challenge_{submission.id}_{secrets.token_hex(6)}{ext}"
+		proof_file.save(os.path.join(upload_folder, filename))
+		proof_path = filename
+
+	if submission.challenge.requires_proof and not proof_note and not proof_path:
+		flash("This challenge requires a note or photo as proof.", "error")
+		return redirect(url_for("public.kid_challenges"))
+
+	submission.proof_note = proof_note or None
+	submission.proof_photo_path = proof_path
+	submission.status = "submitted"
+	submission.submitted_at = datetime.utcnow()
+	db.session.commit()
+
+	flash(f"'{submission.challenge.title}' submitted for parent approval! 🎉", "success")
+	return redirect(url_for("public.kid_challenges"))
+
+
+@public_bp.post("/kid/store/cash-out")
+@kid_web_login_required
+def kid_cash_out_coins():
+	kid = Kid.query.get(session.get("kid_id"))
+	if not kid or kid.family_id != session.get("family_id"):
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.kid_login"))
+
+	try:
+		coins = int(request.form.get("coins", 0))
+	except (ValueError, TypeError):
+		flash("Invalid coin amount.", "error")
+		return redirect(url_for("public.kid_store", tab="kid"))
+
+	family = Family.query.get(kid.family_id)
+	rate = (family.coins_per_dollar if family and family.coins_per_dollar else 10)
+
+	if coins <= 0 or coins % rate != 0:
+		flash(f"Coin amount must be a positive multiple of {rate}.", "error")
+		return redirect(url_for("public.kid_store", tab="kid"))
+
+	if kid.coin_balance < coins:
+		flash("You don't have enough coins.", "error")
+		return redirect(url_for("public.kid_store", tab="kid"))
+
+	dollars = coins / rate
+	kid.coin_balance -= coins
+	db.session.add(CoinTransaction(
+		kid_id=kid.id,
+		family_id=kid.family_id,
+		amount=-coins,
+		kind="cash_out",
+		reason=f"Cash out: {coins} coins = ${dollars:.2f}",
+	))
+	db.session.commit()
+	flash(f'Cashed out {coins} coins for ${dollars:.2f}. Ask a parent to pay you out!', "success")
+	return redirect(url_for("public.kid_store", tab="kid"))
+
+
 @public_bp.post("/kid/store/items/<int:item_id>/purchase")
 @kid_web_login_required
 def kid_purchase_store_item(item_id: int):
 	kid = Kid.query.get(session.get("kid_id"))
 	item = StoreItem.query.get(item_id)
+
 
 	if not kid or kid.family_id != session.get("family_id"):
 		session.clear()
@@ -2458,6 +2899,28 @@ def kid_logout_web():
 
 # ── Settings ──────────────────────────────────────────────────────────────────
 
+@public_bp.post("/parent/settings/coin-rate")
+@parent_web_login_required
+def parent_settings_update_coin_rate():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+	try:
+		rate = int(request.form.get("coins_per_dollar", 10))
+	except (ValueError, TypeError):
+		flash("Invalid exchange rate.", "error")
+		return redirect(url_for("public.parent_settings"))
+	if rate < 1 or rate > 1000:
+		flash("Exchange rate must be between 1 and 1000 coins per dollar.", "error")
+		return redirect(url_for("public.parent_settings"))
+	family.coins_per_dollar = rate
+	db.session.commit()
+	flash(f"Cash-out rate updated: {rate} coins = $1.", "success")
+	return redirect(url_for("public.parent_settings"))
+
+
 @public_bp.get("/parent/settings")
 @parent_web_login_required
 def parent_settings():
@@ -2494,6 +2957,10 @@ def parent_settings():
 		co_guardians=co_guardians,
 		pending_requests=pending_requests,
 		active_devices=active_devices,
+		starter_chores=[{**c, "already_exists": c["name"] in {ch.name for ch in Chore.query.filter_by(family_id=family.id).all()}} for c in _STARTER_CHORES],
+		starter_kid_store=[{**s, "already_exists": s["name"] in {si.name for si in StoreItem.query.filter_by(family_id=family.id).all()}} for s in _STARTER_KID_STORE],
+		starter_family_store=[{**s, "already_exists": s["name"] in {si.name for si in StoreItem.query.filter_by(family_id=family.id).all()}} for s in _STARTER_FAMILY_STORE],
+		starter_challenges=[{**c, "already_exists": c["title"] in {ch.title for ch in Challenge.query.filter_by(family_id=family.id).all()}} for c in _STARTER_CHALLENGES],
 	)
 
 
@@ -2694,3 +3161,615 @@ def parent_reject_guardian(request_id: int):
 	db.session.commit()
 	flash("Join request declined.", "success")
 	return redirect(url_for("public.parent_settings"))
+
+
+# ---------------------------------------------------------------------------
+# Getting Started / Starter Data
+# ---------------------------------------------------------------------------
+
+_STARTER_CHORES = [
+	{"name": "Make your bed", "description": "Straighten pillows, pull up covers, and make it tidy.", "coin_reward": 5, "point_value": 2},
+	{"name": "Wash the dishes", "description": "Rinse, wash, and stack — or load the dishwasher.", "coin_reward": 10, "point_value": 5},
+	{"name": "Take out the trash", "description": "Empty trash cans and replace the bags.", "coin_reward": 8, "point_value": 4},
+	{"name": "Vacuum the living room", "description": "Vacuum the main living area thoroughly.", "coin_reward": 12, "point_value": 5},
+	{"name": "Clean your room", "description": "Pick up clothes, toys, and tidy all surfaces.", "coin_reward": 10, "point_value": 5},
+	{"name": "Feed the pets", "description": "Fill food and water bowls for any family pets.", "coin_reward": 5, "point_value": 2},
+	{"name": "Wipe down the kitchen counter", "description": "Clean and dry all kitchen countertops.", "coin_reward": 6, "point_value": 3},
+	{"name": "Sweep the floor", "description": "Sweep hard-floor areas and collect debris.", "coin_reward": 7, "point_value": 3},
+]
+
+_STARTER_KID_STORE = [
+	{"name": "30 min extra screen time", "description": "Earn an extra 30 minutes of video game or TV time.", "kid_coin_cost": 20},
+	{"name": "Stay up 30 min late", "description": "Stay up 30 minutes past your normal bedtime.", "kid_coin_cost": 25},
+	{"name": "Choose what's for dinner", "description": "Pick the family's dinner for one night.", "kid_coin_cost": 50},
+	{"name": "Movie night pick", "description": "Choose the movie for family movie night.", "kid_coin_cost": 35},
+	{"name": "Skip one chore (once)", "description": "Skip a single chore without penalty — one time use.", "kid_coin_cost": 40},
+	{"name": "Small treat from the store", "description": "Parent buys you a small snack or treat of your choice.", "kid_coin_cost": 60},
+]
+
+_STARTER_FAMILY_STORE = [
+	{"name": "Family movie night", "description": "Pick a movie and enjoy popcorn together as a family.", "family_point_cost": 80},
+	{"name": "Pizza night", "description": "Celebrate with everyone's favourite pizza.", "family_point_cost": 120},
+	{"name": "Board game marathon", "description": "Break out the board games for a full evening of fun.", "family_point_cost": 60},
+	{"name": "Trip to the park or nature trail", "description": "An outdoor adventure day chosen by the family.", "family_point_cost": 150},
+	{"name": "Stay-up-late weekend", "description": "Everyone gets to stay up late on a Friday or Saturday night.", "family_point_cost": 100},
+	{"name": "Family outing (bowling, mini-golf, etc.)", "description": "A fun outing activity voted on by the family.", "family_point_cost": 200},
+]
+
+_STARTER_CHALLENGES = [
+	{"title": "Read for 20 minutes", "description": "Read any book for at least 20 minutes and tell someone what it was about.", "difficulty": "bronze", "coin_reward": 8, "point_value": 3, "requires_proof": False, "is_repeatable": True},
+	{"title": "No complaining for a whole day", "description": "Go an entire day without complaining about anything — even vegetables.", "difficulty": "silver", "coin_reward": 20, "point_value": 8, "requires_proof": False, "is_repeatable": True},
+	{"title": "Write a thank-you note", "description": "Write a heartfelt thank-you note to a friend, teacher, or family member.", "difficulty": "bronze", "coin_reward": 10, "point_value": 4, "requires_proof": True, "is_repeatable": True},
+	{"title": "Learn a new skill", "description": "Pick one new skill (knot tying, a card trick, a new recipe) and demo it for the family.", "difficulty": "gold", "coin_reward": 40, "point_value": 15, "requires_proof": True, "is_repeatable": False},
+	{"title": "Do something kind for a stranger", "description": "Perform an unprompted act of kindness for someone outside the family.", "difficulty": "silver", "coin_reward": 25, "point_value": 10, "requires_proof": False, "is_repeatable": True},
+	{"title": "Memorise a poem or scripture", "description": "Pick a short poem or scripture, memorise it, and recite it from memory.", "difficulty": "silver", "coin_reward": 20, "point_value": 8, "requires_proof": False, "is_repeatable": False},
+	{"title": "Exercise for 30 minutes", "description": "Go for a run, do a workout, shoot hoops — any physical activity for 30 minutes.", "difficulty": "bronze", "coin_reward": 10, "point_value": 4, "requires_proof": False, "is_repeatable": True},
+	{"title": "Teach a sibling something new", "description": "Teach a younger sibling (or friend) how to do something you're good at.", "difficulty": "gold", "coin_reward": 35, "point_value": 12, "requires_proof": False, "is_repeatable": True},
+]
+
+
+@public_bp.get("/parent/setup-wizard")
+@parent_web_login_required
+def parent_setup_wizard():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+	return render_template("private/parents/setup_wizard.html", parent=parent, family=family)
+
+
+@public_bp.post("/parent/setup-wizard/submit")
+@parent_web_login_required
+def parent_setup_wizard_submit():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired.", "error")
+		return redirect(url_for("public.login"))
+
+	created = []
+
+	# ── Coin rate ──────────────────────────────────────────────────────────
+	try:
+		rate = int(request.form.get("coins_per_dollar") or 10)
+		if 1 <= rate <= 1000:
+			family.coins_per_dollar = rate
+	except (ValueError, TypeError):
+		pass
+
+	# ── Chore ──────────────────────────────────────────────────────────────
+	chore_name = (request.form.get("chore_name") or "").strip()
+	if chore_name:
+		try:
+			chore_coins = max(0, int(request.form.get("chore_coin_reward") or 0))
+			chore_points = max(0, int(request.form.get("chore_point_value") or 0))
+		except (ValueError, TypeError):
+			chore_coins = chore_points = 0
+		chore = Chore(
+			family_id=family.id,
+			created_by_parent_id=parent.id,
+			name=chore_name,
+			description=(request.form.get("chore_description") or "").strip() or None,
+			coin_reward=chore_coins,
+			point_value=chore_points,
+			requires_photo_proof=False,
+			max_concurrent_claims=1,
+			schedule_kind="unscheduled",
+			rotation_cycle_weeks=1,
+			anchor_date=None,
+		)
+		db.session.add(chore)
+		created.append(f'chore "{chore_name}"')
+
+	# ── Challenge ──────────────────────────────────────────────────────────
+	challenge_title = (request.form.get("challenge_title") or "").strip()
+	if challenge_title:
+		difficulty = (request.form.get("challenge_difficulty") or "bronze").strip()
+		if difficulty not in {"bronze", "silver", "gold"}:
+			difficulty = "bronze"
+		try:
+			ch_coins = max(0, int(request.form.get("challenge_coin_reward") or 0))
+			ch_points = max(0, int(request.form.get("challenge_point_value") or 0))
+		except (ValueError, TypeError):
+			ch_coins = ch_points = 0
+		challenge = Challenge(
+			family_id=family.id,
+			created_by_parent_id=parent.id,
+			title=challenge_title,
+			description=(request.form.get("challenge_description") or "").strip() or None,
+			difficulty=difficulty,
+			coin_reward=ch_coins,
+			point_value=ch_points,
+			requires_proof=request.form.get("challenge_requires_proof") == "1",
+			is_repeatable=request.form.get("challenge_is_repeatable") == "1",
+		)
+		db.session.add(challenge)
+		created.append(f'challenge "{challenge_title}"')
+
+	# ── Kid store item ─────────────────────────────────────────────────────
+	kid_item_name = (request.form.get("kid_item_name") or "").strip()
+	if kid_item_name:
+		try:
+			kid_cost = max(1, int(request.form.get("kid_item_coin_cost") or 1))
+		except (ValueError, TypeError):
+			kid_cost = 1
+		kid_item = StoreItem(
+			family_id=family.id,
+			created_by_parent_id=parent.id,
+			name=kid_item_name,
+			description=(request.form.get("kid_item_description") or "").strip() or None,
+			item_scope="kid",
+			item_type="basic",
+			kid_coin_cost=kid_cost,
+			family_point_cost=0,
+			stock_qty=-1,
+		)
+		db.session.add(kid_item)
+		created.append(f'kid reward "{kid_item_name}"')
+
+	# ── Family goal ────────────────────────────────────────────────────────
+	family_item_name = (request.form.get("family_item_name") or "").strip()
+	if family_item_name:
+		try:
+			family_cost = max(1, int(request.form.get("family_item_point_cost") or 1))
+		except (ValueError, TypeError):
+			family_cost = 1
+		family_item = StoreItem(
+			family_id=family.id,
+			created_by_parent_id=parent.id,
+			name=family_item_name,
+			description=(request.form.get("family_item_description") or "").strip() or None,
+			item_scope="family",
+			item_type="basic",
+			kid_coin_cost=0,
+			family_point_cost=family_cost,
+			stock_qty=-1,
+		)
+		db.session.add(family_item)
+		created.append(f'family goal "{family_item_name}"')
+
+	db.session.commit()
+
+	if created:
+		flash(f"Setup complete! Created: {', '.join(created)}.", "success")
+	else:
+		flash("Setup complete! You can add more from the individual pages.", "success")
+
+	redirect_to = request.form.get("redirect_to") or ""
+	# Only allow relative paths to prevent open redirect
+	if redirect_to and redirect_to.startswith("/") and not redirect_to.startswith("//"):
+		return redirect(redirect_to)
+	return redirect(url_for("public.parent_dashboard"))
+
+
+@public_bp.get("/parent/getting-started")
+@parent_web_login_required
+def parent_getting_started():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	existing_chore_names = {c.name for c in Chore.query.filter_by(family_id=family.id).all()}
+	existing_store_names = {s.name for s in StoreItem.query.filter_by(family_id=family.id).all()}
+
+	starter_chores = [
+		{**c, "already_exists": c["name"] in existing_chore_names}
+		for c in _STARTER_CHORES
+	]
+	starter_kid_store = [
+		{**s, "already_exists": s["name"] in existing_store_names}
+		for s in _STARTER_KID_STORE
+	]
+	starter_family_store = [
+		{**s, "already_exists": s["name"] in existing_store_names}
+		for s in _STARTER_FAMILY_STORE
+	]
+
+	return render_template(
+		"private/parents/getting_started.html",
+		parent=parent,
+		family=family,
+		starter_chores=starter_chores,
+		starter_kid_store=starter_kid_store,
+		starter_family_store=starter_family_store,
+		starter_challenges=[{**c, "already_exists": c["title"] in {ch.title for ch in Challenge.query.filter_by(family_id=family.id).all()}} for c in _STARTER_CHALLENGES],
+	)
+
+
+@public_bp.post("/parent/getting-started/apply")
+@parent_web_login_required
+def parent_getting_started_apply():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	category = request.form.get("category", "all")  # chores | kid_store | family_store | all
+	single_name = (request.form.get("single_name") or "").strip() or None  # optional — apply only one item
+	added_count = 0
+
+	if category in ("chores", "all"):
+		existing_names = {c.name for c in Chore.query.filter_by(family_id=family.id).all()}
+		for chore_data in _STARTER_CHORES:
+			if single_name and chore_data["name"] != single_name:
+				continue
+			if chore_data["name"] not in existing_names:
+				db.session.add(Chore(
+					family_id=family.id,
+					created_by_parent_id=parent.id,
+					name=chore_data["name"],
+					description=chore_data["description"],
+					coin_reward=chore_data["coin_reward"],
+					point_value=chore_data["point_value"],
+					schedule_kind="unscheduled",
+					requires_photo_proof=False,
+				))
+				added_count += 1
+
+	if category in ("kid_store", "all"):
+		existing_names = {s.name for s in StoreItem.query.filter_by(family_id=family.id).all()}
+		for item_data in _STARTER_KID_STORE:
+			if single_name and item_data["name"] != single_name:
+				continue
+			if item_data["name"] not in existing_names:
+				db.session.add(StoreItem(
+					family_id=family.id,
+					created_by_parent_id=parent.id,
+					name=item_data["name"],
+					description=item_data["description"],
+					item_scope="kid",
+					item_type="basic",
+					kid_coin_cost=item_data["kid_coin_cost"],
+					family_point_cost=0,
+					stock_qty=-1,
+				))
+				added_count += 1
+
+	if category in ("family_store", "all"):
+		existing_names = {s.name for s in StoreItem.query.filter_by(family_id=family.id).all()}
+		for item_data in _STARTER_FAMILY_STORE:
+			if single_name and item_data["name"] != single_name:
+				continue
+			if item_data["name"] not in existing_names:
+				db.session.add(StoreItem(
+					family_id=family.id,
+					created_by_parent_id=parent.id,
+					name=item_data["name"],
+					description=item_data["description"],
+					item_scope="family",
+					item_type="basic",
+					kid_coin_cost=0,
+					family_point_cost=item_data["family_point_cost"],
+					stock_qty=-1,
+				))
+				added_count += 1
+
+	if category in ("challenges", "all"):
+		existing_titles = {c.title for c in Challenge.query.filter_by(family_id=family.id).all()}
+		for ch_data in _STARTER_CHALLENGES:
+			if single_name and ch_data["title"] != single_name:
+				continue
+			if ch_data["title"] not in existing_titles:
+				db.session.add(Challenge(
+					family_id=family.id,
+					created_by_parent_id=parent.id,
+					title=ch_data["title"],
+					description=ch_data["description"],
+					difficulty=ch_data["difficulty"],
+					coin_reward=ch_data["coin_reward"],
+					point_value=ch_data["point_value"],
+					requires_proof=ch_data["requires_proof"],
+					is_repeatable=ch_data["is_repeatable"],
+				))
+				added_count += 1
+
+	db.session.commit()
+
+	labels = {
+		"chores": "starter chores",
+		"kid_store": "kid store items",
+		"family_store": "family goals",
+		"challenges": "starter challenges",
+		"all": "starter data",
+	}
+	label = labels.get(category, "starter data")
+	if added_count:
+		flash(f"Added {added_count} {label} to your family!", "success")
+	else:
+		flash(f"All {label} are already in your account — nothing new to add.", "info")
+
+	return redirect(url_for("public.parent_getting_started"))
+
+
+# ── Task Board ─────────────────────────────────────────────────────────────────
+
+def _save_task_photo(file) -> str | None:
+	"""Save an uploaded task proof photo and return its relative path or None."""
+	if not file or not file.filename:
+		return None
+	upload_folder = os.path.join(current_app.instance_path, "uploads", "task_photos")
+	os.makedirs(upload_folder, exist_ok=True)
+	ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+	filename = f"task_{secrets.token_hex(8)}{ext}"
+	file.save(os.path.join(upload_folder, filename))
+	return filename
+
+
+@public_bp.get("/uploads/task_photos/<path:filename>")
+def serve_task_photo(filename):
+	directory = os.path.join(current_app.instance_path, "uploads", "task_photos")
+	return send_from_directory(directory, filename)
+
+
+# ── Parent: task board ─────────────────────────────────────────────────────────
+
+@public_bp.get("/parent/tasks")
+@parent_web_login_required
+def parent_tasks():
+	parent = Parent.query.get(session["parent_id"])
+	family_id = session["family_id"]
+	tasks = (
+		Task.query
+		.filter_by(family_id=family_id, is_active=True)
+		.order_by(Task.created_at.desc())
+		.all()
+	)
+	pending_claims = (
+		TaskClaim.query
+		.join(Task, TaskClaim.task_id == Task.id)
+		.filter(Task.family_id == family_id, TaskClaim.status == "submitted")
+		.order_by(TaskClaim.submitted_at.desc())
+		.all()
+	)
+	kids = Kid.query.filter_by(family_id=family_id, is_active=True).all()
+	return render_template(
+		"private/parents/tasks/index.html",
+		tasks=tasks,
+		pending_claims=pending_claims,
+		kids=kids,
+		parent=parent,
+	)
+
+
+@public_bp.post("/parent/tasks/create")
+@parent_web_login_required
+def parent_tasks_create():
+	parent = Parent.query.get(session["parent_id"])
+	family_id = session["family_id"]
+
+	title = (request.form.get("title") or "").strip()
+	description = (request.form.get("description") or "").strip() or None
+	coin_reward = int(request.form.get("coin_reward") or 0)
+	point_reward = int(request.form.get("point_reward") or 0)
+	due_date_str = (request.form.get("due_date") or "").strip()
+	assigned_kid_id = request.form.get("assigned_to_kid_id") or None
+	allow_multiple = request.form.get("allow_multiple_claims") == "1"
+	requires_photo = request.form.get("requires_photo_proof") == "1"
+
+	if not title:
+		flash("Task title is required.", "error")
+		return redirect(url_for("public.parent_tasks"))
+
+	due_date = None
+	if due_date_str:
+		try:
+			due_date = date.fromisoformat(due_date_str)
+		except ValueError:
+			flash("Invalid due date format.", "error")
+			return redirect(url_for("public.parent_tasks"))
+
+	if assigned_kid_id:
+		kid = Kid.query.filter_by(id=int(assigned_kid_id), family_id=family_id, is_active=True).first()
+		if not kid:
+			flash("Selected kid not found.", "error")
+			return redirect(url_for("public.parent_tasks"))
+		assigned_kid_id = kid.id
+	else:
+		assigned_kid_id = None
+
+	task = Task(
+		family_id=family_id,
+		created_by_parent_id=parent.id,
+		title=title,
+		description=description,
+		coin_reward=coin_reward,
+		point_reward=point_reward,
+		due_date=due_date,
+		assigned_to_kid_id=assigned_kid_id,
+		allow_multiple_claims=allow_multiple,
+		requires_photo_proof=requires_photo,
+	)
+	db.session.add(task)
+	db.session.commit()
+	flash(f"Task '{title}' created!", "success")
+	return redirect(url_for("public.parent_tasks"))
+
+
+@public_bp.post("/parent/tasks/<int:task_id>/delete")
+@parent_web_login_required
+def parent_tasks_delete(task_id: int):
+	family_id = session["family_id"]
+	task = Task.query.filter_by(id=task_id, family_id=family_id).first_or_404()
+	task.is_active = False
+	db.session.commit()
+	flash(f"Task '{task.title}' removed.", "success")
+	return redirect(url_for("public.parent_tasks"))
+
+
+@public_bp.post("/parent/tasks/claims/<int:claim_id>/approve")
+@parent_web_login_required
+def parent_tasks_claim_approve(claim_id: int):
+	parent = Parent.query.get(session["parent_id"])
+	family_id = session["family_id"]
+	claim = TaskClaim.query.filter_by(id=claim_id, family_id=family_id).first_or_404()
+
+	if claim.status != "submitted":
+		flash("This claim is not pending approval.", "info")
+		return redirect(url_for("public.parent_tasks"))
+
+	note = (request.form.get("resolution_note") or "").strip() or None
+	task = claim.task
+	kid = Kid.query.get(claim.kid_id)
+
+	claim.status = "approved"
+	claim.resolved_at = datetime.utcnow()
+	claim.resolved_by_parent_id = parent.id
+	claim.resolution_note = note
+	claim.awarded_coin_amount = task.coin_reward
+	claim.awarded_point_amount = task.point_reward
+
+	if task.coin_reward:
+		_record_coin_transaction(
+			kid=kid,
+			family_id=family_id,
+			amount=task.coin_reward,
+			kind="task_reward",
+			reason=f"Task: {task.title}",
+			ref_type="task_claim",
+			ref_id=claim.id,
+			parent_id=parent.id,
+		)
+
+	if task.point_reward:
+		family = Family.query.get(family_id)
+		family.family_points_balance += task.point_reward
+
+	db.session.commit()
+	flash(f"Approved! {kid.display_name} earned {task.coin_reward} coins.", "success")
+	return redirect(url_for("public.parent_tasks"))
+
+
+@public_bp.post("/parent/tasks/claims/<int:claim_id>/reject")
+@parent_web_login_required
+def parent_tasks_claim_reject(claim_id: int):
+	parent = Parent.query.get(session["parent_id"])
+	family_id = session["family_id"]
+	claim = TaskClaim.query.filter_by(id=claim_id, family_id=family_id).first_or_404()
+
+	if claim.status != "submitted":
+		flash("This claim is not pending approval.", "info")
+		return redirect(url_for("public.parent_tasks"))
+
+	note = (request.form.get("resolution_note") or "").strip() or None
+	claim.status = "rejected"
+	claim.resolved_at = datetime.utcnow()
+	claim.resolved_by_parent_id = parent.id
+	claim.resolution_note = note
+	db.session.commit()
+	flash("Claim rejected.", "info")
+	return redirect(url_for("public.parent_tasks"))
+
+
+# ── Kid: task board ─────────────────────────────────────────────────────────────
+
+@public_bp.get("/kid/tasks")
+@kid_web_login_required
+def kid_tasks():
+	kid = Kid.query.get(session["kid_id"])
+	family_id = session["family_id"]
+
+	# Tasks available to this kid: either open board or assigned to them
+	all_tasks = Task.query.filter_by(family_id=family_id, is_active=True).all()
+
+	my_claims = TaskClaim.query.filter_by(kid_id=kid.id).filter(
+		TaskClaim.status.in_(["claimed", "submitted"])
+	).all()
+	my_claimed_task_ids = {c.task_id for c in my_claims}
+
+	available_tasks = []
+	for task in all_tasks:
+		# Must be assigned to this kid or be open board
+		if task.assigned_to_kid_id and task.assigned_to_kid_id != kid.id:
+			continue
+		# Skip tasks the kid has already claimed/submitted
+		if task.id in my_claimed_task_ids:
+			continue
+		# If not allowing multiple claims, skip if already approved by another kid
+		if not task.allow_multiple_claims:
+			already_approved = any(c.status == "approved" for c in task.claims)
+			if already_approved:
+				continue
+			already_claimed = any(c.status in ("claimed", "submitted") for c in task.claims)
+			if already_claimed:
+				continue
+
+		available_tasks.append(task)
+
+	family = Family.query.get(family_id)
+	return render_template(
+		"private/kids/tasks/index.html",
+		kid=kid,
+		family=family,
+		available_tasks=available_tasks,
+		my_claims=my_claims,
+	)
+
+
+@public_bp.post("/kid/tasks/<int:task_id>/claim")
+@kid_web_login_required
+def kid_task_claim(task_id: int):
+	kid = Kid.query.get(session["kid_id"])
+	family_id = session["family_id"]
+	task = Task.query.filter_by(id=task_id, family_id=family_id, is_active=True).first_or_404()
+
+	# Verify kid is allowed
+	if task.assigned_to_kid_id and task.assigned_to_kid_id != kid.id:
+		flash("This task is not assigned to you.", "error")
+		return redirect(url_for("public.kid_tasks"))
+
+	# Check for duplicate active claim
+	existing = TaskClaim.query.filter_by(task_id=task.id, kid_id=kid.id).filter(
+		TaskClaim.status.in_(["claimed", "submitted"])
+	).first()
+	if existing:
+		flash("You already have an active claim on this task.", "info")
+		return redirect(url_for("public.kid_tasks"))
+
+	# If single-claim task, verify no other active claims
+	if not task.allow_multiple_claims:
+		other_active = TaskClaim.query.filter_by(task_id=task.id).filter(
+			TaskClaim.status.in_(["claimed", "submitted", "approved"])
+		).first()
+		if other_active:
+			flash("This task has already been claimed or completed.", "info")
+			return redirect(url_for("public.kid_tasks"))
+
+	claim = TaskClaim(
+		task_id=task.id,
+		family_id=family_id,
+		kid_id=kid.id,
+		status="claimed",
+	)
+	db.session.add(claim)
+	db.session.commit()
+	flash(f"You picked up '{task.title}'! Submit it when done.", "success")
+	return redirect(url_for("public.kid_tasks"))
+
+
+@public_bp.post("/kid/tasks/claims/<int:claim_id>/submit")
+@kid_web_login_required
+def kid_task_submit(claim_id: int):
+	kid = Kid.query.get(session["kid_id"])
+	claim = TaskClaim.query.filter_by(id=claim_id, kid_id=kid.id).first_or_404()
+
+	if claim.status != "claimed":
+		flash("This task is already submitted or resolved.", "info")
+		return redirect(url_for("public.kid_tasks"))
+
+	photo_file = request.files.get("photo")
+	photo_path = _save_task_photo(photo_file)
+
+	if claim.task.requires_photo_proof and not photo_path:
+		flash("A photo is required as proof for this task.", "error")
+		return redirect(url_for("public.kid_tasks"))
+
+	claim.photo_path = photo_path
+	claim.status = "submitted"
+	claim.submitted_at = datetime.utcnow()
+	db.session.commit()
+	flash(f"'{claim.task.title}' submitted! Waiting for parent approval. 🎉", "success")
+	return redirect(url_for("public.kid_tasks"))

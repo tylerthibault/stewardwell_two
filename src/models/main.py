@@ -44,6 +44,10 @@ class Family(db.Model):
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 	is_active = db.Column(db.Boolean, default=True, nullable=False)
 	family_points_balance = db.Column(db.Integer, default=0, nullable=False)
+	# How many coins equal $1 (default 10 → 10 coins = $1)
+	coins_per_dollar = db.Column(db.Integer, default=10, nullable=False)
+	# Tracks the last date daily chore reset ran for this family (lazy reset)
+	last_reset_date = db.Column(db.Date, nullable=True)
 
 	parents = db.relationship("Parent", back_populates="family", cascade="all, delete-orphan")
 	kids = db.relationship("Kid", back_populates="family", cascade="all, delete-orphan")
@@ -599,3 +603,122 @@ class StoreSessionPreference(db.Model):
 	__table_args__ = (
 		db.UniqueConstraint("kid_id", "store_item_id", name="uq_store_session_pref_kid_item"),
 	)
+
+
+class Challenge(db.Model):
+	"""A non-chore goal (memory verse, character trait, act of service, etc.) that kids can earn coins/points for."""
+
+	__tablename__ = "challenges"
+
+	id = db.Column(db.Integer, primary_key=True)
+	family_id = db.Column(db.Integer, db.ForeignKey("families.id"), nullable=False, index=True)
+	created_by_parent_id = db.Column(db.Integer, db.ForeignKey("parents.id"), nullable=False)
+	title = db.Column(db.String(120), nullable=False)
+	description = db.Column(db.Text)
+	# bronze | silver | gold
+	difficulty = db.Column(db.String(20), nullable=False, default="bronze")
+	coin_reward = db.Column(db.Integer, default=0, nullable=False)
+	point_value = db.Column(db.Integer, default=0, nullable=False)
+	requires_proof = db.Column(db.Boolean, default=False, nullable=False)
+	is_repeatable = db.Column(db.Boolean, default=False, nullable=False)
+	is_active = db.Column(db.Boolean, default=True, nullable=False)
+	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+	family = db.relationship("Family", backref=db.backref("challenges", lazy=True, cascade="all, delete-orphan"))
+	created_by_parent = db.relationship("Parent", backref=db.backref("challenges_created", lazy=True))
+	submissions = db.relationship(
+		"ChallengeSubmission",
+		back_populates="challenge",
+		cascade="all, delete-orphan",
+		order_by="ChallengeSubmission.claimed_at.desc()",
+	)
+
+
+class ChallengeSubmission(db.Model):
+	"""A kid's attempt at a Challenge."""
+
+	__tablename__ = "challenge_submissions"
+
+	id = db.Column(db.Integer, primary_key=True)
+	challenge_id = db.Column(db.Integer, db.ForeignKey("challenges.id"), nullable=False, index=True)
+	family_id = db.Column(db.Integer, db.ForeignKey("families.id"), nullable=False, index=True)
+	kid_id = db.Column(db.Integer, db.ForeignKey("kids.id"), nullable=False, index=True)
+	# claimed | submitted | approved | rejected
+	status = db.Column(db.String(20), nullable=False, default="claimed", index=True)
+	proof_note = db.Column(db.Text)
+	proof_photo_path = db.Column(db.String(255))
+	awarded_coin_amount = db.Column(db.Integer, default=0, nullable=False)
+	awarded_point_amount = db.Column(db.Integer, default=0, nullable=False)
+	claimed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	submitted_at = db.Column(db.DateTime)
+	resolved_at = db.Column(db.DateTime)
+	resolved_by_parent_id = db.Column(db.Integer, db.ForeignKey("parents.id"), nullable=True, index=True)
+	resolution_note = db.Column(db.String(255))
+
+	challenge = db.relationship("Challenge", back_populates="submissions")
+	family = db.relationship("Family", backref=db.backref("challenge_submissions", lazy=True, cascade="all, delete-orphan"))
+	kid = db.relationship("Kid", backref=db.backref("challenge_submissions", lazy=True, cascade="all, delete-orphan"))
+	resolved_by_parent = db.relationship("Parent", foreign_keys=[resolved_by_parent_id])
+
+
+class Task(db.Model):
+	"""A one-off task on the family task board. Can be assigned to a specific kid
+	or left open for any kid to claim."""
+
+	__tablename__ = "tasks"
+
+	id = db.Column(db.Integer, primary_key=True)
+	family_id = db.Column(db.Integer, db.ForeignKey("families.id"), nullable=False, index=True)
+	created_by_parent_id = db.Column(db.Integer, db.ForeignKey("parents.id"), nullable=False)
+	title = db.Column(db.String(120), nullable=False)
+	description = db.Column(db.Text)
+	coin_reward = db.Column(db.Integer, default=0, nullable=False)
+	point_reward = db.Column(db.Integer, default=0, nullable=False)
+	due_date = db.Column(db.Date, nullable=True)
+	# null = open board (any kid can claim). set = assigned to that specific kid.
+	assigned_to_kid_id = db.Column(db.Integer, db.ForeignKey("kids.id"), nullable=True, index=True)
+	# if True, multiple kids can each independently claim & complete this task
+	allow_multiple_claims = db.Column(db.Boolean, default=False, nullable=False)
+	requires_photo_proof = db.Column(db.Boolean, default=True, nullable=False)
+	is_active = db.Column(db.Boolean, default=True, nullable=False)
+	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+	family = db.relationship("Family", backref=db.backref("tasks", lazy=True, cascade="all, delete-orphan"))
+	created_by_parent = db.relationship("Parent", backref=db.backref("tasks_created", lazy=True))
+	assigned_to_kid = db.relationship("Kid", foreign_keys=[assigned_to_kid_id], backref=db.backref("assigned_tasks", lazy=True))
+	claims = db.relationship(
+		"TaskClaim",
+		back_populates="task",
+		cascade="all, delete-orphan",
+		order_by="TaskClaim.claimed_at.desc()",
+	)
+
+	@property
+	def is_open_board(self) -> bool:
+		return self.assigned_to_kid_id is None
+
+
+class TaskClaim(db.Model):
+	"""A kid's claim/submission on a Task."""
+
+	__tablename__ = "task_claims"
+
+	id = db.Column(db.Integer, primary_key=True)
+	task_id = db.Column(db.Integer, db.ForeignKey("tasks.id"), nullable=False, index=True)
+	family_id = db.Column(db.Integer, db.ForeignKey("families.id"), nullable=False, index=True)
+	kid_id = db.Column(db.Integer, db.ForeignKey("kids.id"), nullable=False, index=True)
+	# claimed | submitted | approved | rejected
+	status = db.Column(db.String(20), nullable=False, default="claimed", index=True)
+	photo_path = db.Column(db.String(255))
+	awarded_coin_amount = db.Column(db.Integer, default=0, nullable=False)
+	awarded_point_amount = db.Column(db.Integer, default=0, nullable=False)
+	claimed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	submitted_at = db.Column(db.DateTime)
+	resolved_at = db.Column(db.DateTime)
+	resolved_by_parent_id = db.Column(db.Integer, db.ForeignKey("parents.id"), nullable=True, index=True)
+	resolution_note = db.Column(db.String(255))
+
+	task = db.relationship("Task", back_populates="claims")
+	family = db.relationship("Family", backref=db.backref("task_claims", lazy=True, cascade="all, delete-orphan"))
+	kid = db.relationship("Kid", backref=db.backref("task_claims", lazy=True, cascade="all, delete-orphan"))
+	resolved_by_parent = db.relationship("Parent", foreign_keys=[resolved_by_parent_id])

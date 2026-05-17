@@ -3,16 +3,8 @@
 {% block title %}Store - Stewardwell{% endblock %}
 
 {% block nav %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Store</h1>
-	<div class="d-flex gap-2 align-items-center">
-		<a href="{{ url_for('public.parent_settings') }}" class="btn">⚙️ Settings</a>
-		<form method="post" action="{{ url_for('public.parent_logout') }}">
-			<button type="submit" class="btn">Logout</button>
-		</form>
-	</div>
-</div>
-{% include 'private/parents/components/navbar.html' %}
+{% set page_title = "Store" %}
+{% include 'private/parents/components/page_header.html' %}
 {% endblock %}
 
 {% block content %}
@@ -27,7 +19,13 @@
 			<div class="dashboard-card">
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
 					<h2>Kid Store Items</h2>
+				<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+					<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+						<input type="hidden" name="category" value="kid_store">
+						<button type="submit" class="btn" style="font-size:.82rem;padding:7px 14px;">Load Starter Rewards</button>
+					</form>
 					<button type="button" class="btn primary" data-open-create-modal>Create Kid Item</button>
+				</div>
 				</div>
 				<div class="card-body">
 					{% if kid_items %}
@@ -133,7 +131,13 @@
 			<div class="dashboard-card">
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
 					<h2>Family Goals</h2>
+				<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+					<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+						<input type="hidden" name="category" value="family_store">
+						<button type="submit" class="btn" style="font-size:.82rem;padding:7px 14px;">Load Starter Goals</button>
+					</form>
 					<button type="button" class="btn primary" data-open-create-modal>Create Family Goal</button>
+				</div>
 				</div>
 				<div class="card-body">
 					{% if family_items %}

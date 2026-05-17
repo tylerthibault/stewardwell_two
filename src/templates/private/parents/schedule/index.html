@@ -1,0 +1,220 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Chore Schedule - Stewardwell{% endblock %}
+
+{% block nav %}
+{% set page_title = "Chore Schedule" %}
+{% include 'private/parents/components/page_header.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+<style>
+	.schedule-grid {
+		display: grid;
+		grid-template-columns: 140px repeat(7, 1fr);
+		border: 1px solid var(--duo-border);
+		border-radius: 14px;
+		overflow: hidden;
+	}
+	.schedule-cell {
+		padding: 10px 10px;
+		border-right: 1px solid var(--duo-border);
+		border-bottom: 1px solid var(--duo-border);
+		min-height: 64px;
+		background: var(--duo-panel);
+	}
+	.schedule-cell:nth-child(8n) { border-right: none; }
+	.schedule-header-cell {
+		background: var(--duo-bg);
+		border-right: 1px solid var(--duo-border);
+		border-bottom: 2px solid var(--duo-border);
+		padding: 10px 10px;
+		font-size: .78rem;
+		font-weight: 800;
+		text-align: center;
+	}
+	.schedule-header-cell:last-child { border-right: none; }
+	.schedule-header-cell.today-col {
+		background: color-mix(in srgb, var(--duo-green, #58cc02) 10%, var(--duo-bg));
+		color: var(--duo-green, #58cc02);
+	}
+	.schedule-kid-cell {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		background: var(--duo-bg);
+		border-right: 2px solid var(--duo-border);
+		border-bottom: 1px solid var(--duo-border);
+		padding: 10px 12px;
+	}
+	.schedule-kid-avatar {
+		width: 28px; height: 28px; border-radius: 50%;
+		display: flex; align-items: center; justify-content: center;
+		font-size: .75rem; font-weight: 900; color: #fff; flex-shrink: 0;
+	}
+	.chore-chip {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		background: color-mix(in srgb, var(--duo-green, #58cc02) 10%, var(--duo-panel));
+		border: 1px solid color-mix(in srgb, var(--duo-green, #58cc02) 25%, transparent);
+		border-radius: 8px;
+		padding: 5px 8px;
+		font-size: .72rem;
+		line-height: 1.3;
+	}
+	.chore-chip + .chore-chip { margin-top: 4px; }
+	.chore-chip-name { font-weight: 700; color: var(--duo-text, inherit); }
+	.chore-chip-meta { color: var(--duo-muted); }
+	.today-col-cell {
+		background: color-mix(in srgb, var(--duo-green, #58cc02) 4%, var(--duo-panel));
+	}
+	/* Unscheduled banner */
+	.unscheduled-row-cell {
+		background: var(--duo-bg);
+		color: var(--duo-muted);
+	}
+</style>
+
+{# ── Week navigation ─────────────────────────────────────────────────────── #}
+<section style="margin-bottom:20px;">
+	<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+		<div>
+			<div style="font-weight:800;font-size:1rem;">
+				{{ week_start.strftime("%B %d") }} – {{ week_end.strftime("%B %d, %Y") }}
+			</div>
+			<div style="font-size:.78rem;color:var(--duo-muted);margin-top:2px;">
+				{{ scheduled_chore_count }} scheduled chore{% if scheduled_chore_count != 1 %}s{% endif %} across {{ kids|length }} kid{% if kids|length != 1 %}s{% endif %}
+			</div>
+		</div>
+		<div style="display:flex;gap:6px;align-items:center;">
+			<a href="{{ url_for('public.parent_schedule', week=week_offset - 1) }}" class="btn" style="padding:7px 14px;font-size:.82rem;">← Prev week</a>
+			{% if week_offset != 0 %}
+				<a href="{{ url_for('public.parent_schedule') }}" class="btn" style="padding:7px 14px;font-size:.82rem;">Today</a>
+			{% endif %}
+			<a href="{{ url_for('public.parent_schedule', week=week_offset + 1) }}" class="btn" style="padding:7px 14px;font-size:.82rem;">Next week →</a>
+		</div>
+	</div>
+</section>
+
+{# ── Kid filter pills ───────────────────────────────────────────────────── #}
+{% if kids and kids|length > 1 %}
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center;">
+	<span style="font-size:.78rem;font-weight:700;color:var(--duo-muted);">Filter:</span>
+	<button type="button" class="kid-filter-btn active" data-kid="all"
+		style="padding:5px 14px;font-size:.78rem;font-weight:700;border-radius:99px;border:2px solid var(--duo-border);background:var(--duo-panel);cursor:pointer;transition:.15s;">
+		All kids
+	</button>
+	{% for kid in kids %}
+		{% set kid_color = loop_colors[loop.index0 % loop_colors|length] %}
+		<button type="button" class="kid-filter-btn" data-kid="{{ kid.id }}"
+			style="padding:5px 14px;font-size:.78rem;font-weight:700;border-radius:99px;border:2px solid {{ kid_color }}20;background:{{ kid_color }}15;color:{{ kid_color }};cursor:pointer;transition:.15s;">
+			{{ kid.display_name }}
+		</button>
+	{% endfor %}
+</div>
+{% endif %}
+
+{% if not kids %}
+	<div class="empty-state">No kids added yet. Add a kid from Settings to get started.</div>
+{% elif not scheduled_chore_count %}
+	<article class="dashboard-card">
+		<div class="card-body" style="text-align:center;padding:40px 24px;">
+			<div style="font-size:2.5rem;margin-bottom:12px;">📅</div>
+			<div style="font-weight:800;font-size:1rem;margin-bottom:6px;">No scheduled chores yet</div>
+			<p style="color:var(--duo-muted);font-size:.85rem;margin:0 0 16px;">Create a chore on the Chores page and use the schedule builder to assign it to specific days and kids.</p>
+			<a href="{{ url_for('public.parent_chores') }}" class="btn primary">Go to Chores →</a>
+		</div>
+	</article>
+{% else %}
+
+{# ── Weekly grid ─────────────────────────────────────────────────────────── #}
+<article class="dashboard-card" style="overflow-x:auto;padding:0;">
+	<div class="schedule-grid" style="min-width:700px;">
+
+		{# Header row: blank corner + 7 day columns #}
+		<div class="schedule-header-cell" style="text-align:left;">Kid</div>
+		{% for day in days %}
+			<div class="schedule-header-cell {% if day == today %}today-col{% endif %}">
+				<div>{{ day.strftime("%a") }}</div>
+				<div style="font-weight:400;font-size:.7rem;color:inherit;opacity:.7;">{{ day.strftime("%b %-d") }}</div>
+			</div>
+		{% endfor %}
+
+		{# One row per kid #}
+		{% for kid in kids %}
+			{# Kid label cell #}
+			{% set kid_color = loop_colors[loop.index0 % loop_colors|length] %}
+			<div class="schedule-kid-cell" data-kid-row="{{ kid.id }}">
+				<div class="schedule-kid-avatar" style="background:{{ kid_color }};">
+					{{ kid.display_name[0].upper() }}
+				</div>
+				<span style="font-weight:700;font-size:.82rem;line-height:1.2;">{{ kid.display_name }}</span>
+			</div>
+
+			{# One cell per day #}
+			{% for day in days %}
+				{% set day_chores = grid.get(kid.id, {}).get(day.isoformat(), []) %}
+				<div class="schedule-cell {% if day == today %}today-col-cell{% endif %}" data-kid-row="{{ kid.id }}">
+					{% for entry in day_chores %}
+						<div class="chore-chip">
+							<span class="chore-chip-name">{{ entry.chore_name }}</span>
+							<span class="chore-chip-meta">🪙 {{ entry.coin_reward }} · ⭐ {{ entry.point_value }}</span>
+						</div>
+					{% endfor %}
+				</div>
+			{% endfor %}
+		{% endfor %}
+
+	</div>
+</article>
+
+{# ── Unscheduled chores note ──────────────────────────────────────────────── #}
+{% if unscheduled_count %}
+<p style="margin-top:14px;font-size:.8rem;color:var(--duo-muted);text-align:center;">
+	{{ unscheduled_count }} chore{% if unscheduled_count != 1 %}s are{% else %} is{% endif %} unscheduled (always available) and not shown here. <a href="{{ url_for('public.parent_chores') }}">View all chores →</a>
+</p>
+{% endif %}
+
+{% endif %}
+
+</div>
+
+<script>
+(function () {
+	var btns = Array.from(document.querySelectorAll('.kid-filter-btn'));
+	if (!btns.length) return;
+
+	function applyFilter(kidId) {
+		var rows = Array.from(document.querySelectorAll('[data-kid-row]'));
+		rows.forEach(function (el) {
+			if (kidId === 'all' || el.dataset.kidRow === kidId) {
+				el.style.display = '';
+			} else {
+				el.style.display = 'none';
+			}
+		});
+		btns.forEach(function (b) {
+			var isActive = b.dataset.kid === kidId;
+			b.classList.toggle('active', isActive);
+			if (b.dataset.kid === 'all') {
+				b.style.background = isActive ? 'var(--duo-green, #58cc02)' : 'var(--duo-panel)';
+				b.style.color = isActive ? '#fff' : '';
+				b.style.borderColor = isActive ? 'var(--duo-green, #58cc02)' : 'var(--duo-border)';
+			} else {
+				b.style.opacity = isActive ? '1' : '0.45';
+			}
+		});
+	}
+
+	btns.forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			applyFilter(btn.dataset.kid);
+		});
+	});
+}());
+</script>
+
+{% endblock %}

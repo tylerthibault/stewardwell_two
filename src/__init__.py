@@ -36,6 +36,12 @@ def _apply_sqlite_schema_fixes() -> None:
 		if "family_code_plain" not in family_columns:
 			with db.engine.begin() as connection:
 				connection.execute(text("ALTER TABLE families ADD COLUMN family_code_plain VARCHAR(16)"))
+		if "coins_per_dollar" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN coins_per_dollar INTEGER NOT NULL DEFAULT 10"))
+		if "last_reset_date" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN last_reset_date DATE"))
 
 	if "kids" in table_names:
 		kid_columns = {column["name"] for column in inspector.get_columns("kids")}

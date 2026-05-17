@@ -1,0 +1,229 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Task Board - Stewardwell{% endblock %}
+
+{% block nav %}
+{% set page_title = "Task Board" %}
+{% include 'private/parents/components/page_header.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Stats Row -->
+    <section>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:24px;">
+            <article class="dashboard-card">
+                <div class="card-body">
+                    <div class="metric-label">Active Tasks</div>
+                    <div class="metric-value">{{ tasks|length }}</div>
+                </div>
+            </article>
+            <article class="dashboard-card">
+                <div class="card-body">
+                    <div class="metric-label">Pending Reviews</div>
+                    <div class="metric-value" style="color:var(--duo-yellow);">{{ pending_claims|length }}</div>
+                </div>
+            </article>
+            <article class="dashboard-card">
+                <div class="card-body">
+                    <div class="metric-label">Open Board Tasks</div>
+                    <div class="metric-value" style="color:var(--duo-green);">{{ tasks|selectattr('is_open_board')|list|length }}</div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- Pending Reviews -->
+    {% if pending_claims %}
+    <section style="margin-bottom:24px;">
+        <details class="dashboard-card" open style="border-radius:var(--radius);overflow:hidden;">
+            <summary style="padding:16px 22px;list-style:none;cursor:pointer;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:1.25rem;">⏳</span>
+                        <h2 style="margin:0;font-size:1.05rem;">Pending Reviews</h2>
+                        <span class="pill" style="background:var(--duo-yellow);color:#1d2b3a;">{{ pending_claims|length }}</span>
+                    </div>
+                </div>
+            </summary>
+            <div class="card-body" style="padding-top:0;">
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    {% for claim in pending_claims %}
+                    <div style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;">
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:10px;">
+                            <strong>{{ claim.task.title }}</strong>
+                            <span class="pill">{{ claim.kid.display_name }}</span>
+                            <span class="pill">🪙 {{ claim.task.coin_reward }} coins{% if claim.task.point_reward %} · ⭐ {{ claim.task.point_reward }} pts{% endif %}</span>
+                            {% if claim.submitted_at %}
+                                <span class="muted" style="font-size:.8rem;">Submitted {{ claim.submitted_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if claim.photo_path %}
+                        <div style="margin-bottom:10px;">
+                            <p class="muted" style="margin:0 0 4px;font-size:.82rem;">Proof photo:</p>
+                            <a href="{{ url_for('public.serve_task_photo', filename=claim.photo_path) }}" target="_blank">
+                                <img src="{{ url_for('public.serve_task_photo', filename=claim.photo_path) }}"
+                                     alt="Proof photo"
+                                     style="max-width:220px;max-height:160px;border-radius:8px;object-fit:cover;border:1.5px solid var(--duo-border);" />
+                            </a>
+                        </div>
+                        {% else %}
+                        <p class="muted" style="font-size:.82rem;margin-bottom:10px;">No photo submitted.</p>
+                        {% endif %}
+
+                        {% if claim.task.description %}
+                        <p style="margin:0 0 10px;font-size:.85rem;color:var(--duo-muted);">{{ claim.task.description }}</p>
+                        {% endif %}
+
+                        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                            <form method="post" action="{{ url_for('public.parent_tasks_claim_approve', claim_id=claim.id) }}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                                <div>
+                                    <label style="font-size:.8rem;display:block;margin-bottom:3px;">Note (optional)</label>
+                                    <input name="resolution_note" type="text" placeholder="Great job!" style="padding:6px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);font-size:.85rem;" />
+                                </div>
+                                <button type="submit" class="btn primary">✅ Approve</button>
+                            </form>
+                            <form method="post" action="{{ url_for('public.parent_tasks_claim_reject', claim_id=claim.id) }}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                                <div>
+                                    <label style="font-size:.8rem;display:block;margin-bottom:3px;">Rejection reason</label>
+                                    <input name="resolution_note" type="text" placeholder="Try again..." style="padding:6px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);font-size:.85rem;" />
+                                </div>
+                                <button type="submit" class="btn" style="border-color:var(--duo-red,#e00);color:var(--duo-red,#e00);">❌ Reject</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </details>
+    </section>
+    {% endif %}
+
+    <!-- Create Task Form -->
+    <section style="margin-bottom:24px;">
+        <details class="dashboard-card" style="border-radius:var(--radius);overflow:hidden;">
+            <summary style="padding:16px 22px;list-style:none;cursor:pointer;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.2rem;">➕</span>
+                    <h2 style="margin:0;font-size:1.05rem;">Create New Task</h2>
+                </div>
+            </summary>
+            <div class="card-body" style="padding-top:8px;">
+                <form method="post" action="{{ url_for('public.parent_tasks_create') }}">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:14px;">
+                        <div>
+                            <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:4px;">Task Title *</label>
+                            <input name="title" type="text" required placeholder="e.g. Clean out the car" style="width:100%;padding:8px 12px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);" />
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:4px;">Assign To (leave blank = open board)</label>
+                            <select name="assigned_to_kid_id" style="width:100%;padding:8px 12px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);">
+                                <option value="">— Open Board (any kid) —</option>
+                                {% for kid in kids %}
+                                <option value="{{ kid.id }}">{{ kid.display_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:4px;">Coin Reward 🪙</label>
+                            <input name="coin_reward" type="number" min="0" value="5" style="width:100%;padding:8px 12px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);" />
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:4px;">Family Points ⭐</label>
+                            <input name="point_reward" type="number" min="0" value="0" style="width:100%;padding:8px 12px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);" />
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:4px;">Due Date (optional)</label>
+                            <input name="due_date" type="date" style="width:100%;padding:8px 12px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);" />
+                        </div>
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:4px;">Description (optional)</label>
+                        <textarea name="description" rows="2" placeholder="Any extra details..." style="width:100%;padding:8px 12px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-surface);color:var(--duo-text);resize:vertical;"></textarea>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:16px;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.88rem;">
+                            <input type="checkbox" name="requires_photo_proof" value="1" checked style="width:16px;height:16px;" />
+                            Require photo proof
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.88rem;">
+                            <input type="checkbox" name="allow_multiple_claims" value="1" style="width:16px;height:16px;" />
+                            Allow multiple kids to claim independently
+                        </label>
+                    </div>
+                    <button type="submit" class="btn primary">Create Task</button>
+                </form>
+            </div>
+        </details>
+    </section>
+
+    <!-- Active Task List -->
+    <section>
+        <article class="dashboard-card">
+            <header class="card-header">
+                <h2>Active Tasks</h2>
+                <span class="pill">{{ tasks|length }}</span>
+            </header>
+            <div class="card-body">
+                {% if not tasks %}
+                <div class="empty-state">No active tasks. Create one above.</div>
+                {% else %}
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    {% for task in tasks %}
+                    <div style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;">
+                        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">
+                            <div>
+                                <strong style="font-size:1rem;">{{ task.title }}</strong>
+                                {% if task.description %}
+                                <p style="margin:4px 0 0;font-size:.83rem;color:var(--duo-muted);">{{ task.description }}</p>
+                                {% endif %}
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                                {% if task.is_open_board %}
+                                    <span class="pill" style="background:var(--duo-green,#58cc02);color:#fff;">Open Board</span>
+                                {% else %}
+                                    <span class="pill">📌 {{ task.assigned_to_kid.display_name }}</span>
+                                {% endif %}
+                                {% if task.allow_multiple_claims %}
+                                    <span class="pill" style="font-size:.75rem;">Multi-claim</span>
+                                {% endif %}
+                                <span class="pill">🪙 {{ task.coin_reward }}{% if task.point_reward %} · ⭐ {{ task.point_reward }}{% endif %}</span>
+                                {% if task.due_date %}
+                                    <span class="pill" style="font-size:.75rem;">Due {{ task.due_date.strftime('%b %d') }}</span>
+                                {% endif %}
+                                {% if task.requires_photo_proof %}
+                                    <span class="pill" style="font-size:.75rem;">📷 Photo required</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Claims on this task -->
+                        {% set active_claims = task.claims|selectattr('status', 'in', ['claimed', 'submitted', 'approved'])|list %}
+                        {% if active_claims %}
+                        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--duo-border);">
+                            <p style="font-size:.8rem;font-weight:700;margin:0 0 6px;color:var(--duo-muted);">CLAIMS</p>
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                                {% for c in active_claims %}
+                                <span class="pill" style="font-size:.78rem;{% if c.status == 'approved' %}background:var(--duo-green,#58cc02);color:#fff;{% elif c.status == 'submitted' %}background:var(--duo-yellow,#ffc800);color:#1d2b3a;{% endif %}">
+                                    {{ c.kid.display_name }}: {{ c.status|upper }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <form method="post" action="{{ url_for('public.parent_tasks_delete', task_id=task.id) }}" style="margin-top:12px;" onsubmit="return confirm('Remove this task?');">
+                            <button type="submit" class="btn" style="font-size:.8rem;padding:5px 14px;color:var(--duo-muted);">Remove</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </article>
+    </section>
+
+</div>
+{% endblock %}

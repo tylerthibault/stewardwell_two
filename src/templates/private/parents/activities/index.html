@@ -2,14 +2,13 @@
 
 {% block title %}Timed Activities - Stewardwell{% endblock %}
 
+{% block nav %}
+{% set page_title = "Activities" %}
+{% include 'private/parents/components/page_header.html' %}
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>⏱️ Timed Activities</h1>
-        <p>Manage activities kids can time with the Turn Taker</p>
-    </div>
-
-    {% include 'private/parents/components/navbar.html' %}
 
     <!-- Tabs (Desktop) -->
     <ul class="my-tabs">

@@ -1,0 +1,414 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Getting Started - Stewardwell{% endblock %}
+
+{% block nav %}
+{% set page_title = "Getting Started" %}
+{% include 'private/parents/components/page_header.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+	<!-- Intro banner -->
+	<section style="margin-bottom:28px;">
+		<article class="dashboard-card" style="border-left:4px solid var(--duo-green,#58cc02);">
+			<div class="card-body" style="display:flex;align-items:flex-start;gap:16px;">
+				<div style="font-size:2rem;line-height:1;">🚀</div>
+				<div>
+					<div style="font-size:1.05rem;font-weight:800;margin-bottom:4px;">Welcome to Stewardwell!</div>
+					<p style="margin:0;font-size:.9rem;color:var(--duo-muted);">
+						Below are hand-picked starter chores, kid rewards, and family goals to help you hit the ground running.
+						Browse each section and apply whichever ones fit your family — or add everything at once.
+						Items you've already created are marked so you won't get duplicates.
+					</p>
+					<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}" style="margin-top:14px;">
+						<input type="hidden" name="category" value="all">
+						<button type="submit" class="btn primary" style="font-size:.88rem;padding:8px 20px;">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><polyline points="20 6 9 17 4 12"/></svg>
+							Apply All Starter Data
+						</button>
+					</form>
+				</div>
+			</div>
+		</article>
+	</section>
+
+	<!-- ── Reward Economy Guide ── -->
+	<section style="margin-bottom:36px;">
+		<details>
+			<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;margin-bottom:0;" class="card-header">
+				<span style="font-size:1.2rem;">💡</span>
+				<div style="flex:1;">
+					<div style="font-size:1rem;font-weight:800;">How to Design Your Reward Economy</div>
+					<div style="font-size:.8rem;color:var(--duo-muted);margin-top:2px;">A mental framework for pricing chores, store items, and goals consistently.</div>
+				</div>
+				<span style="font-size:.8rem;font-weight:700;color:var(--duo-muted);padding:4px 10px;border:1px solid var(--duo-border);border-radius:8px;">Show guide</span>
+			</summary>
+			<div style="margin-top:16px;display:flex;flex-direction:column;gap:20px;">
+
+				<!-- Overview callout -->
+				<article class="dashboard-card" style="border-left:4px solid var(--duo-yellow,#ffd900);background:color-mix(in srgb,var(--duo-panel) 90%,#fffbe6 10%);">
+					<div class="card-body">
+						<div style="font-weight:800;font-size:.95rem;margin-bottom:6px;">🏦 The two-currency system</div>
+						<div style="display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--duo-yellow,#ffd900) 15%,var(--duo-panel));border:1px solid color-mix(in srgb,var(--duo-yellow,#ffd900) 40%,transparent);border-radius:10px;padding:7px 12px;margin-bottom:10px;font-size:.85rem;font-weight:700;">
+							<span>🪙 10 coins = 💵 $1</span>
+							<span style="font-weight:400;color:var(--duo-muted);font-size:.78rem;">— the recommended real-money exchange rate</span>
+						</div>
+						<p style="margin:0 0 8px;font-size:.88rem;color:var(--duo-muted);">Stewardwell uses two separate currencies on purpose:</p>
+						<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+							<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:800;margin-bottom:4px;">🪙 Coins — personal rewards</div>
+								<p style="margin:0;font-size:.82rem;color:var(--duo-muted);">Coins belong to the individual kid. They spend them in the <strong>Kid Store</strong> on personal rewards like screen time, a special snack, or choosing dinner. Coins foster <em>individual responsibility</em>.</p>
+							</div>
+							<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:800;margin-bottom:4px;">⭐ Points — family teamwork</div>
+								<p style="margin:0;font-size:.82rem;color:var(--duo-muted);">Points accumulate across the whole family toward <strong>Family Goals</strong> like a trip, a movie night out, or a new board game. Points foster <em>collective effort</em> — the whole family wins together.</p>
+							</div>
+						</div>
+					</div>
+				</article>
+
+				<!-- Chore pricing -->
+				<article class="dashboard-card">
+					<div class="card-body">
+						<div style="font-weight:800;font-size:.95rem;margin-bottom:2px;">🧹 Pricing chores</div>
+						<p style="margin:0 0 12px;font-size:.82rem;color:var(--duo-muted);">Base coin &amp; point rewards on time and effort, not outcome. Consistency matters more than perfect numbers — adjust as you learn what motivates your kids.</p>
+						<div style="overflow-x:auto;">
+							<table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+								<thead>
+									<tr style="border-bottom:2px solid var(--duo-border);text-align:left;">
+										<th style="padding:6px 10px;font-weight:700;">Effort level</th>
+										<th style="padding:6px 10px;font-weight:700;">Examples</th>
+										<th style="padding:6px 10px;font-weight:700;">🪙 Coins</th>
+										<th style="padding:6px 10px;font-weight:700;">⭐ Points</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr style="border-bottom:1px solid var(--duo-border);">
+										<td style="padding:7px 10px;font-weight:700;">Quick (&lt;5 min)</td>
+										<td style="padding:7px 10px;color:var(--duo-muted);">Make bed, put dishes away, wipe counter</td>
+										<td style="padding:7px 10px;">5 – 10</td>
+										<td style="padding:7px 10px;">5 – 10</td>
+									</tr>
+									<tr style="border-bottom:1px solid var(--duo-border);">
+										<td style="padding:7px 10px;font-weight:700;">Medium (10–20 min)</td>
+										<td style="padding:7px 10px;color:var(--duo-muted);">Vacuum, sweep + mop, clean bathroom sink</td>
+										<td style="padding:7px 10px;">15 – 25</td>
+										<td style="padding:7px 10px;">15 – 25</td>
+									</tr>
+									<tr style="border-bottom:1px solid var(--duo-border);">
+										<td style="padding:7px 10px;font-weight:700;">Hard (20–40 min)</td>
+										<td style="padding:7px 10px;color:var(--duo-muted);">Clean whole bathroom, mow lawn, deep-clean kitchen</td>
+										<td style="padding:7px 10px;">30 – 50</td>
+										<td style="padding:7px 10px;">30 – 50</td>
+									</tr>
+									<tr>
+										<td style="padding:7px 10px;font-weight:700;">Big project (45+ min)</td>
+										<td style="padding:7px 10px;color:var(--duo-muted);">Garage cleanout, yard work, wash the car</td>
+										<td style="padding:7px 10px;">50 – 100</td>
+										<td style="padding:7px 10px;">50 – 100</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<p style="margin:10px 0 0;font-size:.78rem;color:var(--duo-muted);">💡 <strong>Tip:</strong> Keep coins and points roughly equal on each chore. Diverge intentionally — e.g. give a solo-but-invisible chore more points to reward the family benefit.</p>
+					</div>
+				</article>
+
+				<!-- Kid store pricing -->
+				<article class="dashboard-card">
+					<div class="card-body">
+						<div style="font-weight:800;font-size:.95rem;margin-bottom:2px;">🛍️ Pricing kid store rewards</div>
+						<p style="margin:0 0 12px;font-size:.82rem;color:var(--duo-muted);">Rewards should feel attainable but not trivial. A good rule of thumb: a kid doing 2–3 chores per day should be able to afford a small reward in <strong>3–5 days</strong>, and a big reward in <strong>2–3 weeks</strong>.</p>
+						<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;">
+							<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:700;font-size:.85rem;margin-bottom:4px;">Small reward</div>
+								<div style="font-size:1.3rem;font-weight:800;color:var(--duo-green,#58cc02);">50 – 150 coins</div>
+								<p style="margin:4px 0 0;font-size:.78rem;color:var(--duo-muted);">Choose tonight's dinner, special snack, stay up 30 min late</p>
+							</div>
+							<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:700;font-size:.85rem;margin-bottom:4px;">Medium reward</div>
+								<div style="font-size:1.3rem;font-weight:800;color:var(--duo-blue,#1cb0f6);">200 – 400 coins</div>
+								<p style="margin:4px 0 0;font-size:.78rem;color:var(--duo-muted);">Extra screen time day, rent a movie, small toy or craft supply</p>
+							</div>
+							<div style="background:var(--duo-bg);border:1px solid var(--duo-border);border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:700;font-size:.85rem;margin-bottom:4px;">Big reward</div>
+								<div style="font-size:1.3rem;font-weight:800;color:var(--duo-yellow,#ffd900);">500 – 1000 coins</div>
+								<p style="margin:4px 0 0;font-size:.78rem;color:var(--duo-muted);">Trip to the dollar store, new book, a special outing with a parent</p>
+							</div>
+						</div>
+						<p style="margin:10px 0 0;font-size:.78rem;color:var(--duo-muted);">💡 <strong>Tip:</strong> Don't set everything as a big reward. Having cheap wins keeps kids motivated early on.</p>
+					</div>
+				</article>
+
+				<!-- Family goals pricing -->
+				<article class="dashboard-card">
+					<div class="card-body">
+						<div style="font-weight:800;font-size:.95rem;margin-bottom:2px;">🏆 Sizing family goals</div>
+						<p style="margin:0 0 12px;font-size:.82rem;color:var(--duo-muted);">Family goals use <strong>points</strong>, not coins. Set the point cost based on how long you want the goal to take the whole family to achieve — factoring in how many kids you have and how many chores they typically do.</p>
+						<div style="overflow-x:auto;">
+							<table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+								<thead>
+									<tr style="border-bottom:2px solid var(--duo-border);text-align:left;">
+										<th style="padding:6px 10px;font-weight:700;">Goal size</th>
+										<th style="padding:6px 10px;font-weight:700;">Examples</th>
+										<th style="padding:6px 10px;font-weight:700;">⭐ Point cost</th>
+										<th style="padding:6px 10px;font-weight:700;">Est. time (2 kids, avg effort)</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr style="border-bottom:1px solid var(--duo-border);">
+										<td style="padding:7px 10px;font-weight:700;">Quick win</td>
+										<td style="padding:7px 10px;color:var(--duo-muted);">Movie night, pizza night, game night</td>
+										<td style="padding:7px 10px;">200 – 400</td>
+										<td style="padding:7px 10px;">~1 week</td>
+									</tr>
+									<tr style="border-bottom:1px solid var(--duo-border);">
+										<td style="padding:7px 10px;font-weight:700;">Medium goal</td>
+										<td style="padding:7px 10px;color:var(--duo-muted);">New board game, drive-in movie, bowling trip</td>
+										<td style="padding:7px 10px;">600 – 1000</td>
+										<td style="padding:7px 10px;">2–3 weeks</td>
+									</tr>
+									<tr>
+										<td style="padding:7px 10px;font-weight:700;">Big goal</td>
+										<td style="padding:7px 10px;color:var(--duo-muted);">Amusement park, weekend camping trip, new trampoline</td>
+										<td style="padding:7px 10px;">1500 – 3000</td>
+										<td style="padding:7px 10px;">1–2 months</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<p style="margin:10px 0 0;font-size:.78rem;color:var(--duo-muted);">💡 <strong>Tip:</strong> Always have at least one quick-win goal active. It keeps the momentum going while a bigger goal builds in the background.</p>
+					</div>
+				</article>
+
+				<!-- Challenges -->
+				<article class="dashboard-card">
+					<div class="card-body">
+						<div style="font-weight:800;font-size:.95rem;margin-bottom:2px;">⚡ Setting challenge difficulty</div>
+						<p style="margin:0 0 12px;font-size:.82rem;color:var(--duo-muted);">Challenges are one-time (or limited) special tasks that go beyond regular chores — reading goals, kindness streaks, earning a badge, etc. The difficulty tier sets expectations.</p>
+						<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
+							<div style="background:var(--duo-bg);border:1px solid #cd7f32;border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:800;font-size:.85rem;color:#cd7f32;margin-bottom:4px;">🥉 Bronze</div>
+								<div style="font-weight:700;">25 – 50 coins · 25 – 50 pts</div>
+								<p style="margin:4px 0 0;font-size:.78rem;color:var(--duo-muted);">Single-day effort, simple behavior goals. <em>Read for 20 min, help set the table all week.</em></p>
+							</div>
+							<div style="background:var(--duo-bg);border:1px solid #aaa;border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:800;font-size:.85rem;color:#888;margin-bottom:4px;">🥈 Silver</div>
+								<div style="font-weight:700;">75 – 150 coins · 75 – 150 pts</div>
+								<p style="margin:4px 0 0;font-size:.78rem;color:var(--duo-muted);">Multi-day or moderate difficulty. <em>Practice an instrument 5 days in a row, read a full book.</em></p>
+							</div>
+							<div style="background:var(--duo-bg);border:1px solid #d4af37;border-radius:12px;padding:12px 14px;">
+								<div style="font-weight:800;font-size:.85rem;color:#b8860b;margin-bottom:4px;">🥇 Gold</div>
+								<div style="font-weight:700;">200 – 400 coins · 200 – 400 pts</div>
+								<p style="margin:4px 0 0;font-size:.78rem;color:var(--duo-muted);">High effort or multi-week commitment. <em>Learn to cook a meal, complete a project, a month-long streak.</em></p>
+							</div>
+						</div>
+						<p style="margin:10px 0 0;font-size:.78rem;color:var(--duo-muted);">💡 <strong>Tip:</strong> Use "requires proof" on gold and silver challenges so kids document their achievement — it's also a great keepsake.</p>
+					</div>
+				</article>
+
+				<!-- General tips -->
+				<article class="dashboard-card" style="border-left:4px solid var(--duo-blue,#1cb0f6);">
+					<div class="card-body">
+						<div style="font-weight:800;font-size:.95rem;margin-bottom:10px;">✅ General tips</div>
+						<ul style="margin:0;padding-left:18px;font-size:.85rem;color:var(--duo-muted);display:flex;flex-direction:column;gap:8px;">
+							<li><strong>Start simple.</strong> Launch with 4–6 chores and 1–2 store items. Add more once your kids are engaged and you see what motivates them.</li>
+							<li><strong>Calibrate after week one.</strong> If coins pile up with nothing to spend them on, add more store items. If kids never reach a reward, lower prices or add easier chores.</li>
+							<li><strong>Never take coins away.</strong> Treat coins as earned wages. Consequences should live outside the coin system to keep it trustworthy.</li>
+							<li><strong>Celebrate family goal completions.</strong> Make it a moment — announce it at dinner, let the kids pick the reward date. The anticipation is half the fun.</li>
+							<li><strong>Pause, don't delete.</strong> When life gets busy, pause chores instead of deleting them. Your setup will be there when things settle down.</li>
+						</ul>
+					</div>
+				</article>
+
+			</div>
+		</details>
+	</section>
+
+	<!-- ── Starter Chores ── -->
+	<section style="margin-bottom:36px;">
+		<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+			<div>
+				<h2 style="margin:0;font-size:1.1rem;font-weight:800;">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+					Starter Chores
+				</h2>
+				<p style="margin:4px 0 0;font-size:.82rem;color:var(--duo-muted);">Kids earn coins and family points by completing these.</p>
+			</div>
+			<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+				<input type="hidden" name="category" value="chores">
+				<button type="submit" class="btn" style="font-size:.82rem;padding:7px 16px;">Add All Chores</button>
+			</form>
+		</div>
+		<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+			{% for chore in starter_chores %}
+			<article class="dashboard-card" style="position:relative;{% if chore.already_exists %}opacity:.6;{% endif %}">
+				{% if chore.already_exists %}
+				<span style="position:absolute;top:10px;right:12px;font-size:.72rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 8px;border-radius:99px;">Already added</span>
+				{% endif %}
+				<div class="card-body">
+					<div style="font-weight:800;font-size:.95rem;margin-bottom:4px;padding-right:{% if chore.already_exists %}90px{% else %}0{% endif %};">{{ chore.name }}</div>
+					<p style="margin:0 0 10px;font-size:.82rem;color:var(--duo-muted);">{{ chore.description }}</p>
+					<div style="display:flex;gap:10px;font-size:.78rem;font-weight:700;margin-bottom:12px;">
+						<span style="color:var(--duo-yellow,#fbbf24);">🪙 {{ chore.coin_reward }} coins</span>
+						<span style="color:var(--duo-blue,#4f8ef7);">⭐ {{ chore.point_value }} pts</span>
+					</div>
+					{% if not chore.already_exists %}
+					<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+						<input type="hidden" name="category" value="chores">
+						<input type="hidden" name="single_name" value="{{ chore.name }}">
+						<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add this chore</button>
+					</form>
+					{% else %}
+					<a href="{{ url_for('public.parent_chores') }}" style="font-size:.78rem;color:var(--duo-muted);text-decoration:none;">View in Chores →</a>
+					{% endif %}
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+	</section>
+
+	<!-- ── Kid Store Items ── -->
+	<section style="margin-bottom:36px;">
+		<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+			<div>
+				<h2 style="margin:0;font-size:1.1rem;font-weight:800;">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+					Kid Store Rewards
+				</h2>
+				<p style="margin:4px 0 0;font-size:.82rem;color:var(--duo-muted);">Individual rewards kids can redeem with their coin balance.</p>
+			</div>
+			<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+				<input type="hidden" name="category" value="kid_store">
+				<button type="submit" class="btn" style="font-size:.82rem;padding:7px 16px;">Add All Kid Rewards</button>
+			</form>
+		</div>
+		<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+			{% for item in starter_kid_store %}
+			<article class="dashboard-card" style="position:relative;{% if item.already_exists %}opacity:.6;{% endif %}">
+				{% if item.already_exists %}
+				<span style="position:absolute;top:10px;right:12px;font-size:.72rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 8px;border-radius:99px;">Already added</span>
+				{% endif %}
+				<div class="card-body">
+					<div style="font-weight:800;font-size:.95rem;margin-bottom:4px;padding-right:{% if item.already_exists %}90px{% else %}0{% endif %};">{{ item.name }}</div>
+					<p style="margin:0 0 10px;font-size:.82rem;color:var(--duo-muted);">{{ item.description }}</p>
+					<div style="font-size:.78rem;font-weight:700;color:var(--duo-yellow,#fbbf24);margin-bottom:12px;">🪙 {{ item.kid_coin_cost }} coins</div>
+					{% if not item.already_exists %}
+					<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+						<input type="hidden" name="category" value="kid_store">
+						<input type="hidden" name="single_name" value="{{ item.name }}">
+						<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add this reward</button>
+					</form>
+					{% else %}
+					<a href="{{ url_for('public.parent_store', tab='kid') }}" style="font-size:.78rem;color:var(--duo-muted);text-decoration:none;">View in Store →</a>
+					{% endif %}
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+	</section>
+
+	<!-- ── Family Goals ── -->
+	<section style="margin-bottom:36px;">
+		<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+			<div>
+				<h2 style="margin:0;font-size:1.1rem;font-weight:800;">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+					Family Goals
+				</h2>
+				<p style="margin:4px 0 0;font-size:.82rem;color:var(--duo-muted);">Whole-family rewards unlocked with the shared family points balance.</p>
+			</div>
+			<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+				<input type="hidden" name="category" value="family_store">
+				<button type="submit" class="btn" style="font-size:.82rem;padding:7px 16px;">Add All Family Goals</button>
+			</form>
+		</div>
+		<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+			{% for item in starter_family_store %}
+			<article class="dashboard-card" style="position:relative;{% if item.already_exists %}opacity:.6;{% endif %}">
+				{% if item.already_exists %}
+				<span style="position:absolute;top:10px;right:12px;font-size:.72rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 8px;border-radius:99px;">Already added</span>
+				{% endif %}
+				<div class="card-body">
+					<div style="font-weight:800;font-size:.95rem;margin-bottom:4px;padding-right:{% if item.already_exists %}90px{% else %}0{% endif %};">{{ item.name }}</div>
+					<p style="margin:0 0 10px;font-size:.82rem;color:var(--duo-muted);">{{ item.description }}</p>
+					<div style="font-size:.78rem;font-weight:700;color:var(--duo-blue,#4f8ef7);margin-bottom:12px;">⭐ {{ item.family_point_cost }} family pts</div>
+					{% if not item.already_exists %}
+					<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+						<input type="hidden" name="category" value="family_store">
+						<input type="hidden" name="single_name" value="{{ item.name }}">
+						<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add this goal</button>
+					</form>
+					{% else %}
+					<a href="{{ url_for('public.parent_store', tab='family') }}" style="font-size:.78rem;color:var(--duo-muted);text-decoration:none;">View in Store →</a>
+					{% endif %}
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+	</section>
+
+	<!-- ── Starter Challenges ── -->
+	<section style="margin-bottom:36px;">
+		<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+			<div>
+				<h2 style="margin:0;font-size:1.1rem;font-weight:800;">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+					Starter Challenges
+				</h2>
+				<p style="margin:4px 0 0;font-size:.82rem;color:var(--duo-muted);">Non-chore goals around character, kindness, and growth. Bronze / Silver / Gold difficulty.</p>
+			</div>
+			<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+				<input type="hidden" name="category" value="challenges">
+				<button type="submit" class="btn" style="font-size:.82rem;padding:7px 16px;">Add All Challenges</button>
+			</form>
+		</div>
+		<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+			{% for ch in starter_challenges %}
+			<article class="dashboard-card" style="position:relative;{% if ch.already_exists %}opacity:.6;{% endif %}">
+				{% if ch.already_exists %}
+				<span style="position:absolute;top:10px;right:12px;font-size:.72rem;font-weight:700;background:var(--duo-green,#58cc02);color:#fff;padding:2px 8px;border-radius:99px;">Already added</span>
+				{% endif %}
+				<div class="card-body">
+					<div style="font-weight:800;font-size:.95rem;margin-bottom:4px;padding-right:{% if ch.already_exists %}90px{% else %}0{% endif %};">{{ ch.title }}</div>
+					<p style="margin:0 0 8px;font-size:.82rem;color:var(--duo-muted);">{{ ch.description }}</p>
+					<div style="display:flex;gap:10px;font-size:.78rem;font-weight:700;margin-bottom:4px;">
+						<span style="color:var(--duo-yellow,#fbbf24);">🪙 {{ ch.coin_reward }} coins</span>
+						<span style="color:var(--duo-blue,#4f8ef7);">⭐ {{ ch.point_value }} pts</span>
+					</div>
+					<div style="display:flex;gap:8px;font-size:.75rem;font-weight:700;margin-bottom:12px;">
+						{% if ch.difficulty == 'bronze' %}<span style="color:#b45309;">🥉 Bronze</span>
+						{% elif ch.difficulty == 'silver' %}<span style="color:#6b7280;">🥈 Silver</span>
+						{% else %}<span style="color:#d97706;">🥇 Gold</span>{% endif %}
+						{% if ch.is_repeatable %}<span style="color:var(--duo-muted);">🔁 Repeatable</span>{% endif %}
+						{% if ch.requires_proof %}<span style="color:var(--duo-muted);">📸 Proof required</span>{% endif %}
+					</div>
+					{% if not ch.already_exists %}
+					<form method="POST" action="{{ url_for('public.parent_getting_started_apply') }}">
+						<input type="hidden" name="category" value="challenges">
+						<input type="hidden" name="single_name" value="{{ ch.title }}">
+						<button type="submit" class="btn" style="font-size:.78rem;padding:5px 14px;">Add this challenge</button>
+					</form>
+					{% else %}
+					<a href="{{ url_for('public.parent_challenges') }}" style="font-size:.78rem;color:var(--duo-muted);text-decoration:none;">View in Challenges →</a>
+					{% endif %}
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+	</section>
+
+	<!-- Bottom quick links -->
+	<section>
+		<div style="display:flex;gap:10px;flex-wrap:wrap;">
+			<a href="{{ url_for('public.parent_chores') }}" class="nav-btn" style="font-size:.82rem;padding:8px 16px;">→ Chores</a>
+			<a href="{{ url_for('public.parent_store') }}" class="nav-btn" style="font-size:.82rem;padding:8px 16px;">→ Store</a>
+			<a href="{{ url_for('public.parent_challenges') }}" class="nav-btn" style="font-size:.82rem;padding:8px 16px;">→ Challenges</a>
+			<a href="{{ url_for('public.parent_settings') }}" class="nav-btn" style="font-size:.82rem;padding:8px 16px;">→ Settings</a>
+		</div>
+	</section>
+
+</div>
+{% endblock %}

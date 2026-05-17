@@ -1,0 +1,270 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Challenges - Stewardwell{% endblock %}
+
+{% block nav %}
+{% set page_title = "Challenges" %}
+{% include 'private/parents/components/page_header.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <style>
+        .diff-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 800;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+        .diff-bronze { background: #f5dfc0; color: #7a4a1e; }
+        .diff-silver { background: #e4e6ed; color: #555a6b; }
+        .diff-gold   { background: #fff3cd; color: #7a6000; }
+
+        .challenge-collapsible > summary {
+            list-style: none;
+            cursor: pointer;
+        }
+        .challenge-collapsible > summary::-webkit-details-marker { display: none; }
+        .challenge-collapsible[open] > summary .toggle-label::after { content: "Hide"; }
+        .challenge-collapsible:not([open]) > summary .toggle-label::after { content: "Show"; }
+    </style>
+
+    <!-- Stats row -->
+    <section>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+            <article class="dashboard-card">
+                <div class="card-body">
+                    <div class="metric-label">Total Challenges</div>
+                    <div class="metric-value">{{ challenges|length }}</div>
+                </div>
+            </article>
+            <article class="dashboard-card">
+                <div class="card-body">
+                    <div class="metric-label">Pending Reviews</div>
+                    <div class="metric-value" style="color:var(--duo-yellow);">{{ pending_submissions|length }}</div>
+                </div>
+            </article>
+            <article class="dashboard-card">
+                <div class="card-body">
+                    <div class="metric-label">Active Challenges</div>
+                    <div class="metric-value" style="color:var(--duo-green);">{{ challenges|selectattr('is_active')|list|length }}</div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- Pending Reviews -->
+    {% if pending_submissions %}
+    <section style="margin-bottom:24px;">
+        <details class="dashboard-card challenge-collapsible" open>
+            <summary style="padding:16px 22px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:1.25rem;">⏳</span>
+                        <h2 style="margin:0;font-size:1.05rem;">Pending Reviews</h2>
+                        <span class="pill" style="background:var(--duo-yellow);color:#1d2b3a;">{{ pending_submissions|length }}</span>
+                    </div>
+                    <span class="toggle-label nav-btn" style="font-size:.8rem;padding:4px 12px;"></span>
+                </div>
+            </summary>
+            <div class="card-body" style="padding-top:0;">
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    {% for sub in pending_submissions %}
+                    <div style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;">
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:10px;">
+                            <span class="diff-badge diff-{{ sub.challenge.difficulty }}">{{ sub.challenge.difficulty }}</span>
+                            <strong>{{ sub.challenge.title }}</strong>
+                            <span class="pill">{{ sub.kid.display_name }}</span>
+                            <span style="font-size:.8rem;color:var(--duo-muted);margin-left:auto;">{{ sub.submitted_at.strftime('%b %d, %Y') if sub.submitted_at else '—' }}</span>
+                        </div>
+                        {% if sub.proof_note %}
+                        <p style="font-size:.88rem;color:var(--duo-ink);margin:0 0 12px;background:#f7f8fc;border-radius:8px;padding:10px 14px;border:1px solid var(--duo-border);">
+                            <strong>Proof note:</strong> {{ sub.proof_note }}
+                        </p>
+                        {% endif %}
+                        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                            <form method="POST" action="{{ url_for('public.parent_challenge_submission_decision', submission_id=sub.id) }}" style="display:inline-flex;gap:8px;align-items:center;">
+                                <input type="hidden" name="action" value="approve">
+                                <span style="font-size:.82rem;color:var(--duo-muted);">Awards 🪙 {{ sub.challenge.coin_reward }} ⭐ {{ sub.challenge.point_value }}</span>
+                                <button type="submit" class="btn primary" style="font-size:.85rem;padding:6px 16px;background:var(--duo-green);">✓ Approve</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('public.parent_challenge_submission_decision', submission_id=sub.id) }}" style="display:inline-flex;gap:8px;align-items:center;">
+                                <input type="hidden" name="action" value="reject">
+                                <input type="text" name="resolution_note" placeholder="Rejection reason (optional)" style="font-size:.82rem;padding:5px 10px;border-radius:8px;border:1.5px solid var(--duo-border);outline:none;">
+                                <button type="submit" class="btn btn-danger" style="font-size:.85rem;padding:6px 16px;">✗ Reject</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </details>
+    </section>
+    {% endif %}
+
+    <!-- All Challenges + Create -->
+    <section>
+        <details class="dashboard-card challenge-collapsible" open>
+            <summary style="padding:16px 22px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:1.25rem;">🏆</span>
+                        <h2 style="margin:0;font-size:1.05rem;">All Challenges</h2>
+                        <span class="pill">{{ challenges|length }}</span>
+                    </div>
+                    <span class="toggle-label nav-btn" style="font-size:.8rem;padding:4px 12px;"></span>
+                </div>
+            </summary>
+            <div class="card-body" style="padding-top:0;">
+
+                <!-- Create new challenge form -->
+                <details style="margin-bottom:20px;border:1.5px dashed var(--duo-border);border-radius:var(--radius);padding:16px;">
+                    <summary style="cursor:pointer;font-weight:700;list-style:none;color:var(--duo-blue);">
+                        + Create New Challenge
+                    </summary>
+                    <form method="POST" action="{{ url_for('public.parent_challenge_create') }}" style="margin-top:14px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px;">
+                            <div>
+                                <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:4px;">Title *</label>
+                                <input type="text" name="title" required maxlength="120" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--duo-border);font-size:.9rem;outline:none;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:4px;">Difficulty</label>
+                                <select name="difficulty" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--duo-border);font-size:.9rem;box-sizing:border-box;">
+                                    <option value="bronze">🥉 Bronze</option>
+                                    <option value="silver">🥈 Silver</option>
+                                    <option value="gold">🥇 Gold</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:4px;">🪙 Coin Reward</label>
+                                <input type="number" name="coin_reward" min="0" value="5" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--duo-border);font-size:.9rem;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:4px;">⭐ Point Value</label>
+                                <input type="number" name="point_value" min="0" value="0" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--duo-border);font-size:.9rem;box-sizing:border-box;">
+                            </div>
+                        </div>
+                        <div style="margin-bottom:12px;">
+                            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:4px;">Description (optional)</label>
+                            <textarea name="description" rows="2" maxlength="500" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--duo-border);font-size:.9rem;resize:vertical;box-sizing:border-box;"></textarea>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px;align-items:center;">
+                            <label style="display:flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer;">
+                                <input type="checkbox" name="requires_proof" value="1"> Requires proof (note or photo)
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer;">
+                                <input type="checkbox" name="is_repeatable" value="1"> Repeatable (can be earned again after approval)
+                            </label>
+                        </div>
+                        <button type="submit" class="btn primary" style="background:var(--duo-blue);">Create Challenge</button>
+                    </form>
+                </details>
+
+                <!-- Challenge list -->
+                {% if challenges %}
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        {% for challenge in challenges %}
+                        <div style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;opacity:{% if challenge.is_active %}1{% else %}0.55{% endif %};">
+                            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:8px;">
+                                <span class="diff-badge diff-{{ challenge.difficulty }}">{{ challenge.difficulty }}</span>
+                                <strong style="flex:1;min-width:100px;">{{ challenge.title }}</strong>
+                                {% if not challenge.is_active %}
+                                    <span class="pill" style="background:#e9ecef;color:#888;">Inactive</span>
+                                {% endif %}
+                                <span style="font-size:.82rem;color:var(--duo-muted);">🪙 {{ challenge.coin_reward }} | ⭐ {{ challenge.point_value }}</span>
+                                {% if challenge.requires_proof %}<span class="pill" style="font-size:.72rem;">Proof required</span>{% endif %}
+                                {% if challenge.is_repeatable %}<span class="pill" style="font-size:.72rem;">Repeatable</span>{% endif %}
+                            </div>
+                            {% if challenge.description %}
+                            <p style="font-size:.84rem;color:var(--duo-muted);margin:0 0 10px;">{{ challenge.description }}</p>
+                            {% endif %}
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                                <!-- Toggle active -->
+                                <form method="POST" action="{{ url_for('public.parent_challenge_toggle', challenge_id=challenge.id) }}">
+                                    <button type="submit" class="nav-btn" style="font-size:.8rem;padding:5px 12px;">
+                                        {% if challenge.is_active %}⏸ Deactivate{% else %}▶ Activate{% endif %}
+                                    </button>
+                                </form>
+                                <!-- Edit inline -->
+                                <button type="button" class="nav-btn" onclick="this.closest('.challenge-edit-wrap').querySelector('.edit-form').toggleAttribute('hidden')" style="font-size:.8rem;padding:5px 12px;">✏️ Edit</button>
+                            </div>
+                            <div class="challenge-edit-wrap">
+                                <form method="POST" action="{{ url_for('public.parent_challenge_edit', challenge_id=challenge.id) }}" hidden class="edit-form" style="margin-top:12px;background:#f7f8fc;border-radius:10px;padding:14px;border:1px solid var(--duo-border);">
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px;">
+                                        <div>
+                                            <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:3px;">Title</label>
+                                            <input type="text" name="title" value="{{ challenge.title }}" maxlength="120" style="width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--duo-border);font-size:.88rem;box-sizing:border-box;">
+                                        </div>
+                                        <div>
+                                            <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:3px;">Difficulty</label>
+                                            <select name="difficulty" style="width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--duo-border);font-size:.88rem;box-sizing:border-box;">
+                                                <option value="bronze" {% if challenge.difficulty == 'bronze' %}selected{% endif %}>🥉 Bronze</option>
+                                                <option value="silver" {% if challenge.difficulty == 'silver' %}selected{% endif %}>🥈 Silver</option>
+                                                <option value="gold" {% if challenge.difficulty == 'gold' %}selected{% endif %}>🥇 Gold</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:3px;">🪙 Coins</label>
+                                            <input type="number" name="coin_reward" min="0" value="{{ challenge.coin_reward }}" style="width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--duo-border);font-size:.88rem;box-sizing:border-box;">
+                                        </div>
+                                        <div>
+                                            <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:3px;">⭐ Points</label>
+                                            <input type="number" name="point_value" min="0" value="{{ challenge.point_value }}" style="width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--duo-border);font-size:.88rem;box-sizing:border-box;">
+                                        </div>
+                                    </div>
+                                    <div style="margin-bottom:10px;">
+                                        <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:3px;">Description</label>
+                                        <textarea name="description" rows="2" maxlength="500" style="width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--duo-border);font-size:.88rem;resize:vertical;box-sizing:border-box;">{{ challenge.description or '' }}</textarea>
+                                    </div>
+                                    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:.84rem;">
+                                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                                            <input type="checkbox" name="requires_proof" value="1" {% if challenge.requires_proof %}checked{% endif %}> Requires proof
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                                            <input type="checkbox" name="is_repeatable" value="1" {% if challenge.is_repeatable %}checked{% endif %}> Repeatable
+                                        </label>
+                                    </div>
+                                    <button type="submit" class="btn primary" style="font-size:.85rem;padding:6px 16px;background:var(--duo-blue);">Save Changes</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state" style="padding:30px;text-align:center;color:var(--duo-muted);">
+                        No challenges yet. Create one above to get started! 🌟
+                    </div>
+                {% endif %}
+            </div>
+        </details>
+    </section>
+
+</div>
+
+<script>
+// One-at-a-time accordion for challenge-collapsible
+document.querySelectorAll(".challenge-collapsible").forEach(d => {
+    d.addEventListener("toggle", () => {
+        if (d.open) {
+            document.querySelectorAll(".challenge-collapsible").forEach(other => {
+                if (other !== d) other.removeAttribute("open");
+            });
+        }
+    });
+});
+
+// Inline edit toggle buttons
+document.querySelectorAll(".challenge-edit-wrap button[type=button]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const form = btn.closest("div").querySelector && btn.parentElement.parentElement.querySelector(".edit-form");
+        if (form) {
+            form.hidden ? form.removeAttribute("hidden") : form.setAttribute("hidden", "");
+        }
+    });
+});
+</script>
+{% endblock %}

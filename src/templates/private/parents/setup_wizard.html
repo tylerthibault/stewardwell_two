@@ -1,0 +1,441 @@
+{% extends "bases/private.html" %}
+
+{% block title %}Setup Wizard - Stewardwell{% endblock %}
+
+{% block nav %}
+{% set page_title = "Setup Wizard" %}
+{% include 'private/parents/components/page_header.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+<style>
+	.wizard-steps {
+		display: flex;
+		gap: 0;
+		margin-bottom: 32px;
+		border-radius: 14px;
+		overflow: hidden;
+		border: 1px solid var(--duo-border);
+	}
+	.wizard-step-tab {
+		flex: 1;
+		padding: 10px 8px;
+		text-align: center;
+		font-size: .78rem;
+		font-weight: 700;
+		cursor: pointer;
+		border: none;
+		background: var(--duo-panel);
+		color: var(--duo-muted);
+		border-right: 1px solid var(--duo-border);
+		transition: background .15s, color .15s;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3px;
+		position: relative;
+	}
+	.wizard-step-tab:last-child { border-right: none; }
+	.wizard-step-tab.active {
+		background: var(--duo-green, #58cc02);
+		color: #fff;
+	}
+	.wizard-step-tab.completed {
+		background: color-mix(in srgb, var(--duo-green, #58cc02) 18%, var(--duo-panel));
+		color: var(--duo-green, #58cc02);
+	}
+	.wizard-step-tab .step-icon { font-size: 1.1rem; }
+	.wizard-step-tab .step-num {
+		width: 18px; height: 18px; border-radius: 50%;
+		background: var(--duo-border); color: var(--duo-muted);
+		font-size: .68rem; font-weight: 900;
+		display: flex; align-items: center; justify-content: center;
+		margin: 0 auto 1px;
+	}
+	.wizard-step-tab.active .step-num { background: rgba(255,255,255,.35); color: #fff; }
+	.wizard-step-tab.completed .step-num { background: var(--duo-green, #58cc02); color: #fff; }
+
+	.wizard-panel { display: none; }
+	.wizard-panel.active { display: block; }
+
+	.step-card {
+		background: var(--duo-panel);
+		border: 1px solid var(--duo-border);
+		border-radius: 14px;
+		padding: 24px 24px 20px;
+		margin-bottom: 16px;
+	}
+	.step-card-header {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 18px;
+	}
+	.step-card-icon {
+		width: 42px; height: 42px; border-radius: 12px;
+		display: flex; align-items: center; justify-content: center;
+		font-size: 1.3rem; flex-shrink: 0;
+	}
+	.step-card-title { font-size: 1.05rem; font-weight: 800; margin: 0; }
+	.step-card-subtitle { font-size: .8rem; color: var(--duo-muted); margin: 2px 0 0; }
+
+	.wizard-nav {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+		margin-top: 20px;
+	}
+</style>
+
+<form method="POST" action="{{ url_for('public.parent_setup_wizard_submit') }}" id="setup-wizard-form">
+
+	<!-- Progress bar -->
+	<div class="wizard-steps" id="wizard-tabs">
+		<button type="button" class="wizard-step-tab active" data-step="0">
+			<span class="step-num">1</span>
+			<span class="step-icon">💵</span>
+			<span>Coins</span>
+		</button>
+		<button type="button" class="wizard-step-tab" data-step="1">
+			<span class="step-num">2</span>
+			<span class="step-icon">🧹</span>
+			<span>Chore</span>
+		</button>
+		<button type="button" class="wizard-step-tab" data-step="2">
+			<span class="step-num">3</span>
+			<span class="step-icon">⚡</span>
+			<span>Challenge</span>
+		</button>
+		<button type="button" class="wizard-step-tab" data-step="3">
+			<span class="step-num">4</span>
+			<span class="step-icon">🛍️</span>
+			<span>Kid Reward</span>
+		</button>
+		<button type="button" class="wizard-step-tab" data-step="4">
+			<span class="step-num">5</span>
+			<span class="step-icon">🏆</span>
+			<span>Family Goal</span>
+		</button>
+		<button type="button" class="wizard-step-tab" data-step="5">
+			<span class="step-num">6</span>
+			<span class="step-icon">✅</span>
+			<span>Review</span>
+		</button>
+	</div>
+
+	<!-- ── Step 0: Coin / Cash Rate ─────────────────────────────────────── -->
+	<div class="wizard-panel active" id="step-0">
+		<div class="step-card">
+			<div class="step-card-header">
+				<div class="step-card-icon" style="background:linear-gradient(135deg,#ffd900,#f59e0b);">💵</div>
+				<div>
+					<h2 class="step-card-title">Cash-Out Rate</h2>
+					<p class="step-card-subtitle">How many coins equal $1 of real money?</p>
+				</div>
+			</div>
+
+			<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+				<div>
+					<label for="coins_per_dollar" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Coins per $1</label>
+					<input id="coins_per_dollar" name="coins_per_dollar" type="number" min="1" max="1000" value="{{ family.coins_per_dollar }}" style="width:140px;" />
+					<p class="muted" style="margin:8px 0 0;font-size:.78rem;">Default is <strong>10 coins = $1</strong>. You can change this anytime in Settings.</p>
+				</div>
+				<div style="background:color-mix(in srgb,var(--duo-yellow,#ffd900) 10%,var(--duo-panel));border:1px solid color-mix(in srgb,var(--duo-yellow,#ffd900) 30%,transparent);border-radius:12px;padding:14px 16px;">
+					<div style="font-weight:700;font-size:.82rem;margin-bottom:8px;">💡 How it works</div>
+					<ul style="margin:0;padding-left:16px;font-size:.8rem;color:var(--duo-muted);display:flex;flex-direction:column;gap:5px;">
+						<li>Kids earn coins by completing chores and challenges.</li>
+						<li>They redeem coins in the Kid Store — or cash out for real money.</li>
+						<li>A quick chore (make bed) might earn 5–10 coins = $0.50–$1.</li>
+						<li>A big chore (mow lawn) might earn 50–100 coins = $5–$10.</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="wizard-nav">
+			<span></span>
+			<button type="button" class="btn primary wizard-next">Next: Add a Chore →</button>
+		</div>
+	</div>
+
+	<!-- ── Step 1: First Chore ──────────────────────────────────────────── -->
+	<div class="wizard-panel" id="step-1">
+		<div class="step-card">
+			<div class="step-card-header">
+				<div class="step-card-icon" style="background:linear-gradient(135deg,var(--duo-green,#58cc02),#38a800);">🧹</div>
+				<div>
+					<h2 class="step-card-title">Create Your First Chore</h2>
+					<p class="step-card-subtitle">Kids earn coins and family points by completing chores.</p>
+				</div>
+			</div>
+
+			<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+				<div class="col-12">
+					<label for="chore_name" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Chore name <span style="color:var(--duo-muted);font-weight:400;">(optional — skip to keep empty)</span></label>
+					<input id="chore_name" name="chore_name" type="text" placeholder="e.g. Make your bed" />
+				</div>
+				<div class="col-12">
+					<label for="chore_description" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Description</label>
+					<input id="chore_description" name="chore_description" type="text" placeholder="Optional instructions" />
+				</div>
+				<div>
+					<label for="chore_coin_reward" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">🪙 Coin reward</label>
+					<input id="chore_coin_reward" name="chore_coin_reward" type="number" min="0" value="10" style="width:110px;" />
+					<p class="muted" style="margin:5px 0 0;font-size:.75rem;">Quick chore: 5–10 · Medium: 15–25 · Hard: 30–50</p>
+				</div>
+				<div>
+					<label for="chore_point_value" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">⭐ Family points</label>
+					<input id="chore_point_value" name="chore_point_value" type="number" min="0" value="10" style="width:110px;" />
+					<p class="muted" style="margin:5px 0 0;font-size:.75rem;">Contributes toward family goals. Match coins for simplicity.</p>
+				</div>
+			</div>
+		</div>
+		<div class="wizard-nav">
+			<button type="button" class="btn wizard-prev">← Back</button>
+			<button type="button" class="btn primary wizard-next">Next: Add a Challenge →</button>
+		</div>
+	</div>
+
+	<!-- ── Step 2: First Challenge ──────────────────────────────────────── -->
+	<div class="wizard-panel" id="step-2">
+		<div class="step-card">
+			<div class="step-card-header">
+				<div class="step-card-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed);">⚡</div>
+				<div>
+					<h2 class="step-card-title">Create Your First Challenge</h2>
+					<p class="step-card-subtitle">One-time or repeatable goals that go beyond regular chores.</p>
+				</div>
+			</div>
+
+			<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+				<div class="col-12">
+					<label for="challenge_title" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Challenge title <span style="color:var(--duo-muted);font-weight:400;">(optional)</span></label>
+					<input id="challenge_title" name="challenge_title" type="text" placeholder="e.g. Read for 20 minutes" />
+				</div>
+				<div class="col-12">
+					<label for="challenge_description" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Description</label>
+					<input id="challenge_description" name="challenge_description" type="text" placeholder="Optional details" />
+				</div>
+				<div>
+					<label for="challenge_difficulty" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Difficulty</label>
+					<select id="challenge_difficulty" name="challenge_difficulty" style="width:140px;">
+						<option value="bronze">🥉 Bronze</option>
+						<option value="silver">🥈 Silver</option>
+						<option value="gold">🥇 Gold</option>
+					</select>
+					<p class="muted" style="margin:5px 0 0;font-size:.75rem;">Bronze: 25–50 · Silver: 75–150 · Gold: 200–400 coins</p>
+				</div>
+				<div>
+					<label for="challenge_coin_reward" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">🪙 Coin reward</label>
+					<input id="challenge_coin_reward" name="challenge_coin_reward" type="number" min="0" value="25" style="width:110px;" />
+				</div>
+				<div>
+					<label for="challenge_point_value" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">⭐ Family points</label>
+					<input id="challenge_point_value" name="challenge_point_value" type="number" min="0" value="10" style="width:110px;" />
+				</div>
+				<div style="display:flex;flex-direction:column;gap:10px;padding-top:4px;">
+					<label style="display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer;">
+						<input name="challenge_requires_proof" value="1" type="checkbox" style="width:auto;" />
+						Require photo proof
+					</label>
+					<label style="display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer;">
+						<input name="challenge_is_repeatable" value="1" type="checkbox" style="width:auto;" checked />
+						Repeatable
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="wizard-nav">
+			<button type="button" class="btn wizard-prev">← Back</button>
+			<button type="button" class="btn primary wizard-next">Next: Add a Kid Reward →</button>
+		</div>
+	</div>
+
+	<!-- ── Step 3: Kid Store Item ───────────────────────────────────────── -->
+	<div class="wizard-panel" id="step-3">
+		<div class="step-card">
+			<div class="step-card-header">
+				<div class="step-card-icon" style="background:linear-gradient(135deg,var(--duo-blue,#1cb0f6),#0083cc);">🛍️</div>
+				<div>
+					<h2 class="step-card-title">Add a Kid Store Reward</h2>
+					<p class="step-card-subtitle">Something a kid can buy with their own coins.</p>
+				</div>
+			</div>
+
+			<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+				<div class="col-12">
+					<label for="kid_item_name" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Reward name <span style="color:var(--duo-muted);font-weight:400;">(optional)</span></label>
+					<input id="kid_item_name" name="kid_item_name" type="text" placeholder="e.g. 30 min extra screen time" />
+				</div>
+				<div class="col-12">
+					<label for="kid_item_description" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Description</label>
+					<input id="kid_item_description" name="kid_item_description" type="text" placeholder="Optional details" />
+				</div>
+				<div>
+					<label for="kid_item_coin_cost" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">🪙 Coin cost</label>
+					<input id="kid_item_coin_cost" name="kid_item_coin_cost" type="number" min="1" value="20" style="width:110px;" />
+					<p class="muted" style="margin:5px 0 0;font-size:.75rem;">Small: 50–150 · Medium: 200–400 · Big: 500–1000</p>
+				</div>
+				<div style="background:color-mix(in srgb,var(--duo-blue,#1cb0f6) 8%,var(--duo-panel));border:1px solid color-mix(in srgb,var(--duo-blue,#1cb0f6) 22%,transparent);border-radius:10px;padding:12px 14px;font-size:.8rem;color:var(--duo-muted);">
+					💡 <strong>Tip:</strong> Start with 1–2 cheap rewards so kids get a quick win early on. You can add more from the Store page.
+				</div>
+			</div>
+		</div>
+		<div class="wizard-nav">
+			<button type="button" class="btn wizard-prev">← Back</button>
+			<button type="button" class="btn primary wizard-next">Next: Add a Family Goal →</button>
+		</div>
+	</div>
+
+	<!-- ── Step 4: Family Goal ──────────────────────────────────────────── -->
+	<div class="wizard-panel" id="step-4">
+		<div class="step-card">
+			<div class="step-card-header">
+				<div class="step-card-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">🏆</div>
+				<div>
+					<h2 class="step-card-title">Add a Family Goal</h2>
+					<p class="step-card-subtitle">Something the whole family earns together using ⭐ points.</p>
+				</div>
+			</div>
+
+			<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+				<div class="col-12">
+					<label for="family_item_name" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Goal name <span style="color:var(--duo-muted);font-weight:400;">(optional)</span></label>
+					<input id="family_item_name" name="family_item_name" type="text" placeholder="e.g. Family movie night" />
+				</div>
+				<div class="col-12">
+					<label for="family_item_description" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">Description</label>
+					<input id="family_item_description" name="family_item_description" type="text" placeholder="Optional details" />
+				</div>
+				<div>
+					<label for="family_item_point_cost" style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;">⭐ Point cost</label>
+					<input id="family_item_point_cost" name="family_item_point_cost" type="number" min="1" value="200" style="width:110px;" />
+					<p class="muted" style="margin:5px 0 0;font-size:.75rem;">Quick win: 200–400 · Medium: 600–1000 · Big: 1500–3000</p>
+				</div>
+				<div style="background:color-mix(in srgb,#f59e0b 8%,var(--duo-panel));border:1px solid color-mix(in srgb,#f59e0b 22%,transparent);border-radius:10px;padding:12px 14px;font-size:.8rem;color:var(--duo-muted);">
+					💡 <strong>Tip:</strong> Always keep a quick-win goal active. It keeps kids motivated while a bigger goal builds in the background.
+				</div>
+			</div>
+		</div>
+		<div class="wizard-nav">
+			<button type="button" class="btn wizard-prev">← Back</button>
+			<button type="button" class="btn primary wizard-next">Review & Finish →</button>
+		</div>
+	</div>
+
+	<!-- ── Step 5: Review ───────────────────────────────────────────────── -->
+	<div class="wizard-panel" id="step-5">
+		<div class="step-card">
+			<div class="step-card-header">
+				<div class="step-card-icon" style="background:linear-gradient(135deg,var(--duo-green,#58cc02),#38a800);">✅</div>
+				<div>
+					<h2 class="step-card-title">Review & Create</h2>
+					<p class="step-card-subtitle">Here's what will be created when you click Finish.</p>
+				</div>
+			</div>
+			<div id="wizard-review" style="display:flex;flex-direction:column;gap:10px;font-size:.88rem;">
+				<!-- Populated by JS -->
+			</div>
+			<p class="muted" style="margin:14px 0 0;font-size:.78rem;">Skipped items are not created. You can always add more from the individual pages later.</p>
+		</div>
+		<div class="wizard-nav">
+			<button type="button" class="btn wizard-prev">← Back</button>
+			<button type="submit" class="btn primary" style="padding:10px 28px;font-size:.95rem;">🚀 Finish Setup</button>
+		</div>
+	</div>
+
+</form>
+</div>
+
+{% block scripts %}
+<script>
+(function () {
+	const panels = Array.from(document.querySelectorAll('.wizard-panel'));
+	const tabs = Array.from(document.querySelectorAll('.wizard-step-tab'));
+	let current = 0;
+
+	function goTo(index) {
+		panels[current].classList.remove('active');
+		tabs[current].classList.remove('active');
+		if (index > current) tabs[current].classList.add('completed');
+		current = index;
+		panels[current].classList.add('active');
+		tabs[current].classList.remove('completed');
+		tabs[current].classList.add('active');
+		if (current === panels.length - 1) buildReview();
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
+	document.querySelectorAll('.wizard-next').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			if (current < panels.length - 1) goTo(current + 1);
+		});
+	});
+
+	document.querySelectorAll('.wizard-prev').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			if (current > 0) {
+				tabs[current].classList.remove('completed');
+				goTo(current - 1);
+			}
+		});
+	});
+
+	tabs.forEach(function (tab) {
+		tab.addEventListener('click', function () {
+			const target = parseInt(tab.dataset.step, 10);
+			if (target !== current) goTo(target);
+		});
+	});
+
+	function val(id) { return (document.getElementById(id) || {}).value || ''; }
+
+	function reviewRow(icon, label, detail, empty) {
+		const isBlank = !detail || detail.trim() === '';
+		return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--duo-bg);border:1px solid var(--duo-border);">'
+			+ '<span style="font-size:1.15rem;">' + icon + '</span>'
+			+ '<div style="flex:1;">'
+			+ '<div style="font-weight:700;">' + label + '</div>'
+			+ '<div style="font-size:.8rem;color:var(--duo-muted);">' + (isBlank ? ('<em>' + empty + '</em>') : detail) + '</div>'
+			+ '</div>'
+			+ (isBlank ? '<span style="font-size:.72rem;font-weight:700;color:var(--duo-muted);padding:2px 8px;border:1px solid var(--duo-border);border-radius:99px;">Skip</span>'
+				: '<span style="font-size:.72rem;font-weight:700;color:#fff;background:var(--duo-green,#58cc02);padding:2px 8px;border-radius:99px;">Create</span>')
+			+ '</div>';
+	}
+
+	function buildReview() {
+		const rate = val('coins_per_dollar') || '10';
+		const choreName = val('chore_name');
+		const chore = choreName ? choreName + ' · 🪙 ' + val('chore_coin_reward') + ' · ⭐ ' + val('chore_point_value') : '';
+		const challengeTitle = val('challenge_title');
+		const diffMap = { bronze: '🥉 Bronze', silver: '🥈 Silver', gold: '🥇 Gold' };
+		const challenge = challengeTitle ? challengeTitle + ' · ' + (diffMap[val('challenge_difficulty')] || '') + ' · 🪙 ' + val('challenge_coin_reward') : '';
+		const kidName = val('kid_item_name');
+		const kid = kidName ? kidName + ' · 🪙 ' + val('kid_item_coin_cost') + ' coins' : '';
+		const famName = val('family_item_name');
+		const fam = famName ? famName + ' · ⭐ ' + val('family_item_point_cost') + ' pts' : '';
+
+		document.getElementById('wizard-review').innerHTML =
+			reviewRow('💵', 'Cash-Out Rate', rate + ' coins = $1', 'Will keep current rate')
+			+ reviewRow('🧹', 'First Chore', chore, 'No chore — skip')
+			+ reviewRow('⚡', 'First Challenge', challenge, 'No challenge — skip')
+			+ reviewRow('🛍️', 'Kid Store Reward', kid, 'No kid reward — skip')
+			+ reviewRow('🏆', 'Family Goal', fam, 'No family goal — skip');
+	}
+
+	// Auto-fill coin reward suggestion when difficulty changes
+	const diffSelect = document.getElementById('challenge_difficulty');
+	const coinInput = document.getElementById('challenge_coin_reward');
+	const ptInput = document.getElementById('challenge_point_value');
+	const defaults = { bronze: [25, 10], silver: [75, 30], gold: [200, 75] };
+	if (diffSelect) {
+		diffSelect.addEventListener('change', function () {
+			const d = defaults[diffSelect.value];
+			if (d) { coinInput.value = d[0]; ptInput.value = d[1]; }
+		});
+	}
+}());
+</script>
+{% endblock %}
+{% endblock %}

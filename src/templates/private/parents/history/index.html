@@ -2,14 +2,13 @@
 
 {% block title %}History - Stewardwell{% endblock %}
 
+{% block nav %}
+{% set page_title = "History" %}
+{% include 'private/parents/components/page_header.html' %}
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>History</h1>
-        <p>Track purchases and completed chores</p>
-    </div>
-
-    {% include 'private/parents/components/navbar.html' %}
 
     <!-- Tab Navigation -->
     <ul class="my-tabs" role="tablist">
@@ -133,6 +132,7 @@
                                 <option value="all">All Types</option>
                                 <option value="fine">Fine</option>
                                 <option value="chore_reward">Chore Reward</option>
+                                <option value="challenge_reward">Challenge Reward</option>
                                 <option value="store_purchase">Store Purchase</option>
                                 <option value="timed_session">Timed Session</option>
                                 <option value="manual_add">Manual Add</option>
@@ -238,6 +238,7 @@
     const KIND_LABELS = {
         fine: { label: 'Fine', color: '#e74c3c' },
         chore_reward: { label: 'Chore Reward', color: '#27ae60' },
+        challenge_reward: { label: 'Challenge Reward', color: '#f59e0b' },
         store_purchase: { label: 'Store Purchase', color: '#8e44ad' },
         timed_session: { label: 'Timed Session', color: '#2980b9' },
         manual_add: { label: 'Manual Add', color: '#27ae60' },

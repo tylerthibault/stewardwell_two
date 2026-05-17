@@ -21,9 +21,33 @@
 		<a href="{{ url_for('public.kid_chores') }}" class="btn">Chores</a>
 		<a href="{{ url_for('public.kid_store', tab='kid') }}" class="btn {% if active_tab == 'kid' %}primary{% endif %}">Kid Store</a>
 		<a href="{{ url_for('public.kid_store', tab='family') }}" class="btn {% if active_tab == 'family' %}primary{% endif %}">Family Goals</a>
+		<a href="{{ url_for('public.kid_challenges') }}" class="btn">Challenges</a>
 	</div>
 
 	{% if active_tab == 'kid' %}
+		{# ── Permanent Cash Out card ── #}
+		<div class="dashboard-grid" style="margin-bottom:12px;">
+			<div class="dashboard-card" style="border-left:4px solid var(--duo-yellow,#ffd900);">
+				<div class="card-body" style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+					<div style="flex:1;min-width:200px;">
+						<div style="font-weight:800;font-size:.95rem;margin-bottom:2px;">💵 Cash Out</div>
+						<p style="margin:0 0 10px;font-size:.82rem;color:var(--duo-muted);">Turn your coins into real money — <strong>{{ family.coins_per_dollar }} coins = $1</strong>. You have <strong>🪙 {{ kid.coin_balance }}</strong> coins.</p>
+						<form method="post" action="{{ url_for('public.kid_cash_out_coins') }}" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">
+							<div>
+								<label for="cash-out-coins" style="font-size:.78rem;font-weight:700;display:block;margin-bottom:3px;">Coins to cash out (multiples of {{ family.coins_per_dollar }})</label>
+								<input id="cash-out-coins" name="coins" type="number" min="{{ family.coins_per_dollar }}" step="{{ family.coins_per_dollar }}" max="{{ kid.coin_balance - (kid.coin_balance % family.coins_per_dollar) }}" placeholder="{{ family.coins_per_dollar }}" style="width:120px;" />
+							</div>
+							<button type="submit" class="btn primary" {% if kid.coin_balance < family.coins_per_dollar %}disabled{% endif %}>Cash Out</button>
+						</form>
+					</div>
+					<div style="text-align:center;min-width:80px;padding:10px 14px;background:color-mix(in srgb,var(--duo-yellow,#ffd900) 12%,var(--duo-panel));border:1px solid color-mix(in srgb,var(--duo-yellow,#ffd900) 35%,transparent);border-radius:12px;">
+						<div style="font-size:1.5rem;font-weight:900;color:var(--duo-yellow,#ffd900);">{{ "${:g}".format(kid.coin_balance / family.coins_per_dollar) }}</div>
+						<div style="font-size:.72rem;color:var(--duo-muted);margin-top:2px;">max cashout</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div class="dashboard-grid">
 			<div class="dashboard-card">
 				<div class="card-header"><h2>🛒 Basic Items</h2></div>

@@ -3,116 +3,170 @@
 {% block title %}Parent Dashboard - Stewardwell{% endblock %}
 
 {% block nav %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Parent Dashboard</h1>
-	<div class="d-flex gap-2 align-items-center">
-		<a href="{{ url_for('public.parent_settings') }}" class="btn">⚙️ Settings</a>
-		<form method="post" action="{{ url_for('public.parent_logout') }}">
-			<button type="submit" class="btn">Logout</button>
-		</form>
-	</div>
-</div>
-{% include 'private/parents/components/navbar.html' %}
+{% set page_title = "Parent Dashboard" %}
+{% include 'private/parents/components/page_header.html' %}
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-	<section class="dashboard-grid">
-		<div class="row g-3">
-			<div class="col-12 col-md-6 col-lg-4">
-				<article class="dashboard-card">
-					<div class="card-body">
-						<div class="metric-label">Family code status</div>
-						<div class="metric-value" style="font-size:1.2rem;">Active</div>
-						<p class="muted" style="margin-top:6px;">Rotation timestamp tracking is coming next.</p>
+
+	{% if is_new_family %}
+	<section style="margin-bottom:20px;">
+		<article class="dashboard-card" style="border-left:4px solid var(--duo-green,#58cc02);background:color-mix(in srgb,var(--duo-green,#58cc02) 6%,var(--duo-panel));">
+			<div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+				<div style="display:flex;align-items:center;gap:14px;">
+					<div style="font-size:2rem;line-height:1;">🚀</div>
+					<div>
+						<div style="font-weight:800;font-size:1rem;margin-bottom:3px;">Welcome to Stewardwell — let's get you set up!</div>
+						<p style="margin:0;font-size:.83rem;color:var(--duo-muted);">Create your first chore, challenge, kid reward, and family goal in 2 minutes with the Setup Wizard.</p>
 					</div>
-				</article>
+				</div>
+				<div style="display:flex;gap:8px;flex-wrap:wrap;">
+					<button type="button" onclick="openWizardModal()" class="btn primary" style="white-space:nowrap;">🧙 Run Setup Wizard</button>
+					<a href="{{ url_for('public.parent_getting_started') }}" class="btn" style="white-space:nowrap;">Browse Starters</a>
+				</div>
 			</div>
-			<div class="col-12 col-md-6 col-lg-4">
-				<article class="dashboard-card">
-					<div class="card-body">
-						<div class="metric-label">Parent last login</div>
-						<div class="metric-value" style="font-size:1.2rem;">
-							{% if parent.last_login_at %}
-								{{ parent.last_login_at.strftime('%b %d, %Y %I:%M %p') }}
-							{% else %}
-								First login session
-							{% endif %}
-						</div>
-						<p class="muted" style="margin-top:6px;">Signed in as {{ parent.name }}.</p>
+		</article>
+	</section>
+	{% endif %}
+
+	<!-- Stat cards -->
+	<section>
+		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+			<!-- Family code status -->
+			<article class="dashboard-card">
+				<div class="card-body">
+					<div class="metric-label">Family Code Status</div>
+					<div style="font-size:1.6rem;font-weight:900;color:var(--duo-blue);margin:4px 0 6px;">Active</div>
+					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Rotation timestamp tracking is coming next.</p>
+				</div>
+			</article>
+
+			<!-- Last login -->
+			<article class="dashboard-card">
+				<div class="card-body">
+					<div class="metric-label">Parent Last Login</div>
+					<div style="font-size:1.15rem;font-weight:900;margin:4px 0 6px;">
+						{% if parent.last_login_at %}
+							{{ parent.last_login_at.strftime('%b %d, %Y') }}
+						{% else %}
+							First login session
+						{% endif %}
 					</div>
-				</article>
-			</div>
-			<div class="col-12 col-md-6 col-lg-4">
-				<article class="dashboard-card">
-					<div class="card-body">
-						<div class="metric-label">Pending chore approvals</div>
-						<div class="metric-value">
-							{% if pending_approvals_count is not none %}
-								{{ pending_approvals_count }}
-							{% else %}
-								—
-							{% endif %}
-						</div>
-						<p class="muted" style="margin-top:6px;">Submissions waiting for parent review.</p>
+					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Signed in as <strong>{{ parent.name }}</strong>.</p>
+				</div>
+			</article>
+
+			<!-- Pending approvals -->
+			<article class="dashboard-card">
+				<div class="card-body">
+					<div class="metric-label">Pending Chore Approvals</div>
+					<div style="font-size:2.4rem;font-weight:900;color:var(--duo-yellow);margin:4px 0 6px;line-height:1;">
+						{% if pending_approvals_count is not none %}{{ pending_approvals_count }}{% else %}—{% endif %}
 					</div>
-				</article>
-			</div>
+					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Submissions waiting for parent review.</p>
+				</div>
+			</article>
 		</div>
 	</section>
 
-	<section class="dashboard-grid">
-		<div class="row g-3">
-			<div class="col-12">
-				<article class="dashboard-card full-width">
-					<header class="card-header">
-						<h2>Kids</h2>
-						<span class="pill">{{ kids|length }} total</span>
-					</header>
-					<div class="card-body">
-						{% if kids %}
-							<div class="d-flex flex-column gap-2">
-								{% for kid in kids %}
-								<div class="chore-item d-flex justify-content-between align-items-center">
-									<div>
-										<strong>{{ kid.display_name }}</strong>
-										<span class="muted" id="kid-balance-label-{{ kid.id }}">Joined {{ kid.created_at.strftime('%b %d, %Y') }} • 🪙 <span id="kid-balance-{{ kid.id }}">{{ kid.coin_balance }}</span> coins</span>
-									</div>
-									<button
-										type="button"
-										class="btn btn-sm"
-										style="background:var(--danger-primary,#e74c3c);color:#fff;border:none;"
-										onclick="openFineModal({{ kid.id }}, '{{ kid.display_name }}')"
-									>🚨 Fine</button>
-									</div>
-								{% endfor %}
+	<!-- Kids -->
+	<section>
+		<article class="dashboard-card">
+			<header class="card-header" style="padding:16px 22px;">
+				<div style="display:flex;align-items:center;gap:10px;">
+					<h2 style="font-size:1.1rem;margin:0;">Kids</h2>
+					<span class="pill">{{ kids|length }} total</span>
+				</div>
+				<a href="{{ url_for('public.parent_chores') }}" style="font-size:.85rem;font-weight:800;color:var(--duo-blue);">Manage All</a>
+			</header>
+			<div class="card-body" style="padding:18px 22px;">
+				{% if kids %}
+					<div style="display:flex;flex-direction:column;gap:12px;">
+						{% for kid in kids %}
+						<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:14px;border:2px solid var(--duo-border);background:color-mix(in srgb,var(--duo-panel) 90%,var(--duo-bg) 10%);">
+							<!-- Avatar -->
+							<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--duo-blue),var(--duo-purple));display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;flex-shrink:0;">
+								{{ kid.display_name[0].upper() }}
 							</div>
-						{% else %}
-							<div class="empty-state">No kids yet. Add your first kid above.</div>
-						{% endif %}
+							<!-- Info -->
+							<div style="flex:1;min-width:0;">
+								<div style="font-weight:900;font-size:1rem;">{{ kid.display_name }}</div>
+								<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px;">
+									<span style="font-size:.78rem;color:var(--duo-muted);">Joined {{ kid.created_at.strftime('%b %d, %Y') }}</span>
+									<span style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;font-weight:800;color:var(--duo-ink);background:color-mix(in srgb,var(--coin-primary) 18%,transparent);border-radius:999px;padding:2px 10px;">
+										<span style="color:var(--coin-primary);">⬤</span>
+										<span id="kid-balance-{{ kid.id }}">{{ kid.coin_balance }}</span> coins
+									</span>
+								</div>
+							</div>
+							<!-- Fine button -->
+							<button
+								type="button"
+								onclick="openFineModal({{ kid.id }}, '{{ kid.display_name }}')"
+								style="flex-shrink:0;background:var(--duo-yellow);color:var(--duo-ink);border:2px solid color-mix(in srgb,var(--duo-yellow) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-yellow) 50%,#000 50%);transition:transform .08s ease;"
+								onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+								Fine
+							</button>
+						</div>
+						{% endfor %}
 					</div>
-				</article>
+				{% else %}
+					<div style="text-align:center;padding:32px;color:var(--duo-muted);font-weight:700;">No kids yet. Add your first kid in Settings.</div>
+				{% endif %}
 			</div>
+		</article>
+	</section>
+
+	<!-- Bottom action cards -->
+	<section>
+		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+			<!-- Quick action -->
+			<article class="dashboard-card" style="background:linear-gradient(135deg,#1a3a5c,#1e4d7b);border-color:#1a3a5c;box-shadow:0 5px 0 #102a40;">
+				<div class="card-body" style="padding:22px 24px;">
+					<div style="font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:6px;">Quick Action</div>
+					<div style="font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:16px;">Assign New Chore</div>
+					<a href="{{ url_for('public.parent_chores') }}" style="display:inline-flex;align-items:center;gap:6px;background:var(--duo-blue);color:#fff;border:2px solid #0f98d8;border-radius:14px;padding:9px 18px;font-weight:900;font-size:.88rem;box-shadow:0 4px 0 #0f98d8;text-decoration:none;transition:transform .08s ease;"
+						onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+						Create Task
+					</a>
+				</div>
+			</article>
+
+			<!-- Family updates -->
+			<article class="dashboard-card" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#c4b5fd;box-shadow:0 5px 0 #a78bfa;">
+				<div class="card-body" style="padding:22px 24px;">
+					<div style="font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;margin-bottom:6px;">Family Updates</div>
+					<div style="font-size:1.2rem;font-weight:900;color:#4c1d95;margin-bottom:16px;">Weekly Reward Ready</div>
+					<a href="{{ url_for('public.parent_store') }}" style="display:inline-flex;align-items:center;gap:6px;background:#7c3aed;color:#fff;border:2px solid #6d28d9;border-radius:14px;padding:9px 18px;font-weight:900;font-size:.88rem;box-shadow:0 4px 0 #6d28d9;text-decoration:none;transition:transform .08s ease;"
+						onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+						Claim Now
+					</a>
+				</div>
+			</article>
 		</div>
 	</section>
+
 </div>
 
 <!-- Fine Modal -->
-<div id="fineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
-	<div style="background:var(--card-bg,#fff);border-radius:12px;max-width:440px;width:90%;padding:2rem;box-shadow:0 8px 32px rgba(0,0,0,.2);">
-		<h3 style="margin:0 0 1rem;">🚨 Fine <span id="fineKidName"></span></h3>
+<div id="fineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
+	<div style="background:var(--duo-panel);border:2px solid var(--duo-border);border-radius:18px;max-width:440px;width:90%;padding:2rem;box-shadow:0 12px 40px rgba(0,0,0,.25);">
+		<h3 style="margin:0 0 1.2rem;font-size:1.1rem;">Fine <span id="fineKidName" style="color:var(--duo-blue);"></span></h3>
 		<div style="margin-bottom:1rem;">
-			<label class="form-label" for="fineAmount">Coin amount to deduct</label>
-			<input id="fineAmount" type="number" min="1" class="form-control" placeholder="e.g. 10">
+			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="fineAmount">Coin amount to deduct</label>
+			<input id="fineAmount" type="number" min="1" class="form-control" placeholder="e.g. 10" style="font-size:1rem;">
 		</div>
 		<div style="margin-bottom:1.25rem;">
-			<label class="form-label" for="fineReason">Reason <span style="color:var(--danger-primary,#e74c3c);">*</span></label>
+			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="fineReason">Reason <span style="color:var(--duo-red);">*</span></label>
 			<textarea id="fineReason" class="form-control" rows="3" placeholder="Describe what the child did…"></textarea>
 		</div>
-		<div id="fineError" style="display:none;color:var(--danger-primary,#e74c3c);margin-bottom:.75rem;font-size:.9rem;"></div>
-		<div class="d-flex gap-2 justify-content-end">
-			<button type="button" class="btn" onclick="closeFineModal()">Cancel</button>
-			<button type="button" class="btn" id="fineSubmitBtn" style="background:var(--danger-primary,#e74c3c);color:#fff;border:none;" onclick="submitFine()">Issue Fine</button>
+		<div id="fineError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
+		<div style="display:flex;gap:8px;justify-content:flex-end;">
+			<button type="button" class="btn" onclick="closeFineModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
+			<button type="button" class="btn btn-danger" id="fineSubmitBtn" onclick="submitFine()" style="font-size:.88rem;padding:8px 18px;">Issue Fine</button>
 		</div>
 	</div>
 </div>
@@ -188,4 +242,7 @@
 		if (e.target === this) closeFineModal();
 	});
 </script>
+
+{% include 'private/parents/components/_wizard_modal.html' %}
+
 {% endblock %}
