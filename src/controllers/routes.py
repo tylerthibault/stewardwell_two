@@ -1062,6 +1062,23 @@ def parent_reset_chore_day(chore_id: int):
 	return redirect(url_for("public.parent_chores"))
 
 
+@public_bp.post("/parent/chores/<int:chore_id>/delete")
+@parent_web_login_required
+def parent_delete_chore(chore_id: int):
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return redirect(url_for("public.login"))
+	chore = Chore.query.get(chore_id)
+	if not chore or chore.family_id != family.id:
+		flash("Chore not found.", "error")
+		return redirect(url_for("public.parent_chores"))
+	name = chore.name
+	db.session.delete(chore)
+	db.session.commit()
+	flash(f'"{name}" deleted.', "success")
+	return redirect(url_for("public.parent_chores"))
+
+
 @public_bp.get("/parent/chores/submissions/<int:submission_id>/photo/<string:photo_type>")
 @parent_web_login_required
 def parent_view_chore_submission_photo(submission_id: int, photo_type: str):
@@ -1722,6 +1739,23 @@ def parent_challenge_edit(challenge_id: int):
 	challenge.is_repeatable = request.form.get("is_repeatable") == "1"
 	db.session.commit()
 	flash(f"'{challenge.title}' updated.", "success")
+	return redirect(url_for("public.parent_challenges"))
+
+
+@public_bp.post("/parent/challenges/<int:challenge_id>/delete")
+@parent_web_login_required
+def parent_delete_challenge(challenge_id: int):
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return redirect(url_for("public.login"))
+	challenge = Challenge.query.get(challenge_id)
+	if not challenge or challenge.family_id != family.id:
+		flash("Challenge not found.", "error")
+		return redirect(url_for("public.parent_challenges"))
+	title = challenge.title
+	db.session.delete(challenge)
+	db.session.commit()
+	flash(f"'{title}' deleted.", "success")
 	return redirect(url_for("public.parent_challenges"))
 
 

@@ -203,12 +203,36 @@
                         {% set active_claims = task.claims|selectattr('status', 'in', ['claimed', 'submitted', 'approved'])|list %}
                         {% if active_claims %}
                         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--duo-border);">
-                            <p style="font-size:.8rem;font-weight:700;margin:0 0 6px;color:var(--duo-muted);">CLAIMS</p>
-                            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                            <p style="font-size:.8rem;font-weight:700;margin:0 0 8px;color:var(--duo-muted);">CLAIMS</p>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
                                 {% for c in active_claims %}
-                                <span class="pill" style="font-size:.78rem;{% if c.status == 'approved' %}background:var(--duo-green,#58cc02);color:#fff;{% elif c.status == 'submitted' %}background:var(--duo-yellow,#ffc800);color:#1d2b3a;{% endif %}">
-                                    {{ c.kid.display_name }}: {{ c.status|upper }}
-                                </span>
+                                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+                                    <!-- Status pill -->
+                                    <span class="pill" style="font-size:.78rem;{% if c.status == 'approved' %}background:var(--duo-green,#58cc02);color:#fff;{% elif c.status == 'submitted' %}background:var(--duo-yellow,#ffc800);color:#1d2b3a;font-weight:700;{% endif %}">
+                                        {{ c.kid.display_name }}: {{ c.status|upper }}
+                                    </span>
+
+                                    {% if c.status == 'submitted' %}
+                                        <!-- Photo evidence -->
+                                        {% if c.photo_path %}
+                                        {% set photo_filename = c.photo_path.split('/')[-1] %}
+                                        <a href="{{ url_for('public.serve_task_photo', filename=photo_filename) }}" target="_blank"
+                                           style="font-size:.78rem;padding:3px 10px;border-radius:20px;border:1.5px solid var(--duo-border);background:var(--duo-card,#fff);text-decoration:none;color:var(--duo-text);">
+                                            📷 View Photo
+                                        </a>
+                                        {% endif %}
+
+                                        <!-- Approve -->
+                                        <form method="post" action="{{ url_for('public.parent_tasks_claim_approve', claim_id=c.id) }}" style="display:contents;">
+                                            <button type="submit" class="btn" style="font-size:.78rem;padding:3px 12px;background:var(--duo-green,#58cc02);color:#fff;border-color:transparent;">✓ Approve</button>
+                                        </form>
+
+                                        <!-- Reject -->
+                                        <form method="post" action="{{ url_for('public.parent_tasks_claim_reject', claim_id=c.id) }}" style="display:contents;" onsubmit="return confirm('Reject this claim from {{ c.kid.display_name }}?')">
+                                            <button type="submit" class="btn-danger" style="font-size:.78rem;padding:3px 12px;">✗ Reject</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
                                 {% endfor %}
                             </div>
                         </div>

@@ -198,6 +198,9 @@
                                                 {% if chore.is_active %}Pause{% else %}Reactivate{% endif %}
                                             </button>
                                         </form>
+                                        <form method="post" action="{{ url_for('public.parent_delete_chore', chore_id=chore.id) }}" style="display:contents;" onsubmit="return confirm('Delete &quot;{{ chore.name }}&quot;? This cannot be undone.')">
+                                            <button type="submit" class="btn-danger">Delete</button>
+                                        </form>
                                     </div>
                                 </article>
                             {% endfor %}
