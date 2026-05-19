@@ -14,38 +14,30 @@
   function setTheme(theme) {
     root.setAttribute("data-theme", theme);
     localStorage.setItem(storageKey, theme);
-
-    var toggleButton = document.getElementById("theme-toggle");
-    if (!toggleButton) {
-      return;
-    }
-
-    var icon = toggleButton.querySelector(".theme-toggle-icon");
-    var label = toggleButton.querySelector(".theme-toggle-label");
-
     var isDark = theme === "dark";
-    toggleButton.setAttribute("aria-pressed", String(isDark));
 
-    if (icon) {
-      icon.textContent = isDark ? "🌙" : "☀️";
-    }
-    if (label) {
-      label.textContent = isDark ? "Dark mode" : "Light mode";
+    // Support legacy floating button (public pages)
+    var legacyBtn = document.getElementById("theme-toggle");
+    if (legacyBtn) {
+      var icon = legacyBtn.querySelector(".theme-toggle-icon");
+      var label = legacyBtn.querySelector(".theme-toggle-label");
+      legacyBtn.setAttribute("aria-pressed", String(isDark));
+      if (icon) icon.textContent = isDark ? "\uD83C\uDF19" : "\u2600\uFE0F";
+      if (label) label.textContent = isDark ? "Dark mode" : "Light mode";
+      // New icon-only nav button: swap moon/sun SVG title
+      if (!icon) legacyBtn.setAttribute("title", isDark ? "Switch to light mode" : "Switch to dark mode");
     }
   }
 
   function toggleTheme() {
     var currentTheme = root.getAttribute("data-theme") || "light";
-    var nextTheme = currentTheme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
+    setTheme(currentTheme === "dark" ? "light" : "dark");
   }
 
   document.addEventListener("DOMContentLoaded", function () {
     setTheme(getPreferredTheme());
-
-    var toggleButton = document.getElementById("theme-toggle");
-    if (toggleButton) {
-      toggleButton.addEventListener("click", toggleTheme);
-    }
+    var btn = document.getElementById("theme-toggle");
+    if (btn) btn.addEventListener("click", toggleTheme);
   });
 })();
+

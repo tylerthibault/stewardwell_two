@@ -1,37 +1,81 @@
-<nav style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px;">
-	<a href="{{ url_for('public.parent_dashboard') }}" class="nav-btn {% if request.endpoint == 'public.parent_dashboard' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-		Dashboard
-	</a>
-	<a href="{{ url_for('public.parent_chores') }}" class="nav-btn {% if request.endpoint == 'public.parent_chores' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-		Chores
-	</a>
-	<a href="{{ url_for('public.parent_schedule') }}" class="nav-btn {% if request.endpoint == 'public.parent_schedule' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-		Schedule
-	</a>
-	<a href="{{ url_for('public.parent_store') }}" class="nav-btn {% if request.endpoint == 'public.parent_store' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-		Store
-	</a>
-	<!-- <a href="{{ url_for('public.parent_activities') }}" class="nav-btn {% if request.endpoint == 'public.parent_activities' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-		Activities
-	</a> -->
-	<a href="{{ url_for('public.parent_challenges') }}" class="nav-btn {% if request.endpoint == 'public.parent_challenges' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-		Challenges
-	</a>
-	<a href="{{ url_for('public.parent_tasks') }}" class="nav-btn {% if request.endpoint == 'public.parent_tasks' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-		Tasks
-	</a>
-	<a href="{{ url_for('public.parent_history') }}" class="nav-btn {% if request.endpoint == 'public.parent_history' %}active{% endif %}" style="padding:9px 16px;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;">
-		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.32"/></svg>
-		History
-	</a>
-</nav>
+{# ─── Parent sticky top navigation ───────────────────────────────────────────
+   Included everywhere via page_header.html — edit once, applies to all pages.
+   Active state detection uses request.endpoint.
+──────────────────────────────────────────────────────────────────────────── #}
+
+{% set _ep = request.endpoint %}
+
+{%- macro _ico_dashboard() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>{%- endmacro %}
+{%- macro _ico_chores() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>{%- endmacro %}
+{%- macro _ico_schedule() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>{%- endmacro %}
+{%- macro _ico_store() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>{%- endmacro %}
+{%- macro _ico_challenges() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>{%- endmacro %}
+{%- macro _ico_tasks() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>{%- endmacro %}
+{%- macro _ico_history() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.32"/></svg>{%- endmacro %}
+{%- macro _ico_settings() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>{%- endmacro %}
+{%- macro _ico_logout() %}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>{%- endmacro %}
+{%- macro _ico_moon() %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>{%- endmacro %}
+{%- macro _ico_ham() %}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>{%- endmacro %}
+
+<header class="app-nav">
+  <div class="app-nav-inner">
+
+    {# Brand #}
+    <a href="{{ url_for('public.parent_dashboard') }}" class="app-nav-brand">
+      <span class="app-nav-logo">SW</span>
+      <span>Stewardwell</span>
+    </a>
+
+    {# Desktop nav links #}
+    <nav class="app-nav-links" aria-label="Primary navigation">
+      <a href="{{ url_for('public.parent_dashboard') }}" class="app-nav-link{% if _ep == 'public.parent_dashboard' %} active{% endif %}">{{ _ico_dashboard() }} Dashboard</a>
+      <a href="{{ url_for('public.parent_chores') }}" class="app-nav-link{% if _ep in ['public.parent_chores','public.parent_edit_chore'] %} active{% endif %}">{{ _ico_chores() }} Chores</a>
+      <a href="{{ url_for('public.parent_schedule') }}" class="app-nav-link{% if _ep == 'public.parent_schedule' %} active{% endif %}">{{ _ico_schedule() }} Schedule</a>
+      <a href="{{ url_for('public.parent_store') }}" class="app-nav-link{% if _ep == 'public.parent_store' %} active{% endif %}">{{ _ico_store() }} Store</a>
+      <a href="{{ url_for('public.parent_challenges') }}" class="app-nav-link{% if _ep == 'public.parent_challenges' %} active{% endif %}">{{ _ico_challenges() }} Challenges</a>
+      <a href="{{ url_for('public.parent_tasks') }}" class="app-nav-link{% if _ep == 'public.parent_tasks' %} active{% endif %}">{{ _ico_tasks() }} Tasks</a>
+      <a href="{{ url_for('public.parent_history') }}" class="app-nav-link{% if 'parent_history' in _ep %} active{% endif %}">{{ _ico_history() }} History</a>
+    </nav>
+
+    {# Right actions — visible on desktop #}
+    <div class="app-nav-actions">
+      <button id="theme-toggle" class="app-nav-icon-btn" type="button" aria-label="Toggle color theme" title="Toggle theme">{{ _ico_moon() }}</button>
+      <a href="{{ url_for('public.parent_settings') }}" class="app-nav-icon-btn{% if _ep == 'public.parent_settings' %} active{% endif %}" title="Settings">{{ _ico_settings() }}<span>Settings</span></a>
+      <form method="post" action="{{ url_for('public.parent_logout') }}" style="margin:0;">
+        <button type="submit" class="app-nav-icon-btn logout" title="Log out">{{ _ico_logout() }}<span>Log out</span></button>
+      </form>
+    </div>
+
+    {# Hamburger (mobile only) #}
+    <button class="app-nav-hamburger" id="app-nav-ham" aria-label="Toggle navigation menu" aria-expanded="false"
+            onclick="(function(btn){
+              var m=document.getElementById('app-nav-mobile');
+              var open=m.style.display==='flex';
+              m.style.display=open?'none':'flex';
+              btn.setAttribute('aria-expanded',String(!open));
+            })(this)">{{ _ico_ham() }}</button>
+
+  </div>
+
+  {# Mobile dropdown menu #}
+  <div class="app-nav-mobile-menu" id="app-nav-mobile" style="display:none;">
+    <a href="{{ url_for('public.parent_dashboard') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_dashboard' %} active{% endif %}">{{ _ico_dashboard() }} Dashboard</a>
+    <a href="{{ url_for('public.parent_chores') }}" class="app-nav-mobile-link{% if _ep in ['public.parent_chores','public.parent_edit_chore'] %} active{% endif %}">{{ _ico_chores() }} Chores</a>
+    <a href="{{ url_for('public.parent_schedule') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_schedule' %} active{% endif %}">{{ _ico_schedule() }} Schedule</a>
+    <a href="{{ url_for('public.parent_store') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_store' %} active{% endif %}">{{ _ico_store() }} Store</a>
+    <a href="{{ url_for('public.parent_challenges') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_challenges' %} active{% endif %}">{{ _ico_challenges() }} Challenges</a>
+    <a href="{{ url_for('public.parent_tasks') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_tasks' %} active{% endif %}">{{ _ico_tasks() }} Tasks</a>
+    <a href="{{ url_for('public.parent_history') }}" class="app-nav-mobile-link{% if 'parent_history' in _ep %} active{% endif %}">{{ _ico_history() }} History</a>
+    <div class="app-nav-mobile-divider"></div>
+    <a href="{{ url_for('public.parent_settings') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_settings' %} active{% endif %}">{{ _ico_settings() }} Settings</a>
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;">
+      <button id="theme-toggle-mobile" class="app-nav-icon-btn" type="button" onclick="document.getElementById('theme-toggle').click()" style="padding:0;font-size:.9rem;font-weight:700;color:var(--duo-muted);">{{ _ico_moon() }} Toggle theme</button>
+    </div>
+    <form method="post" action="{{ url_for('public.parent_logout') }}" style="margin:0;">
+      <button type="submit" class="app-nav-mobile-link logout" style="border:none;background:none;cursor:pointer;font-family:inherit;width:100%;text-align:left;color:var(--duo-red);">{{ _ico_logout() }} Log out</button>
+    </form>
+  </div>
+</header>
 
 
 

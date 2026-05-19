@@ -21,12 +21,6 @@
 	{% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
-	<div class="theme-toggle-wrap">
-		<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle color theme" aria-pressed="false">
-			<span class="theme-toggle-icon">☀️</span>
-			<span class="theme-toggle-label">Light mode</span>
-		</button>
-	</div>
 	<main class="page-wrap">
 		{% with messages = get_flashed_messages(with_categories=true) %}
 			{% if messages %}
@@ -41,6 +35,19 @@
 			{% endif %}
 		{% endwith %}
 
+		{% if session.get('impersonating_parent_id') %}
+		<div style="background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-radius:14px;margin-bottom:16px;box-shadow:0 3px 0 #3730a3;">
+			<span style="font-size:.88rem;font-weight:800;display:flex;align-items:center;gap:8px;">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+				Viewing as kid — you are in preview mode
+			</span>
+			<form method="post" action="{{ url_for('public.parent_switch_back') }}" style="margin:0;">
+				<button type="submit" style="background:#fff;color:#4f46e5;border:none;border-radius:999px;padding:6px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 2px 0 #c7d2fe;">
+					← Return to Parent
+				</button>
+			</form>
+		</div>
+		{% endif %}
 		{% block nav %}{% endblock %}
 		{% block content %}{% endblock %}
 	</main>

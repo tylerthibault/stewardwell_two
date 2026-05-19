@@ -238,9 +238,72 @@
                         </div>
                         {% endif %}
 
-                        <form method="post" action="{{ url_for('public.parent_tasks_delete', task_id=task.id) }}" style="margin-top:12px;" onsubmit="return confirm('Remove this task?');">
-                            <button type="submit" class="btn" style="font-size:.8rem;padding:5px 14px;color:var(--duo-muted);">Remove</button>
-                        </form>
+                        <!-- Action buttons -->
+                        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">
+                            <button type="button" class="btn" style="font-size:.8rem;padding:5px 14px;"
+                                onclick="this.closest('div').nextElementSibling.toggleAttribute('hidden')">✏️ Edit</button>
+                            <form method="post" action="{{ url_for('public.parent_tasks_delete', task_id=task.id) }}" style="display:contents;" onsubmit="return confirm('Delete this task?');">
+                                <button type="submit" class="btn-danger" style="font-size:.8rem;padding:5px 14px;">🗑 Delete</button>
+                            </form>
+                        </div>
+
+                        <!-- Inline edit form -->
+                        <div hidden style="margin-top:12px;padding:14px;background:var(--duo-surface);border:1.5px solid var(--duo-border);border-radius:var(--radius);">
+                            <form method="post" action="{{ url_for('public.parent_tasks_edit', task_id=task.id) }}">
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;">
+                                    <div style="grid-column:1/-1;">
+                                        <label style="display:block;font-size:.82rem;font-weight:700;margin-bottom:3px;">Title *</label>
+                                        <input name="title" type="text" required value="{{ task.title }}"
+                                               style="width:100%;padding:7px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-bg);color:var(--duo-text);" />
+                                    </div>
+                                    <div style="grid-column:1/-1;">
+                                        <label style="display:block;font-size:.82rem;font-weight:700;margin-bottom:3px;">Description</label>
+                                        <textarea name="description" rows="2"
+                                                  style="width:100%;padding:7px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-bg);color:var(--duo-text);resize:vertical;">{{ task.description or '' }}</textarea>
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:.82rem;font-weight:700;margin-bottom:3px;">Assign To</label>
+                                        <select name="assigned_to_kid_id"
+                                                style="width:100%;padding:7px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-bg);color:var(--duo-text);">
+                                            <option value="">— Open Board —</option>
+                                            {% for kid in kids %}
+                                            <option value="{{ kid.id }}" {% if task.assigned_to_kid_id == kid.id %}selected{% endif %}>{{ kid.display_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:.82rem;font-weight:700;margin-bottom:3px;">Coins 🪙</label>
+                                        <input name="coin_reward" type="number" min="0" value="{{ task.coin_reward }}"
+                                               style="width:100%;padding:7px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-bg);color:var(--duo-text);" />
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:.82rem;font-weight:700;margin-bottom:3px;">Points ⭐</label>
+                                        <input name="point_reward" type="number" min="0" value="{{ task.point_reward }}"
+                                               style="width:100%;padding:7px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-bg);color:var(--duo-text);" />
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:.82rem;font-weight:700;margin-bottom:3px;">Due Date</label>
+                                        <input name="due_date" type="date" value="{{ task.due_date.isoformat() if task.due_date else '' }}"
+                                               style="width:100%;padding:7px 10px;border-radius:var(--radius);border:1.5px solid var(--duo-border);background:var(--duo-bg);color:var(--duo-text);" />
+                                    </div>
+                                </div>
+                                <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px;">
+                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.85rem;">
+                                        <input type="checkbox" name="requires_photo_proof" value="1" {% if task.requires_photo_proof %}checked{% endif %} />
+                                        Require photo proof
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.85rem;">
+                                        <input type="checkbox" name="allow_multiple_claims" value="1" {% if task.allow_multiple_claims %}checked{% endif %} />
+                                        Allow multiple claims
+                                    </label>
+                                </div>
+                                <div style="display:flex;gap:8px;">
+                                    <button type="submit" class="btn primary" style="font-size:.85rem;padding:6px 16px;">Save Changes</button>
+                                    <button type="button" class="btn" style="font-size:.85rem;padding:6px 16px;"
+                                            onclick="this.closest('[hidden]').setAttribute('hidden','')">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>

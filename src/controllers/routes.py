@@ -1962,6 +1962,60 @@ def parent_logout():
 	return response
 
 
+@public_bp.post("/parent/switch-to-kid/<int:kid_id>")
+@parent_web_login_required
+def parent_switch_to_kid(kid_id: int):
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	kid = Kid.query.get(kid_id)
+	if not kid or kid.family_id != family.id or not kid.is_active:
+		flash("Kid not found.", "error")
+		return redirect(url_for("public.parent_dashboard"))
+
+	# Save parent context so we can return to it
+	session["impersonating_parent_id"] = parent.id
+	session["impersonating_parent_family_id"] = family.id
+
+	# Switch to kid session
+	session["role"] = "kid"
+	session["kid_id"] = kid.id
+	session["family_id"] = family.id
+
+	flash(f"You're now viewing as {kid.display_name}. Tap 'Return to Parent' to go back.", "info")
+	return redirect(url_for("public.kid_chores"))
+
+
+@public_bp.post("/parent/switch-back")
+def parent_switch_back():
+	parent_id = session.get("impersonating_parent_id")
+	family_id = session.get("impersonating_parent_family_id")
+
+	if not parent_id or not family_id:
+		flash("No parent session to return to.", "error")
+		return redirect(url_for("public.login"))
+
+	parent = Parent.query.get(parent_id)
+	if not parent:
+		session.clear()
+		flash("Parent account not found. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	# Restore parent session, clearing kid + impersonation keys
+	session["role"] = "parent"
+	session["parent_id"] = parent.id
+	session["family_id"] = family_id
+	session.pop("kid_id", None)
+	session.pop("impersonating_parent_id", None)
+	session.pop("impersonating_parent_family_id", None)
+
+	flash(f"Welcome back, {parent.name}!", "success")
+	return redirect(url_for("public.parent_dashboard"))
+
+
 @public_bp.get("/kid/login")
 def kid_login():
 	device_token = (request.cookies.get("family_device_token") or "").strip()
@@ -3631,6 +3685,44 @@ def parent_tasks_delete(task_id: int):
 	task.is_active = False
 	db.session.commit()
 	flash(f"Task '{task.title}' removed.", "success")
+	return redirect(url_for("public.parent_tasks"))
+
+
+@public_bp.post("/parent/tasks/<int:task_id>/edit")
+@parent_web_login_required
+def parent_tasks_edit(task_id: int):
+	family_id = session["family_id"]
+	task = Task.query.filter_by(id=task_id, family_id=family_id).first_or_404()
+
+	title = (request.form.get("title") or "").strip()
+	if not title:
+		flash("Task title is required.", "error")
+		return redirect(url_for("public.parent_tasks"))
+
+	due_date_str = (request.form.get("due_date") or "").strip()
+	due_date = None
+	if due_date_str:
+		try:
+			due_date = date.fromisoformat(due_date_str)
+		except ValueError:
+			flash("Invalid due date.", "error")
+			return redirect(url_for("public.parent_tasks"))
+
+	assigned_kid_id = request.form.get("assigned_to_kid_id") or None
+	if assigned_kid_id:
+		kid = Kid.query.filter_by(id=int(assigned_kid_id), family_id=family_id, is_active=True).first()
+		assigned_kid_id = kid.id if kid else None
+
+	task.title = title
+	task.description = (request.form.get("description") or "").strip() or None
+	task.coin_reward = int(request.form.get("coin_reward") or 0)
+	task.point_reward = int(request.form.get("point_reward") or 0)
+	task.due_date = due_date
+	task.assigned_to_kid_id = assigned_kid_id
+	task.allow_multiple_claims = request.form.get("allow_multiple_claims") == "1"
+	task.requires_photo_proof = request.form.get("requires_photo_proof") == "1"
+	db.session.commit()
+	flash(f"Task '{task.title}' updated.", "success")
 	return redirect(url_for("public.parent_tasks"))
 
 

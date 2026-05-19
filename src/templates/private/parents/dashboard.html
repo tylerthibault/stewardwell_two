@@ -108,6 +108,15 @@
 								onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
 								Fine
 							</button>
+							<!-- View as Kid button -->
+							<form method="post" action="{{ url_for('public.parent_switch_to_kid', kid_id=kid.id) }}" style="margin:0;flex-shrink:0;">
+								<button
+									type="submit"
+									style="background:var(--duo-blue);color:#fff;border:2px solid color-mix(in srgb,var(--duo-blue) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-blue) 50%,#000 50%);transition:transform .08s ease;"
+									onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+									View
+								</button>
+							</form>
 						</div>
 						{% endfor %}
 					</div>

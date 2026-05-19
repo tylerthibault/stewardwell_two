@@ -55,6 +55,7 @@ html[data-theme="dark"] body {
   max-width: 1140px;
   margin: 0 auto;
   padding: 20px;
+  padding-top: 0;
 }
 
 h1 { margin: 0; color: #14213b; font-weight: 900; letter-spacing: -0.01em; font-size: clamp(1.5rem, 3vw, 2rem); }
@@ -207,8 +208,7 @@ button,
 .btn-primary,
 .btn-success,
 .btn-danger,
-.btn-secondary,
-.nav-btn {
+.btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -227,8 +227,7 @@ button:active,
 .btn-primary:active,
 .btn-success:active,
 .btn-danger:active,
-.btn-secondary:active,
-.nav-btn:active { transform: translateY(2px); }
+.btn-secondary:active { transform: translateY(2px); }
 
 .btn.primary,
 .btn-primary,
@@ -240,8 +239,7 @@ button:active,
 }
 
 .btn,
-.btn-secondary,
-.nav-btn {
+.btn-secondary {
   background: var(--duo-panel);
   color: var(--duo-ink);
   border-color: var(--duo-border);
@@ -253,13 +251,6 @@ button:active,
   color: #fff;
   border-color: #d93b3b;
   box-shadow: 0 4px 0 #d93b3b;
-}
-
-.nav-btn.active {
-  background: var(--duo-blue);
-  color: #fff;
-  border-color: #0f98d8;
-  box-shadow: 0 4px 0 #0f98d8;
 }
 
 input,
@@ -801,6 +792,191 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
 
 .close { cursor: pointer; font-size: 1.4rem; font-weight: 900; color: #63708a; }
 
+/* ── App Top Navigation ─────────────────────────────────────────────────── */
+.app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  margin: 0 -20px 28px -20px;
+  background: var(--duo-panel);
+  border-bottom: 2px solid var(--duo-border);
+  box-shadow: 0 3px 0 var(--duo-shadow);
+}
+
+.app-nav-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 58px;
+}
+
+.app-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 900;
+  font-size: .95rem;
+  letter-spacing: -.01em;
+  color: var(--duo-ink);
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+
+.app-nav-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--duo-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -.03em;
+  box-shadow: 0 3px 0 var(--duo-green-dark);
+  flex-shrink: 0;
+}
+
+.app-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 1;
+}
+
+.app-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: .83rem;
+  font-weight: 700;
+  color: var(--duo-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+
+.app-nav-link:hover {
+  background: var(--duo-bg);
+  color: var(--duo-ink);
+}
+
+.app-nav-link.active {
+  background: color-mix(in srgb, var(--duo-green) 14%, transparent);
+  color: var(--duo-green-dark);
+}
+
+.app-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 8px;
+  border-left: 1.5px solid var(--duo-border);
+}
+
+.app-nav-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: none;
+  cursor: pointer;
+  font-size: .83rem;
+  font-weight: 700;
+  color: var(--duo-muted);
+  text-decoration: none;
+  transition: background .12s, color .12s, border-color .12s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.app-nav-icon-btn:hover {
+  background: var(--duo-bg);
+  color: var(--duo-ink);
+  border-color: var(--duo-border);
+}
+
+.app-nav-icon-btn.logout:hover {
+  background: color-mix(in srgb, var(--duo-red) 10%, transparent);
+  color: var(--duo-red);
+  border-color: color-mix(in srgb, var(--duo-red) 30%, transparent);
+}
+
+.app-nav-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 7px 9px;
+  color: var(--duo-ink);
+  margin-left: 6px;
+  transition: background .12s, border-color .12s;
+}
+
+.app-nav-hamburger:hover {
+  background: var(--duo-bg);
+  border-color: var(--duo-border);
+}
+
+.app-nav-mobile-menu {
+  border-top: 1.5px solid var(--duo-border);
+  background: var(--duo-panel);
+  padding: 8px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-nav-mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--duo-muted);
+  text-decoration: none;
+  transition: background .12s, color .12s;
+}
+
+.app-nav-mobile-link:hover {
+  background: var(--duo-bg);
+  color: var(--duo-ink);
+}
+
+.app-nav-mobile-link.active {
+  background: color-mix(in srgb, var(--duo-green) 14%, transparent);
+  color: var(--duo-green-dark);
+}
+
+.app-nav-mobile-divider {
+  height: 1.5px;
+  background: var(--duo-border);
+  margin: 6px 4px;
+}
+
+@media (max-width: 820px) {
+  .app-nav-links { display: none; }
+  .app-nav-actions { display: none; }
+  .app-nav-hamburger { display: flex; }
+}
+
+/* ── Theme toggle (public pages floating button) ─────────────────────────── */
 .theme-toggle-wrap {
   position: fixed;
   top: 14px;

@@ -12,10 +12,10 @@
 
 ## 🧹 Chores & Tasks
 
-- **Scheduled/recurring chores** — daily, weekly, monthly with auto-reset
-- **Chore assignments** — assign specific chores to specific kids vs. first-come-first-served
-- **Chore approval with photo proof** — kid submits a photo, parent approves before coins are awarded
-- **Bonus chores** — parent can post a one-time extra chore with a bonus coin reward
+- **Scheduled/recurring chores** — daily, weekly, monthly with auto-reset (Done)
+- **Chore assignments** — assign specific chores to specific kids vs. first-come-first-served (Done)
+- **Chore approval with photo proof** — kid submits a photo, parent approves before coins are awarded (Done)
+- **Bonus chores** — parent can post a one-time extra chore with a bonus coin reward (Done)
 
 ---
 
