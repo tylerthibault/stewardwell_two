@@ -196,6 +196,7 @@ class Chore(db.Model):
 	anchor_date = db.Column(db.Date, default=date.today, nullable=False)
 	is_active = db.Column(db.Boolean, default=True, nullable=False)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	sort_order = db.Column(db.Integer, default=0, nullable=False)
 
 	family = db.relationship("Family", backref=db.backref("chores", lazy=True, cascade="all, delete-orphan"))
 	created_by_parent = db.relationship("Parent", backref=db.backref("chores", lazy=True))

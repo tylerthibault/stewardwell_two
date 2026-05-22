@@ -32,7 +32,7 @@
 
 	<!-- Stat cards -->
 	<section>
-		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+						<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:16px;">
 			<!-- Family code status -->
 			<article class="dashboard-card">
 				<div class="card-body">
@@ -84,13 +84,14 @@
 				{% if kids %}
 					<div style="display:flex;flex-direction:column;gap:12px;">
 						{% for kid in kids %}
-						<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:14px;border:2px solid var(--duo-border);background:color-mix(in srgb,var(--duo-panel) 90%,var(--duo-bg) 10%);">
+			<!-- Kid row -->
+							<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:2px solid var(--duo-border);background:color-mix(in srgb,var(--duo-panel) 90%,var(--duo-bg) 10%);flex-wrap:wrap;">
 							<!-- Avatar -->
 							<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--duo-blue),var(--duo-purple));display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;flex-shrink:0;">
 								{{ kid.display_name[0].upper() }}
 							</div>
 							<!-- Info -->
-							<div style="flex:1;min-width:0;">
+								<div style="flex:1;min-width:120px;">
 								<div style="font-weight:900;font-size:1rem;">{{ kid.display_name }}</div>
 								<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px;">
 									<span style="font-size:.78rem;color:var(--duo-muted);">Joined {{ kid.created_at.strftime('%b %d, %Y') }}</span>
@@ -129,7 +130,7 @@
 
 	<!-- Bottom action cards -->
 	<section>
-		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px;">
 			<!-- Quick action -->
 			<article class="dashboard-card" style="background:linear-gradient(135deg,#1a3a5c,#1e4d7b);border-color:#1a3a5c;box-shadow:0 5px 0 #102a40;">
 				<div class="card-body" style="padding:22px 24px;">

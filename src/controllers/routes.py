@@ -40,6 +40,25 @@ from src.controllers.parent_controller import _record_coin_transaction
 public_bp = Blueprint("public", __name__)
 
 
+# ── PWA support ──────────────────────────────────────────────────────────────
+# The service worker MUST be served from root scope to intercept all requests.
+@public_bp.route("/sw.js")
+def service_worker():
+    return send_from_directory(
+        current_app.static_folder, "sw.js",
+        mimetype="application/javascript"
+    )
+
+
+@public_bp.route("/manifest.json")
+def web_manifest():
+    return send_from_directory(
+        current_app.static_folder, "manifest.json",
+        mimetype="application/manifest+json"
+    )
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 def parent_web_login_required(func):
 	@wraps(func)
 	def wrapper(*args, **kwargs):
@@ -844,7 +863,7 @@ def parent_chores():
 	_run_daily_chore_reset(family)
 
 	kids = Kid.query.filter_by(family_id=family.id, is_active=True).order_by(Kid.display_name.asc()).all()
-	chores = Chore.query.filter_by(family_id=family.id).order_by(Chore.created_at.desc()).all()
+	chores = Chore.query.filter_by(family_id=family.id).order_by(Chore.sort_order.asc(), Chore.created_at.asc()).all()
 	pending_submissions = (
 		ChoreSubmission.query.filter_by(family_id=family.id, status="submitted")
 		.order_by(ChoreSubmission.submitted_at.desc())
@@ -864,6 +883,26 @@ def parent_chores():
 		schedule_preview=_build_schedule_preview(scheduled_chores),
 		weekday_labels=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
 	)
+
+
+@public_bp.post("/parent/chores/reorder")
+@parent_web_login_required
+def parent_reorder_chores():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return jsonify({"error": "unauthorized"}), 401
+	data = request.get_json(silent=True)
+	if not data or "order" not in data:
+		return jsonify({"error": "bad request"}), 400
+	ordered_ids = data["order"]
+	# Validate all IDs belong to this family
+	chores_by_id = {c.id: c for c in Chore.query.filter_by(family_id=family.id).all()}
+	for position, chore_id in enumerate(ordered_ids):
+		chore = chores_by_id.get(chore_id)
+		if chore:
+			chore.sort_order = position
+	db.session.commit()
+	return jsonify({"success": True})
 
 
 @public_bp.get("/parent/schedule")

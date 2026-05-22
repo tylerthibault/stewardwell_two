@@ -39,8 +39,15 @@ html[data-theme="dark"] {
 
 * { box-sizing: border-box; }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   color: var(--duo-ink);
   font-family: "Nunito", "Avenir Next", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   background: radial-gradient(circle at top right, #ecf9ff 0%, transparent 40%), var(--duo-bg);
@@ -53,9 +60,21 @@ html[data-theme="dark"] body {
 
 .page-wrap {
   max-width: 1140px;
+  width: 100%;
   margin: 0 auto;
   padding: 20px;
-  padding-top: 0;
+}
+
+.page-title-wrap {
+  max-width: 1140px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px 20px 0;
+}
+
+@media (max-width: 480px) {
+  .page-wrap { padding: 14px; }
+  .page-title-wrap { padding: 14px 14px 0; }
 }
 
 h1 { margin: 0; color: #14213b; font-weight: 900; letter-spacing: -0.01em; font-size: clamp(1.5rem, 3vw, 2rem); }
@@ -71,6 +90,7 @@ a { color: inherit; text-decoration: none; }
   border: 2px solid var(--duo-border);
   border-radius: var(--radius);
   box-shadow: 0 5px 0 var(--duo-shadow);
+  min-width: 0;
 }
 
 html[data-theme="dark"] h1,
@@ -84,7 +104,7 @@ html[data-theme="dark"] h4 {
 .modal-body { padding: 18px; }
 .card-body { padding: 22px 24px; }
 
-.dashboard-container { display: grid; gap: 22px; }
+.dashboard-container { display: grid; gap: 22px; width: 100%; min-width: 0; }
 
 .top-bar {
   display: flex;
@@ -546,6 +566,7 @@ html[data-theme="dark"] .join-player-row:has(input[type="checkbox"]:checked) {
   font-weight: 700;
   font-size: 0.95rem;
   line-height: 1.3;
+  flex: 1;
 }
 
 .chore-square-card .chore-card-desc {
@@ -797,7 +818,7 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
   position: sticky;
   top: 0;
   z-index: 200;
-  margin: 0 -20px 28px -20px;
+  width: 100%;
   background: var(--duo-panel);
   border-bottom: 2px solid var(--duo-border);
   box-shadow: 0 3px 0 var(--duo-shadow);

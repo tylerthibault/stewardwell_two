@@ -26,6 +26,20 @@
         .chore-collapsible:not([open]) > summary .toggle-label::after {
             content: "Show";
         }
+
+        .drag-handle {
+            cursor: grab;
+            font-size: 1.1rem;
+            color: var(--duo-muted, #777);
+            line-height: 1;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .drag-handle:active { cursor: grabbing; }
+
+        .sortable-ghost {
+            opacity: 0.4;
+        }
     </style>
 
     <section class="dashboard-grid">
@@ -169,8 +183,9 @@
                         <div class="chore-square-grid">
                             {% for chore in chores %}
                                 {% set category_ids_csv = chore.categories | map(attribute='id') | join(',') %}
-                                <article class="dashboard-card chore-item chore-square-card" data-category-ids="{{ category_ids_csv }}">
+                                <article class="dashboard-card chore-item chore-square-card" data-category-ids="{{ category_ids_csv }}" data-chore-id="{{ chore.id }}">
                                     <div class="chore-card-top">
+                                        <span class="drag-handle" title="Drag to reorder" aria-hidden="true">⠿</span>
                                         <span class="chore-card-name">{{ chore.name }}</span>
                                         <span class="status-badge {% if not chore.is_active %}inactive{% else %}active{% endif %}" style="white-space:nowrap;">
                                             {% if chore.is_active %}Active{% else %}Paused{% endif %}
@@ -357,6 +372,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const createModal = document.getElementById('create-chore-modal');
@@ -475,6 +491,27 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     setScheduleEnabled(false);
+
+    // Drag-and-drop reorder using SortableJS
+    const choreGrid = document.querySelector('.chore-square-grid');
+    if (choreGrid && typeof Sortable !== 'undefined') {
+        const sortable = Sortable.create(choreGrid, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function () {
+                const ids = Array.from(choreGrid.querySelectorAll('[data-chore-id]'))
+                    .map(el => parseInt(el.dataset.choreId, 10));
+                fetch('{{ url_for("public.parent_reorder_chores") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order: ids })
+                });
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
+
+

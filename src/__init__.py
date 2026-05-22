@@ -58,6 +58,10 @@ def _apply_sqlite_schema_fixes() -> None:
 			with db.engine.begin() as connection:
 				connection.execute(text("ALTER TABLE trusted_devices ADD COLUMN ip_hash VARCHAR(64)"))
 
+	if "sort_order" not in columns:
+		with db.engine.begin() as connection:
+			connection.execute(text("ALTER TABLE chores ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"))
+
 	if "chore_submissions" in table_names:
 		submission_columns = {column["name"] for column in inspector.get_columns("chore_submissions")}
 		if "reset_version" not in submission_columns:

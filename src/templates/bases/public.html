@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 	<title>{% block title %}Stewardwell{% endblock %}</title>
+	<!-- PWA -->
+	<link rel="manifest" href="/manifest.json" />
+	<meta name="theme-color" content="#4f46e5" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<meta name="apple-mobile-web-app-title" content="Stewardwell" />
+	<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
 	<script>
 		(function () {
 			try {
@@ -20,6 +27,13 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/galactic-opera.css') }}" />
 	{% block extra_css %}{% endblock %}
 </head>
+<script>
+	if ('serviceWorker' in navigator) {
+		window.addEventListener('load', function () {
+			navigator.serviceWorker.register('/sw.js');
+		});
+	}
+</script>
 <body class="{% block body_class %}{% endblock %}">
 	<div class="theme-toggle-wrap">
 		<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle color theme" aria-pressed="false">
