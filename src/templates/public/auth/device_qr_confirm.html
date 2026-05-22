@@ -1,0 +1,35 @@
+{% extends "bases/public.html" %}
+
+{% block title %}Register Device — Stewardwell{% endblock %}
+
+{% block content %}
+<section class="auth-grid" style="width:min(520px,100%);margin:0 auto;">
+	<article class="panel" style="text-align:center;">
+		<div class="pill" style="margin-bottom:12px;">Family device</div>
+		<h1 style="font-size:28px;line-height:1.1;margin-bottom:10px;">Register this device?</h1>
+		<p class="muted" style="margin-bottom:20px;">
+			Registering lets kids log in on this device using only their name and PIN — no family code needed.
+			The registration is tied to <strong>{{ family.name }}</strong>.
+		</p>
+
+		{% with messages = get_flashed_messages(with_categories=true) %}
+			{% for category, message in messages %}
+				<div class="alert alert-{{ category }}" style="margin-bottom:12px;">{{ message }}</div>
+			{% endfor %}
+		{% endwith %}
+
+		<form method="POST" style="display:grid;gap:14px;text-align:left;">
+			<div>
+				<label for="device_label">Device name <span class="muted">(optional)</span></label>
+				<input id="device_label" name="device_label" type="text"
+					placeholder="Living Room iPad, Basement TV, etc." maxlength="80" />
+			</div>
+			<button type="submit" class="btn primary" style="width:100%;">✅ Register this device</button>
+		</form>
+
+		<p class="muted" style="margin-top:16px;font-size:13px;">
+			You are logged in as a parent of <strong>{{ family.name }}</strong>. Only parents can register devices.
+		</p>
+	</article>
+</section>
+{% endblock %}

@@ -170,16 +170,19 @@
                 {% if not tasks %}
                 <div class="empty-state">No active tasks. Create one above.</div>
                 {% else %}
-                <div style="display:flex;flex-direction:column;gap:14px;">
+                <div style="display:flex;flex-direction:column;gap:14px;" id="tasks-list">
                     {% for task in tasks %}
-                    <div style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;">
+                    <div data-task-id="{{ task.id }}" style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;">
                         <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">
-                            <div>
+                            <div style="display:flex;align-items:flex-start;gap:8px;">
+                                <span class="drag-handle" title="Drag to reorder" aria-hidden="true" style="margin-top:2px;">⠿</span>
+                                <div>
                                 <strong style="font-size:1rem;">{{ task.title }}</strong>
                                 {% if task.description %}
                                 <p style="margin:4px 0 0;font-size:.83rem;color:var(--duo-muted);">{{ task.description }}</p>
                                 {% endif %}
-                            </div>
+                                </div><!-- /title-desc -->
+                            </div><!-- /drag+title flex -->
                             <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
                                 {% if task.is_open_board %}
                                     <span class="pill" style="background:var(--duo-green,#58cc02);color:#fff;">Open Board</span>
@@ -313,4 +316,26 @@
     </section>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+<script>
+(function () {
+    var list = document.getElementById('tasks-list');
+    if (!list || typeof Sortable === 'undefined') return;
+    Sortable.create(list, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function () {
+            var ids = Array.from(list.querySelectorAll('[data-task-id]'))
+                .map(function (el) { return parseInt(el.dataset.taskId, 10); });
+            fetch('{{ url_for("public.parent_reorder_tasks") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: ids })
+            });
+        }
+    });
+})();
+</script>
 {% endblock %}

@@ -21,6 +21,7 @@ from src.models.main import (
 	Kid,
 	Parent,
 	PasswordResetToken,
+	PendingDeviceRegistration,
 	StoreItem,
 	StoreRedemption,
 	StoreRedemptionVote,
@@ -634,11 +635,17 @@ def login():
 		flash("Invalid email or password.", "error")
 		return render_template("public/auth/login.html")
 
+	qr_token = session.get("qr_confirm_token")  # save before clear
 	session.clear()
 	session["role"] = "parent"
 	session["parent_id"] = parent.id
 	session["family_id"] = parent.family_id
 	db.session.commit()
+
+	# If parent was redirected here to confirm a QR device registration, go back
+	if qr_token:
+		flash("Welcome back! You are logged in.", "success")
+		return redirect(url_for("public.device_qr_confirm_page", token=qr_token))
 
 	response = redirect(url_for("public.parent_dashboard"))
 	flash("Welcome back! You are logged in.", "success")
@@ -1674,7 +1681,7 @@ def parent_challenges():
 		flash("Session expired. Please log in again.", "error")
 		return redirect(url_for("public.login"))
 
-	challenges = Challenge.query.filter_by(family_id=family.id).order_by(Challenge.created_at.desc()).all()
+	challenges = Challenge.query.filter_by(family_id=family.id).order_by(Challenge.sort_order.asc(), Challenge.created_at.asc()).all()
 	pending_submissions = (
 		ChallengeSubmission.query.filter_by(family_id=family.id, status="submitted")
 		.order_by(ChallengeSubmission.submitted_at.desc())
@@ -1687,6 +1694,61 @@ def parent_challenges():
 		challenges=challenges,
 		pending_submissions=pending_submissions,
 	)
+
+
+@public_bp.post("/parent/store/reorder")
+@parent_web_login_required
+def parent_store_reorder_items():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return jsonify({"error": "unauthorized"}), 401
+	data = request.get_json(silent=True)
+	if not data or "order" not in data:
+		return jsonify({"error": "bad request"}), 400
+	items_by_id = {i.id: i for i in StoreItem.query.filter_by(family_id=family.id).all()}
+	for position, item_id in enumerate(data["order"]):
+		item = items_by_id.get(item_id)
+		if item:
+			item.sort_order = position
+	db.session.commit()
+	return jsonify({"success": True})
+
+
+@public_bp.post("/parent/challenges/reorder")
+@parent_web_login_required
+def parent_reorder_challenges():
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		return jsonify({"error": "unauthorized"}), 401
+	data = request.get_json(silent=True)
+	if not data or "order" not in data:
+		return jsonify({"error": "bad request"}), 400
+	challenges_by_id = {c.id: c for c in Challenge.query.filter_by(family_id=family.id).all()}
+	for position, challenge_id in enumerate(data["order"]):
+		challenge = challenges_by_id.get(challenge_id)
+		if challenge:
+			challenge.sort_order = position
+	db.session.commit()
+	return jsonify({"success": True})
+
+
+@public_bp.post("/parent/tasks/reorder")
+@parent_web_login_required
+def parent_reorder_tasks():
+	parent = Parent.query.get(session["parent_id"])
+	family_id = session["family_id"]
+	if not parent:
+		return jsonify({"error": "unauthorized"}), 401
+	data = request.get_json(silent=True)
+	if not data or "order" not in data:
+		return jsonify({"error": "bad request"}), 400
+	tasks_by_id = {t.id: t for t in Task.query.filter_by(family_id=family_id).all()}
+	for position, task_id in enumerate(data["order"]):
+		task = tasks_by_id.get(task_id)
+		if task:
+			task.sort_order = position
+	db.session.commit()
+	return jsonify({"success": True})
 
 
 @public_bp.post("/parent/challenges/create")
@@ -2053,6 +2115,138 @@ def parent_switch_back():
 
 	flash(f"Welcome back, {parent.name}!", "success")
 	return redirect(url_for("public.parent_dashboard"))
+
+
+# ── QR-code device registration ──────────────────────────────────────────────
+
+@public_bp.post("/device/qr-init")
+def device_qr_init():
+	"""Kid's browser calls this to get a fresh registration token for the QR code."""
+	# Clean up stale expired records occasionally
+	try:
+		db.session.query(PendingDeviceRegistration).filter(
+			PendingDeviceRegistration.expires_at < datetime.utcnow()
+		).delete()
+		db.session.commit()
+	except Exception:
+		db.session.rollback()
+
+	rec, plain_token = PendingDeviceRegistration.create()
+	db.session.add(rec)
+	db.session.commit()
+	return jsonify({
+		"token": plain_token,
+		"expires_in": PendingDeviceRegistration.TTL_SECONDS,
+	})
+
+
+@public_bp.get("/device/qr-status/<token>")
+def device_qr_status(token: str):
+	"""Kid's browser polls this to find out if a parent has confirmed."""
+	rec = PendingDeviceRegistration.find_valid(token)
+	if rec is None:
+		return jsonify({"status": "expired"})
+	if rec.confirmed_at and rec.confirmed_device_token:
+		return jsonify({"status": "confirmed"})
+	return jsonify({"status": "pending"})
+
+
+@public_bp.get("/device/qr-confirm/<token>")
+def device_qr_confirm_page(token: str):
+	"""Parent opens this URL (scanned from QR). Must be logged in as a parent."""
+	rec = PendingDeviceRegistration.find_valid(token)
+	if rec is None:
+		return render_template("public/auth/device_qr_expired.html"), 410
+	if rec.confirmed_at:
+		return render_template("public/auth/device_qr_already_confirmed.html"), 200
+
+	parent_id = session.get("parent_id")
+	if not parent_id:
+		# Store token in session so we can return after login
+		session["qr_confirm_token"] = token
+		flash("Please log in as a parent to register this device.", "info")
+		return redirect(url_for("public.login"))
+
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session["qr_confirm_token"] = token
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	return render_template(
+		"public/auth/device_qr_confirm.html",
+		token=token,
+		family=family,
+	)
+
+
+@public_bp.post("/device/qr-confirm/<token>")
+def device_qr_confirm_submit(token: str):
+	"""Parent submits the confirmation form — creates the TrustedDevice."""
+	parent_id = session.get("parent_id")
+	if not parent_id:
+		flash("You must be logged in as a parent to register a device.", "error")
+		return redirect(url_for("public.login"))
+
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		flash("Session expired. Please log in again.", "error")
+		return redirect(url_for("public.login"))
+
+	rec = PendingDeviceRegistration.find_valid(token)
+	if rec is None:
+		flash("This QR code has expired. Please ask the kid's device to refresh and show a new QR code.", "error")
+		return redirect(url_for("public.parent_dashboard"))
+	if rec.confirmed_at:
+		flash("This QR code was already used.", "info")
+		return redirect(url_for("public.parent_dashboard"))
+
+	device_label = (request.form.get("device_label") or "").strip() or "Kid's Device"
+
+	trusted_device, plain_device_token = TrustedDevice.create_for_family(
+		family_id=family.id,
+		parent_id=parent.id,
+		device_label=device_label,
+	)
+	db.session.add(trusted_device)
+
+	rec.family_id = family.id
+	rec.device_label = device_label
+	rec.confirmed_at = datetime.utcnow()
+	rec.confirmed_device_token = plain_device_token
+	db.session.commit()
+
+	return render_template("public/auth/device_qr_success.html", device_label=device_label)
+
+
+@public_bp.get("/device/qr-complete/<token>")
+def device_qr_complete(token: str):
+	"""Kid's browser calls this after polling detects confirmed.
+	Sets the TrustedDevice cookie on the kid's device and redirects to login."""
+	rec = PendingDeviceRegistration.find_valid(token)
+	if rec is None or not rec.confirmed_at or not rec.confirmed_device_token:
+		flash("QR registration not found or already used.", "error")
+		return redirect(url_for("public.kid_login"))
+
+	plain_device_token = rec.confirmed_device_token
+	device_label = rec.device_label or "Kid's Device"
+
+	# Mark consumed so it can't be replayed
+	rec.completed_at = datetime.utcnow()
+	rec.confirmed_device_token = None  # clear plaintext token
+	db.session.commit()
+
+	response = redirect(url_for("public.kid_login"))
+	response.set_cookie(
+		"family_device_token",
+		plain_device_token,
+		max_age=90 * 24 * 60 * 60,
+		httponly=True,
+		samesite="Lax",
+	)
+	flash(f"✅ Device \"{device_label}\" registered! Kids can now log in here with just their name and PIN.", "success")
+	return response
 
 
 @public_bp.get("/kid/login")
@@ -3642,7 +3836,7 @@ def parent_tasks():
 	tasks = (
 		Task.query
 		.filter_by(family_id=family_id, is_active=True)
-		.order_by(Task.created_at.desc())
+		.order_by(Task.sort_order.asc(), Task.created_at.asc())
 		.all()
 	)
 	pending_claims = (

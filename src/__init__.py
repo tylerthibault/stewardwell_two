@@ -97,6 +97,24 @@ def _apply_sqlite_schema_fixes() -> None:
 			with db.engine.begin() as connection:
 				connection.execute(text("ALTER TABLE store_timed_sessions ADD COLUMN participant_kid_id INTEGER"))
 
+	if "store_items" in table_names:
+		si2_columns = {column["name"] for column in inspector.get_columns("store_items")}
+		if "sort_order" not in si2_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE store_items ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"))
+
+	if "challenges" in table_names:
+		ch_columns = {column["name"] for column in inspector.get_columns("challenges")}
+		if "sort_order" not in ch_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE challenges ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"))
+
+	if "tasks" in table_names:
+		task_columns = {column["name"] for column in inspector.get_columns("tasks")}
+		if "sort_order" not in task_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE tasks ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"))
+
 
 def create_app() -> Flask:
 	app = Flask(__name__)

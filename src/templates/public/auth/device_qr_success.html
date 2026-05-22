@@ -1,0 +1,17 @@
+{% extends "bases/public.html" %}
+
+{% block title %}Device Registered — Stewardwell{% endblock %}
+
+{% block content %}
+<section style="width:min(520px,100%);margin:0 auto;padding:48px 16px;text-align:center;">
+	<article class="panel">
+		<div style="font-size:3rem;margin-bottom:12px;">✅</div>
+		<h1 style="font-size:26px;margin-bottom:10px;">Device registered!</h1>
+		<p class="muted">
+			<strong>{{ device_label }}</strong> is now a trusted family device.
+			The kid's login screen will refresh automatically and they can log in with just their name and PIN.
+		</p>
+		<a href="{{ url_for('public.parent_dashboard') }}" class="btn primary" style="margin-top:20px;display:inline-block;">Back to dashboard</a>
+	</article>
+</section>
+{% endblock %}

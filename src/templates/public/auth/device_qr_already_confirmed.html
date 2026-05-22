@@ -1,0 +1,12 @@
+{% extends "bases/public.html" %}
+{% block title %}Already Registered — Stewardwell{% endblock %}
+{% block content %}
+<section style="width:min(520px,100%);margin:0 auto;padding:48px 16px;text-align:center;">
+	<article class="panel">
+		<div style="font-size:3rem;margin-bottom:12px;">✅</div>
+		<h1 style="font-size:24px;margin-bottom:10px;">Already registered</h1>
+		<p class="muted">This QR code was already used to register a device. If the kid's screen didn't update, ask them to refresh the page.</p>
+		<a href="{{ url_for('public.parent_dashboard') }}" class="btn primary" style="margin-top:20px;display:inline-block;">Back to dashboard</a>
+	</article>
+</section>
+{% endblock %}

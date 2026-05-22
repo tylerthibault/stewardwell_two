@@ -166,10 +166,11 @@
 
                 <!-- Challenge list -->
                 {% if challenges %}
-                    <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;flex-direction:column;gap:12px;" id="challenges-list">
                         {% for challenge in challenges %}
-                        <div style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;opacity:{% if challenge.is_active %}1{% else %}0.55{% endif %};">
+                        <div data-challenge-id="{{ challenge.id }}" style="background:var(--duo-bg);border:1.5px solid var(--duo-border);border-radius:var(--radius);padding:16px;opacity:{% if challenge.is_active %}1{% else %}0.55{% endif %};">
                             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:8px;">
+                                <span class="drag-handle" title="Drag to reorder" aria-hidden="true">⠿</span>
                                 <span class="diff-badge diff-{{ challenge.difficulty }}">{{ challenge.difficulty }}</span>
                                 <strong style="flex:1;min-width:100px;">{{ challenge.title }}</strong>
                                 {% if not challenge.is_active %}
@@ -248,6 +249,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
 // One-at-a-time accordion for challenge-collapsible
 document.querySelectorAll(".challenge-collapsible").forEach(d => {
@@ -269,5 +271,25 @@ document.querySelectorAll(".challenge-edit-wrap button[type=button]").forEach(bt
         }
     });
 });
+
+// Drag-and-drop reorder
+(function () {
+    const list = document.getElementById('challenges-list');
+    if (!list || typeof Sortable === 'undefined') return;
+    Sortable.create(list, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function () {
+            const ids = Array.from(list.querySelectorAll('[data-challenge-id]'))
+                .map(el => parseInt(el.dataset.challengeId, 10));
+            fetch('{{ url_for("public.parent_reorder_challenges") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: ids })
+            });
+        }
+    });
+})();
 </script>
 {% endblock %}

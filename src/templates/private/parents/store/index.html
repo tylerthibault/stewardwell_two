@@ -29,12 +29,13 @@
 				</div>
 				<div class="card-body">
 					{% if kid_items %}
-						<div class="row g-3">
+						<div class="row g-3" id="kid-items-grid">
 							{% for item in kid_items %}
-								<div class="col-12 col-md-6 col-lg-4">
+								<div class="col-12 col-md-6 col-lg-4" data-item-id="{{ item.id }}">
 									<div class="store-item d-flex flex-column gap-2">
 										<div class="d-flex flex-wrap gap-2 align-items-center">
-											<strong>{{ item.name }}</strong>
+											<span class="drag-handle" title="Drag to reorder" aria-hidden="true">⠿</span>
+											<strong>{{ item.name }}</strong></strong>
 											<span class="pill">{% if item.item_type == 'timed_session' %}⏱ Timed{% else %}🛒 Basic{% endif %}</span>
 										</div>
 										{% if item.description %}<p class="muted m-0">{{ item.description }}</p>{% endif %}
@@ -141,11 +142,14 @@
 				</div>
 				<div class="card-body">
 					{% if family_items %}
-						<div class="row g-3">
+						<div class="row g-3" id="family-items-grid">
 							{% for item in family_items %}
-								<div class="col-12 col-md-6 col-lg-4">
+								<div class="col-12 col-md-6 col-lg-4" data-item-id="{{ item.id }}">
 									<div class="store-item">
-										<strong>{{ item.name }}</strong>
+										<div class="d-flex gap-2 align-items-center" style="margin-bottom:4px;">
+											<span class="drag-handle" title="Drag to reorder" aria-hidden="true">⠿</span>
+											<strong>{{ item.name }}</strong>
+										</div>
 										{% if item.description %}<p class="muted" style="margin:6px 0;">{{ item.description }}</p>{% endif %}
 										<p class="m-0">⭐ {{ item.family_point_cost }} family points</p>
 										<div class="d-flex gap-2 flex-wrap mt-2">
@@ -395,6 +399,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 	const modal = document.getElementById('createItemModal');
@@ -575,6 +580,29 @@ document.addEventListener('DOMContentLoaded', function () {
 		editModal.addEventListener('click', function (e) {
 			if (e.target === editModal) { closeEditModal(); }
 		});
-	}});
+	}
+
+	// Drag-and-drop reorder
+	function makeGrid(gridId, scope) {
+		const grid = document.getElementById(gridId);
+		if (!grid || typeof Sortable === 'undefined') return;
+		Sortable.create(grid, {
+			handle: '.drag-handle',
+			animation: 150,
+			ghostClass: 'sortable-ghost',
+			onEnd: function () {
+				const ids = Array.from(grid.querySelectorAll('[data-item-id]'))
+					.map(el => parseInt(el.dataset.itemId, 10));
+				fetch('{{ url_for("public.parent_store_reorder_items") }}', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ order: ids })
+				});
+			}
+		});
+	}
+	makeGrid('kid-items-grid');
+	makeGrid('family-items-grid');
+});
 </script>
 {% endblock %}

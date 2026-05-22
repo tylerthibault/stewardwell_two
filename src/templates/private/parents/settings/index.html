@@ -545,6 +545,21 @@
 					<button type="submit" class="btn primary">Register This Device</button>
 				</form>
 
+				<div style="display:flex;align-items:center;gap:8px;">
+					<button type="button" id="qr-scan-btn" class="btn" style="display:flex;align-items:center;gap:6px;">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h2v2h-2zm4 0h2v2h-2zm-4 4h2v2h-2zm4 0h2v2h-2zm-4 4h2v2h-2zm4-4h2"/></svg>
+						Scan QR Code
+					</button>
+					<span style="font-size:.78rem;color:var(--duo-muted);">Point at the QR code on the kid's login screen</span>
+				</div>
+				<div id="qr-scanner-wrap" hidden style="border:2px solid var(--duo-border);border-radius:12px;overflow:hidden;max-width:340px;">
+					<div id="qr-scanner-viewport"></div>
+					<div style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+						<span id="qr-scanner-status" style="font-size:.8rem;color:var(--duo-muted);">Waiting for camera…</span>
+						<button type="button" id="qr-scan-stop" class="btn" style="font-size:.78rem;padding:5px 12px;">Stop</button>
+					</div>
+				</div>
+
 				{% if active_devices %}
 					<div>
 						<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -691,6 +706,64 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+	var scanBtn  = document.getElementById('qr-scan-btn');
+	var stopBtn  = document.getElementById('qr-scan-stop');
+	var wrap     = document.getElementById('qr-scanner-wrap');
+	var statusEl = document.getElementById('qr-scanner-status');
+	if (!scanBtn || !wrap) return;
+
+	var scanner = null;
+
+	function setStatus(msg) { if (statusEl) statusEl.textContent = msg; }
+
+	function stopScanner() {
+		if (scanner) {
+			scanner.stop().catch(function () {}).then(function () {
+				scanner.clear();
+				scanner = null;
+				wrap.hidden = true;
+				scanBtn.textContent = 'Scan QR Code';
+			});
+		} else {
+			wrap.hidden = true;
+		}
+	}
+
+	scanBtn.addEventListener('click', function () {
+		if (scanner) { stopScanner(); return; }
+		wrap.hidden = false;
+		setStatus('Starting camera…');
+		scanner = new Html5Qrcode('qr-scanner-viewport');
+		scanner.start(
+			{ facingMode: 'environment' },
+			{ fps: 10, qrbox: { width: 220, height: 220 } },
+			function (decodedText) {
+				// Only handle URLs that look like our confirm endpoint
+				if (decodedText.indexOf('/device/qr-confirm/') !== -1) {
+					setStatus('✅ QR code detected — redirecting…');
+					scanner.stop().catch(function () {}).then(function () {
+						window.location.href = decodedText;
+					});
+				} else {
+					setStatus('Not a Stewardwell device QR code.');
+				}
+			},
+			function () { /* scan errors are normal — ignore */ }
+		).then(function () {
+			setStatus('Point at the QR code on the kid\u2019s login screen.');
+		}).catch(function (err) {
+			setStatus('Camera error: ' + err);
+			wrap.hidden = true;
+			scanner = null;
+		});
+	});
+
+	if (stopBtn) stopBtn.addEventListener('click', stopScanner);
+})();
+</script>
 <style>
 	.settings-collapsible > summary { list-style: none; }
 	.settings-collapsible > summary::-webkit-details-marker { display: none; }

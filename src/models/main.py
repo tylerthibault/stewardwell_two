@@ -178,6 +178,50 @@ class TrustedDevice(db.Model):
 		).order_by(cls.last_seen_at.desc()).first()
 
 
+class PendingDeviceRegistration(db.Model):
+	"""Short-lived record created when a kid's device shows a QR code.
+	A parent scans it, logs in, and approves — then the kid's browser picks
+	up the resulting TrustedDevice token via polling."""
+
+	__tablename__ = "pending_device_registrations"
+
+	id = db.Column(db.Integer, primary_key=True)
+	# Token shown in the QR code URL (stored as a SHA-256 hash)
+	init_token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	expires_at = db.Column(db.DateTime, nullable=False)
+
+	# Populated once a parent confirms
+	family_id = db.Column(db.Integer, db.ForeignKey("families.id"), nullable=True)
+	device_label = db.Column(db.String(120), nullable=True)
+	confirmed_at = db.Column(db.DateTime, nullable=True)
+	# Plain TrustedDevice token stored briefly so the kid's browser can consume it
+	confirmed_device_token = db.Column(db.String(128), nullable=True)
+	# Set once the kid's browser has actually consumed (set its cookie)
+	completed_at = db.Column(db.DateTime, nullable=True)
+
+	TTL_SECONDS = 5 * 60  # QR codes expire after 5 minutes
+
+	@classmethod
+	def create(cls) -> tuple["PendingDeviceRegistration", str]:
+		plain_token = TrustedDevice.mint_token(48)
+		rec = cls(
+			init_token_hash=_hash_token(plain_token),
+			expires_at=datetime.utcnow() + timedelta(seconds=cls.TTL_SECONDS),
+		)
+		return rec, plain_token
+
+	@classmethod
+	def find_valid(cls, plain_token: str) -> "PendingDeviceRegistration | None":
+		token_hash = _hash_token(plain_token)
+		now = datetime.utcnow()
+		return cls.query.filter(
+			cls.init_token_hash == token_hash,
+			cls.expires_at > now,
+			cls.completed_at.is_(None),
+		).first()
+
+
 class Chore(db.Model):
 	__tablename__ = "chores"
 
@@ -347,6 +391,7 @@ class StoreItem(db.Model):
 	stock_qty = db.Column(db.Integer, default=-1, nullable=False)
 	is_active = db.Column(db.Boolean, default=True, nullable=False)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	sort_order = db.Column(db.Integer, default=0, nullable=False)
 
 	family = db.relationship("Family", backref=db.backref("store_items", lazy=True, cascade="all, delete-orphan"))
 	created_by_parent = db.relationship("Parent", backref=db.backref("store_items", lazy=True))
@@ -624,6 +669,7 @@ class Challenge(db.Model):
 	is_repeatable = db.Column(db.Boolean, default=False, nullable=False)
 	is_active = db.Column(db.Boolean, default=True, nullable=False)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	sort_order = db.Column(db.Integer, default=0, nullable=False)
 
 	family = db.relationship("Family", backref=db.backref("challenges", lazy=True, cascade="all, delete-orphan"))
 	created_by_parent = db.relationship("Parent", backref=db.backref("challenges_created", lazy=True))
@@ -683,6 +729,7 @@ class Task(db.Model):
 	requires_photo_proof = db.Column(db.Boolean, default=True, nullable=False)
 	is_active = db.Column(db.Boolean, default=True, nullable=False)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	sort_order = db.Column(db.Integer, default=0, nullable=False)
 
 	family = db.relationship("Family", backref=db.backref("tasks", lazy=True, cascade="all, delete-orphan"))
 	created_by_parent = db.relationship("Parent", backref=db.backref("tasks_created", lazy=True))

@@ -569,6 +569,18 @@ html[data-theme="dark"] .join-player-row:has(input[type="checkbox"]:checked) {
   flex: 1;
 }
 
+/* Drag-and-drop handle (used on chores, store, challenges, tasks) */
+.drag-handle {
+  cursor: grab;
+  font-size: 1.1rem;
+  color: var(--duo-muted, #777);
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.sortable-ghost { opacity: 0.4; }
+
 .chore-square-card .chore-card-desc {
   font-size: 0.8rem;
   color: var(--duo-muted);
