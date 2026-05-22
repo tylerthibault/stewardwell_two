@@ -60,17 +60,6 @@
 			</div>
 		</form>
 
-		{# ── QR code to register this device ── #}
-		<div style="margin-top:28px;padding-top:20px;border-top:1.5px solid var(--duo-border);">
-			<p style="font-size:.85rem;font-weight:700;margin:0 0 6px;">Register this device</p>
-			<p class="muted" style="font-size:.8rem;margin:0 0 14px;">Scan this QR code on a parent's phone to skip the family code next time.</p>
-
-			<div id="qr-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-				<div id="qr-canvas-container" style="background:#fff;padding:12px;border-radius:10px;display:inline-block;"></div>
-				<p id="qr-status" class="muted" style="font-size:.78rem;margin:0;text-align:center;">Generating QR code…</p>
-				<button type="button" id="qr-refresh" class="btn" style="font-size:.78rem;padding:6px 14px;display:none;">↺ New QR code</button>
-			</div>
-		</div>
 		{% endif %}
 
 		<a href="{{ url_for('public.landing') }}" style="margin-top:14px;display:inline-block;color:#c8d7f7;font-weight:600;">← Back to landing page</a>
@@ -83,6 +72,17 @@
 			<li>Request family goals with shared points.</li>
 			<li>Vote yes or no on family requests.</li>
 		</ul>
+		{% if not device %}
+		<div style="margin-top:24px;padding-top:20px;border-top:1.5px solid var(--duo-border);">
+			<p style="font-size:.85rem;font-weight:700;margin:0 0 6px;">Register this device</p>
+			<p class="muted" style="font-size:.8rem;margin:0 0 14px;">Scan this QR code on a parent’s phone to skip the family code next time.</p>
+			<div id="qr-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+				<div id="qr-canvas-container" style="background:#fff;padding:12px;border-radius:10px;display:inline-block;"></div>
+				<p id="qr-status" class="muted" style="font-size:.78rem;margin:0;text-align:center;">Generating QR code…</p>
+				<button type="button" id="qr-refresh" class="btn" style="font-size:.78rem;padding:6px 14px;display:none;">↺ New QR code</button>
+			</div>
+		</div>
+		{% endif %}
 	</aside>
 </section>
 {% endblock %}

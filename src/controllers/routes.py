@@ -2055,6 +2055,35 @@ def parent_revoke_this_device():
 	return response
 
 
+@public_bp.post("/parent/revoke-device/<int:device_id>")
+@parent_web_login_required
+def parent_revoke_device(device_id: int):
+	parent, family = _load_parent_and_family()
+	if not parent or not family:
+		session.clear()
+		return redirect(url_for("public.login"))
+
+	device = TrustedDevice.query.filter_by(id=device_id, family_id=family.id).first()
+	if not device:
+		flash("Device not found.", "error")
+		return redirect(url_for("public.parent_settings"))
+	if device.revoked_at:
+		flash("Device was already revoked.", "info")
+		return redirect(url_for("public.parent_settings"))
+
+	device.revoked_at = db.func.now()
+	db.session.commit()
+
+	# If the parent is revoking the device they're currently on, clear its cookie too
+	current_token = (request.cookies.get("family_device_token") or "").strip()
+	current_device = TrustedDevice.find_valid_by_token(current_token) if current_token else None
+	response = redirect(url_for("public.parent_settings"))
+	if current_device and current_device.id == device_id:
+		response.delete_cookie("family_device_token")
+	flash(f'"{device.device_label}" has been revoked.', "success")
+	return response
+
+
 @public_bp.post("/parent/logout")
 def parent_logout():
 	session.clear()

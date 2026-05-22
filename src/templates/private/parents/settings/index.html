@@ -573,8 +573,9 @@
 									<div style="flex:1;">
 										<div style="font-weight:900;font-size:.9rem;">{{ device.device_label }}</div>
 										<div style="font-size:.75rem;color:var(--duo-muted);">Last seen {{ device.last_seen_at.strftime('%b %d, %Y') }} &middot; Expires {{ device.expires_at.strftime('%b %d, %Y') }}</div>
-									</div>
-								</div>
+									</div>								<form method="post" action="{{ url_for('public.parent_revoke_device', device_id=device.id) }}" style="margin:0;" onsubmit="return confirm('Revoke &quot;{{ device.device_label | e }}&quot;? Kids will need the family code to log in from this device again.')">
+									<button type="submit" class="btn-danger" style="font-size:.78rem;padding:5px 12px;">Revoke</button>
+								</form>								</div>
 							{% endfor %}
 						</div>
 					</div>
