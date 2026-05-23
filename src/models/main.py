@@ -890,3 +890,26 @@ class PromoRedemption(db.Model):
 
 	promo_code = db.relationship("PromoCode", back_populates="redemptions")
 	family = db.relationship("Family", backref=db.backref("promo_redemptions", lazy=True))
+
+
+# ---------------------------------------------------------------------------
+# Donations
+# ---------------------------------------------------------------------------
+
+class Donation(db.Model):
+	"""Logs one-time donations received via Stripe Payment Link."""
+
+	__tablename__ = "donations"
+
+	id = db.Column(db.Integer, primary_key=True)
+	stripe_payment_intent_id = db.Column(db.String(120), nullable=False, unique=True, index=True)
+	amount_cents = db.Column(db.Integer, nullable=False)  # amount in smallest currency unit
+	currency = db.Column(db.String(10), nullable=False, default="usd")
+	donor_email = db.Column(db.String(255), nullable=True)  # from billing_details
+	donor_name = db.Column(db.String(255), nullable=True)
+	received_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+	@property
+	def amount_display(self) -> str:
+		"""Human-readable amount, e.g. '$5.00'."""
+		return f"${self.amount_cents / 100:,.2f}"

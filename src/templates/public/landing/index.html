@@ -61,4 +61,17 @@
 			<div class="step-card">4 · Redeem in store</div>
 		</div>
 	</section>
+
+	{% if donate_url %}
+	<section class="panel" style="margin-top:12px;text-align:center;">
+		<h2 style="font-size:22px;margin-bottom:8px;">❤️ Support Stewardwell</h2>
+		<p class="muted" style="max-width:520px;margin:0 auto 16px;">
+			Stewardwell is built by a small team. If it's brought value to your family,
+			consider buying us a coffee — every contribution helps!
+		</p>
+		<a class="btn primary" href="{{ donate_url }}" target="_blank" rel="noopener">
+			☕ Donate
+		</a>
+	</section>
+	{% endif %}
 {% endblock %}

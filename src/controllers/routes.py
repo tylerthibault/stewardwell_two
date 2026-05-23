@@ -30,6 +30,7 @@ from src.models.main import (
 	StoreTimedSession,
 	Task,
 	TaskClaim,
+	Donation,
 	PromoCode,
 	PromoRedemption,
 	TrustedDevice,
@@ -618,7 +619,8 @@ def _build_chore_slot_lookup(chore: Chore) -> dict[tuple[int, int], int]:
 
 @public_bp.get("/")
 def landing():
-	return render_template("public/landing/index.html")
+	donate_url = os.environ.get("STRIPE_DONATE_URL", "")
+	return render_template("public/landing/index.html", donate_url=donate_url)
 
 
 @public_bp.get("/terms")
@@ -1074,6 +1076,26 @@ def stripe_webhook():
 				db.session.commit()
 				# Send dunning email to all parents
 				_send_payment_failed_email(family)
+
+	elif event["type"] == "payment_intent.succeeded":
+		# Log one-time donation from Stripe Payment Link
+		pi_id = obj.get("id")
+		if pi_id and not Donation.query.filter_by(stripe_payment_intent_id=pi_id).first():
+			billing = obj.get("charges", {}).get("data", [{}])
+			charge = billing[0] if billing else {}
+			billing_details = charge.get("billing_details") or obj.get("payment_method_options", {})
+			donor_email = (charge.get("billing_details") or {}).get("email") or obj.get("receipt_email")
+			donor_name  = (charge.get("billing_details") or {}).get("name")
+			donation = Donation(
+				stripe_payment_intent_id=pi_id,
+				amount_cents=obj.get("amount_received", obj.get("amount", 0)),
+				currency=obj.get("currency", "usd"),
+				donor_email=donor_email,
+				donor_name=donor_name,
+			)
+			db.session.add(donation)
+			db.session.commit()
+			current_app.logger.info("Donation logged: %s %s", pi_id, donation.amount_display)
 
 	elif event["type"] == "customer.subscription.deleted":
 		sub_id = obj.get("id")
