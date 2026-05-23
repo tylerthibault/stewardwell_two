@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ family.name }} — Stewardwell Admin{% endblock %}
+{% block page_title %}{{ family.name }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('admin.admin_families') }}" class="btn btn-outline btn-sm">← Back to Families</a>
+{% endblock %}
+
+{% block content %}
+<div class="detail-grid">
+	<!-- Overview -->
+	<div class="detail-card">
+		<h3>Overview</h3>
+		<div class="kv"><span class="key">Family ID</span> <span>#{{ family.id }}</span></div>
+		<div class="kv"><span class="key">Name</span> <span>{{ family.name }}</span></div>
+		<div class="kv"><span class="key">Family Code</span> <span><code>{{ family.family_code_plain or '—' }}</code></span></div>
+		<div class="kv"><span class="key">Created</span> <span>{{ family.created_at.strftime('%b %d, %Y') }}</span></div>
+		<div class="kv"><span class="key">Active</span> <span>{{ '✅ Yes' if family.is_active else '❌ No' }}</span></div>
+	</div>
+
+	<!-- Billing -->
+	<div class="detail-card">
+		<h3>Billing</h3>
+		<div class="kv"><span class="key">Plan</span>
+			<span>
+				{% if family.plan == 'pro' %}<span class="badge badge-pro">Pro</span>
+				{% elif family.trial_active %}<span class="badge badge-trial">Trial</span>
+				{% else %}<span class="badge badge-free">Free</span>{% endif %}
+			</span>
+		</div>
+		<div class="kv"><span class="key">Subscription Status</span> <span>{{ family.subscription_status or '—' }}</span></div>
+		<div class="kv"><span class="key">Trial Ends</span> <span>{{ family.trial_ends_at.strftime('%b %d, %Y %H:%M UTC') if family.trial_ends_at else '—' }}</span></div>
+		<div class="kv"><span class="key">Trial Days Left</span> <span>{{ family.trial_days_remaining }}</span></div>
+		<div class="kv"><span class="key">Stripe Customer</span> <span>{{ family.stripe_customer_id or '—' }}</span></div>
+		<div class="kv"><span class="key">Stripe Subscription</span> <span>{{ family.stripe_subscription_id or '—' }}</span></div>
+	</div>
+</div>
+
+<!-- Actions -->
+<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px;">
+	<!-- Set Plan -->
+	<form method="post" action="{{ url_for('admin.admin_set_plan', family_id=family.id) }}" style="display:flex;gap:8px;align-items:center;">
+		<select name="plan" style="padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.88rem;">
+			<option value="free" {% if family.plan == 'free' %}selected{% endif %}>Free</option>
+			<option value="pro" {% if family.plan == 'pro' %}selected{% endif %}>Pro</option>
+		</select>
+		<button type="submit" class="btn btn-primary btn-sm">Set Plan</button>
+	</form>
+
+	<!-- Extend Trial -->
+	<form method="post" action="{{ url_for('admin.admin_extend_trial', family_id=family.id) }}" style="display:flex;gap:8px;align-items:center;">
+		<input type="number" name="days" value="7" min="1" max="365" style="width:70px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.88rem;" />
+		<button type="submit" class="btn btn-outline btn-sm">Extend Trial (days)</button>
+	</form>
+
+	<!-- Impersonate -->
+	<form method="post" action="{{ url_for('admin.admin_impersonate', family_id=family.id) }}" onsubmit="return confirm('Impersonate this family?');">
+		<button type="submit" class="btn btn-sm" style="background:#f59e0b;color:#fff;">👁 Impersonate</button>
+	</form>
+
+	<!-- Deactivate -->
+	{% if family.is_active %}
+	<form method="post" action="{{ url_for('admin.admin_deactivate_family', family_id=family.id) }}" onsubmit="return confirm('Deactivate this family? This cannot be undone easily.');">
+		<button type="submit" class="btn btn-danger btn-sm">Deactivate Family</button>
+	</form>
+	{% endif %}
+</div>
+
+<!-- Parents -->
+<div class="admin-table-wrap" style="margin-bottom:24px;">
+	<table>
+		<thead><tr><th>Parent Name</th><th>Email</th><th>Verified</th><th>Superuser</th><th>Last Login</th><th></th></tr></thead>
+		<tbody>
+		{% for p in family.parents %}
+		<tr>
+			<td>{{ p.name }}</td>
+			<td>{{ p.email }}</td>
+			<td>{{ '✅' if p.email_verified else '❌' }}</td>
+			<td>{{ '⭐' if p.is_superuser else '—' }}</td>
+			<td>{{ p.last_login_at.strftime('%b %d, %Y') if p.last_login_at else 'Never' }}</td>
+			<td>
+				<form method="post" action="{{ url_for('admin.admin_trigger_password_reset', parent_id=p.id) }}" onsubmit="return confirm('Send password reset email?');" style="display:inline;">
+					<button type="submit" class="btn btn-sm btn-outline">Reset PW</button>
+				</form>
+			</td>
+		</tr>
+		{% else %}
+		<tr><td colspan="6" style="text-align:center;color:#94a3b8;">No parents.</td></tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+
+<!-- Kids -->
+<h3 style="font-size:.9rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px;">Kids ({{ kids|length }})</h3>
+<div class="admin-table-wrap" style="margin-bottom:24px;">
+	<table>
+		<thead><tr><th>Name</th><th>Coins</th><th>Active</th></tr></thead>
+		<tbody>
+		{% for k in kids %}
+		<tr>
+			<td>{{ k.display_name }}</td>
+			<td>{{ k.coin_balance }}</td>
+			<td>{{ '✅' if k.is_active else '❌' }}</td>
+		</tr>
+		{% else %}
+		<tr><td colspan="3" style="text-align:center;color:#94a3b8;">No kids.</td></tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+{% endblock %}

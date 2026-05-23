@@ -42,12 +42,43 @@ def _apply_sqlite_schema_fixes() -> None:
 		if "last_reset_date" not in family_columns:
 			with db.engine.begin() as connection:
 				connection.execute(text("ALTER TABLE families ADD COLUMN last_reset_date DATE"))
+		# SaaS billing columns
+		if "plan" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN plan VARCHAR(20) NOT NULL DEFAULT 'free'"))
+		if "trial_ends_at" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN trial_ends_at DATETIME"))
+		if "stripe_customer_id" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN stripe_customer_id VARCHAR(120)"))
+		if "stripe_subscription_id" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN stripe_subscription_id VARCHAR(120)"))
+		if "subscription_status" not in family_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE families ADD COLUMN subscription_status VARCHAR(30)"))
 
 	if "kids" in table_names:
 		kid_columns = {column["name"] for column in inspector.get_columns("kids")}
 		if "coin_balance" not in kid_columns:
 			with db.engine.begin() as connection:
 				connection.execute(text("ALTER TABLE kids ADD COLUMN coin_balance INTEGER NOT NULL DEFAULT 0"))
+
+	if "parents" in table_names:
+		parent_columns = {column["name"] for column in inspector.get_columns("parents")}
+		if "email_verified" not in parent_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE parents ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT 0"))
+		if "email_verify_token_hash" not in parent_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE parents ADD COLUMN email_verify_token_hash VARCHAR(64)"))
+		if "email_verify_expires_at" not in parent_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE parents ADD COLUMN email_verify_expires_at DATETIME"))
+		if "is_superuser" not in parent_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE parents ADD COLUMN is_superuser BOOLEAN NOT NULL DEFAULT 0"))
 
 	if "trusted_devices" in table_names:
 		device_columns = {column["name"] for column in inspector.get_columns("trusted_devices")}
@@ -125,14 +156,117 @@ def create_app() -> Flask:
 	from src.controllers.routes import public_bp
 	from src.controllers.parent_controller import parent_bp
 	from src.controllers.kid_controller import kid_bp
+	from src.controllers.admin import admin_bp
 
 	db.init_app(app)
 	app.register_blueprint(public_bp)
 	app.register_blueprint(parent_bp)
 	app.register_blueprint(kid_bp)
+	app.register_blueprint(admin_bp)
 
 	with app.app_context():
 		db.create_all()
 		_apply_sqlite_schema_fixes()
 
+	# ── Background scheduler ─────────────────────────────────────────────────
+	if not app.debug or os.environ.get("SCHEDULER_ENABLED"):
+		_start_scheduler(app)
+
 	return app
+
+
+def _start_scheduler(app: "Flask") -> None:
+	"""Start APScheduler for background maintenance tasks."""
+	try:
+		from apscheduler.schedulers.background import BackgroundScheduler
+	except ImportError:
+		app.logger.warning("APScheduler not installed; background jobs disabled.")
+		return
+
+	scheduler = BackgroundScheduler(daemon=True)
+
+	def run_daily_jobs():
+		with app.app_context():
+			_job_expire_trials()
+			_job_trial_reminders()
+			_job_purge_pending_devices()
+
+	scheduler.add_job(run_daily_jobs, "interval", hours=12, id="daily_jobs")
+	scheduler.start()
+
+
+def _job_expire_trials() -> None:
+	"""Downgrade families whose trial has ended without a Pro subscription."""
+	from datetime import datetime as _dt
+	from src.models.main import Family, db
+	from src.utils.email import send_email
+	import os
+
+	expired = Family.query.filter(
+		Family.trial_ends_at <= _dt.utcnow(),
+		Family.plan == "free",
+		Family.subscription_status == "trialing",
+	).all()
+
+	for family in expired:
+		family.subscription_status = None
+		db.session.commit()
+		base_url = os.environ.get("APP_BASE_URL", "https://app.stewardwell.com")
+		for parent in family.parents:
+			html = (
+				f"<p>Hi {parent.name},</p>"
+				f"<p>Your Stewardwell Pro trial for <strong>{family.name}</strong> has ended. "
+				f"Your account is now on the Free plan.</p>"
+				f"<p><a href='{base_url}/billing/upgrade'>Upgrade to Pro</a> to restore unlimited access.</p>"
+			)
+			send_email(
+				to_email=parent.email,
+				to_name=parent.name,
+				subject="Your Stewardwell Pro trial has ended",
+				html_content=html,
+			)
+
+
+def _job_trial_reminders() -> None:
+	"""Send a reminder email to families with 3 days left on their trial."""
+	from datetime import datetime as _dt, timedelta as _td
+	from src.models.main import Family, db
+	from src.utils.email import send_email
+	import os
+
+	window_start = _dt.utcnow() + _td(days=2, hours=23)
+	window_end = _dt.utcnow() + _td(days=3, hours=1)
+
+	expiring = Family.query.filter(
+		Family.trial_ends_at >= window_start,
+		Family.trial_ends_at <= window_end,
+		Family.plan == "free",
+		Family.subscription_status == "trialing",
+	).all()
+
+	base_url = os.environ.get("APP_BASE_URL", "https://app.stewardwell.com")
+	for family in expiring:
+		for parent in family.parents:
+			html = (
+				f"<p>Hi {parent.name},</p>"
+				f"<p>Your Stewardwell Pro trial for <strong>{family.name}</strong> ends in <strong>3 days</strong>.</p>"
+				f"<p><a href='{base_url}/billing/upgrade'>Subscribe to Pro</a> to keep unlimited access.</p>"
+			)
+			send_email(
+				to_email=parent.email,
+				to_name=parent.name,
+				subject="Your Stewardwell Pro trial ends in 3 days",
+				html_content=html,
+			)
+
+
+def _job_purge_pending_devices() -> None:
+	"""Delete long-expired pending device registration records."""
+	from datetime import datetime as _dt, timedelta as _td
+	from src.models.main import PendingDeviceRegistration, db
+
+	cutoff = _dt.utcnow() - _td(hours=24)
+	PendingDeviceRegistration.query.filter(
+		PendingDeviceRegistration.expires_at < cutoff
+	).delete()
+	db.session.commit()

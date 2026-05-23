@@ -49,6 +49,15 @@ class Family(db.Model):
 	# Tracks the last date daily chore reset ran for this family (lazy reset)
 	last_reset_date = db.Column(db.Date, nullable=True)
 
+	# ── SaaS billing ─────────────────────────────────────────────────────────
+	# plan: "free" | "pro"
+	plan = db.Column(db.String(20), nullable=False, default="free")
+	trial_ends_at = db.Column(db.DateTime, nullable=True)
+	stripe_customer_id = db.Column(db.String(120), nullable=True)
+	stripe_subscription_id = db.Column(db.String(120), nullable=True)
+	# subscription_status: "trialing" | "active" | "past_due" | "canceled" | None
+	subscription_status = db.Column(db.String(30), nullable=True)
+
 	parents = db.relationship("Parent", back_populates="family", cascade="all, delete-orphan")
 	kids = db.relationship("Kid", back_populates="family", cascade="all, delete-orphan")
 	devices = db.relationship("TrustedDevice", back_populates="family", cascade="all, delete-orphan")
@@ -67,6 +76,26 @@ class Family(db.Model):
 	def verify_family_code(self, candidate: str) -> bool:
 		return check_password_hash(self.family_code_hash, _normalize_family_code(candidate))
 
+	@property
+	def is_pro(self) -> bool:
+		"""True when the family has an active Pro plan OR an active trial."""
+		if self.plan == "pro" and self.subscription_status in ("active", "past_due", None):
+			return True
+		if self.trial_ends_at and datetime.utcnow() < self.trial_ends_at:
+			return True
+		return False
+
+	@property
+	def trial_active(self) -> bool:
+		return bool(self.trial_ends_at and datetime.utcnow() < self.trial_ends_at)
+
+	@property
+	def trial_days_remaining(self) -> int:
+		if not self.trial_active:
+			return 0
+		delta = self.trial_ends_at - datetime.utcnow()
+		return max(0, delta.days)
+
 
 class Parent(db.Model):
 	__tablename__ = "parents"
@@ -78,9 +107,30 @@ class Parent(db.Model):
 	name = db.Column(db.String(120), nullable=False)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 	last_login_at = db.Column(db.DateTime)
+	# ── Email verification ────────────────────────────────────────────────────
+	email_verified = db.Column(db.Boolean, nullable=False, default=False)
+	email_verify_token_hash = db.Column(db.String(64), nullable=True)
+	email_verify_expires_at = db.Column(db.DateTime, nullable=True)
+	# ── Admin flag ────────────────────────────────────────────────────────────
+	is_superuser = db.Column(db.Boolean, nullable=False, default=False)
 
 	family = db.relationship("Family", back_populates="parents")
 	registered_devices = db.relationship("TrustedDevice", back_populates="registered_by_parent")
+
+	def generate_verify_token(self) -> str:
+		"""Generate a new email-verification token, store its hash, return plain token."""
+		plain = secrets.token_urlsafe(32)
+		self.email_verify_token_hash = _hash_token(plain)
+		self.email_verify_expires_at = datetime.utcnow() + timedelta(hours=24)
+		return plain
+
+	def verify_email_token(self, plain: str) -> bool:
+		"""Return True if the plain token matches and has not expired."""
+		if not self.email_verify_token_hash or not self.email_verify_expires_at:
+			return False
+		if datetime.utcnow() > self.email_verify_expires_at:
+			return False
+		return _hash_token(plain) == self.email_verify_token_hash
 
 	def set_password(self, raw_password: str) -> None:
 		self.password_hash = generate_password_hash(raw_password)

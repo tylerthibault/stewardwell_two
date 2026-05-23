@@ -35,6 +35,7 @@ from src.models.main import (
 	generate_family_code,
 )
 from src.utils.email import send_email
+from src.utils.limits import can_add, limit_reached_message
 from src.controllers.parent_controller import _record_coin_transaction
 
 
@@ -618,6 +619,16 @@ def landing():
 	return render_template("public/landing/index.html")
 
 
+@public_bp.get("/terms")
+def terms():
+	return render_template("public/legal/terms.html")
+
+
+@public_bp.get("/privacy")
+def privacy():
+	return render_template("public/legal/privacy.html")
+
+
 @public_bp.route("/login", methods=["GET", "POST"])
 def login():
 	if request.method == "GET":
@@ -683,14 +694,25 @@ def register():
 	family_code = generate_family_code()
 	family = Family(name=household_name)
 	family.set_family_code(family_code)
+	# Start 14-day Pro trial for all new families
+	family.trial_ends_at = datetime.utcnow() + timedelta(days=14)
+	family.subscription_status = "trialing"
 
 	parent_name = f"{first_name} {last_name}".strip()
 	parent = Parent(family=family, name=parent_name, email=email)
 	parent.set_password(password)
 
+	# Generate email-verification token
+	verify_token = parent.generate_verify_token()
+
 	db.session.add(family)
 	db.session.add(parent)
 	db.session.commit()
+
+	# Send verification email
+	base_url = os.environ.get("APP_BASE_URL", request.host_url.rstrip("/"))
+	verify_url = f"{base_url}/verify-email/{verify_token}"
+	_send_verify_email(parent, verify_url)
 
 	session.clear()
 	session["role"] = "parent"
@@ -699,6 +721,7 @@ def register():
 
 	response = redirect(url_for("public.parent_dashboard"))
 	flash(f"Account created! Save your family code: {family_code}", "success")
+	flash("A verification email has been sent. Please verify your email address within 24 hours.", "info")
 	return response
 
 
@@ -793,6 +816,256 @@ def reset_password(token: str):
 @public_bp.get("/health")
 def health():
 	return jsonify({"success": True, "message": "ok"})
+
+
+# ---------------------------------------------------------------------------
+# Email-verification helpers
+# ---------------------------------------------------------------------------
+
+def _send_verify_email(parent: "Parent", verify_url: str) -> None:
+	html = f"""
+	<p>Hi {parent.name},</p>
+	<p>Thanks for signing up for Stewardwell! Click the button below to verify
+	your email address. This link expires in 24 hours.</p>
+	<p style="text-align:center;margin:24px 0;">
+		<a href="{verify_url}"
+		   style="background:#4f8ef7;color:#fff;padding:12px 28px;border-radius:8px;
+		          text-decoration:none;font-weight:700;font-size:15px;">
+			Verify my email
+		</a>
+	</p>
+	<p>Or copy this link:<br><a href="{verify_url}">{verify_url}</a></p>
+	<p style="color:#888;font-size:12px;">If you didn\u2019t create a Stewardwell account, you can ignore this email.</p>
+	"""
+	send_email(
+		to_email=parent.email,
+		to_name=parent.name,
+		subject="Verify your Stewardwell email address",
+		html_content=html,
+	)
+
+
+@public_bp.route("/verify-email/<token>", methods=["GET"])
+def verify_email(token: str):
+	# Find parents whose verify token matches
+	token_hash = __import__("hashlib").sha256(token.encode()).hexdigest()
+	from datetime import datetime as _dt
+	parent = Parent.query.filter_by(email_verify_token_hash=token_hash).first()
+	if not parent:
+		flash("Verification link is invalid or has already been used.", "error")
+		return redirect(url_for("public.login"))
+	if parent.email_verify_expires_at and _dt.utcnow() > parent.email_verify_expires_at:
+		flash("Verification link has expired. Please request a new one.", "error")
+		return redirect(url_for("public.resend_verification"))
+	parent.email_verified = True
+	parent.email_verify_token_hash = None
+	parent.email_verify_expires_at = None
+	db.session.commit()
+	flash("Email verified! Welcome to Stewardwell.", "success")
+	return redirect(url_for("public.login"))
+
+
+@public_bp.route("/resend-verification", methods=["GET", "POST"])
+def resend_verification():
+	if request.method == "GET":
+		return render_template("public/auth/resend_verification.html")
+	email = request.form.get("email", "").strip().lower()
+	parent = Parent.query.filter_by(email=email).first()
+	if parent and not parent.email_verified:
+		verify_token = parent.generate_verify_token()
+		db.session.commit()
+		base_url = os.environ.get("APP_BASE_URL", request.host_url.rstrip("/"))
+		verify_url = f"{base_url}/verify-email/{verify_token}"
+		_send_verify_email(parent, verify_url)
+	flash("If your email is registered and unverified, a new verification link has been sent.", "success")
+	return redirect(url_for("public.login"))
+
+
+# ---------------------------------------------------------------------------
+# Stripe billing
+# ---------------------------------------------------------------------------
+
+def _get_stripe():
+	try:
+		import stripe as _stripe
+		_stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+		return _stripe
+	except ImportError:
+		return None
+
+
+@public_bp.get("/billing/upgrade")
+@parent_web_login_required
+def billing_upgrade():
+	stripe = _get_stripe()
+	parent, family = _load_parent_and_family()
+	if not stripe or not os.environ.get("STRIPE_SECRET_KEY"):
+		flash("Billing is not yet configured. Please check back soon.", "info")
+		return redirect(url_for("public.parent_settings"))
+
+	price_id = os.environ.get("STRIPE_PRICE_ID_MONTHLY")
+	base_url = os.environ.get("APP_BASE_URL", request.host_url.rstrip("/"))
+
+	try:
+		# Create or reuse Stripe customer
+		if not family.stripe_customer_id:
+			customer = stripe.Customer.create(
+				email=parent.email,
+				name=family.name,
+				metadata={"family_id": family.id},
+			)
+			family.stripe_customer_id = customer.id
+			db.session.commit()
+
+		checkout = stripe.checkout.Session.create(
+			customer=family.stripe_customer_id,
+			payment_method_types=["card"],
+			line_items=[{"price": price_id, "quantity": 1}],
+			mode="subscription",
+			allow_promotion_codes=True,
+			success_url=f"{base_url}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+			cancel_url=f"{base_url}/billing/cancel",
+			metadata={"family_id": family.id},
+		)
+		return redirect(checkout.url, code=303)
+	except Exception as exc:
+		current_app.logger.error("Stripe checkout error: %s", exc)
+		flash("Could not start checkout. Please try again.", "error")
+		return redirect(url_for("public.parent_settings"))
+
+
+@public_bp.get("/billing/success")
+@parent_web_login_required
+def billing_success():
+	session_id = request.args.get("session_id", "")
+	stripe = _get_stripe()
+	parent, family = _load_parent_and_family()
+	if stripe and session_id:
+		try:
+			checkout_session = stripe.checkout.Session.retrieve(session_id)
+			sub = stripe.Subscription.retrieve(checkout_session.subscription)
+			family.plan = "pro"
+			family.stripe_subscription_id = sub.id
+			family.subscription_status = sub.status
+			db.session.commit()
+		except Exception as exc:
+			current_app.logger.error("Stripe success handler error: %s", exc)
+	flash("You're now on Stewardwell Pro! Enjoy unlimited access.", "success")
+	return redirect(url_for("public.parent_dashboard"))
+
+
+@public_bp.get("/billing/cancel")
+@parent_web_login_required
+def billing_cancel():
+	flash("Upgrade cancelled. You can upgrade anytime from Settings.", "info")
+	return redirect(url_for("public.parent_settings"))
+
+
+@public_bp.post("/billing/portal")
+@parent_web_login_required
+def billing_portal():
+	stripe = _get_stripe()
+	parent, family = _load_parent_and_family()
+	base_url = os.environ.get("APP_BASE_URL", request.host_url.rstrip("/"))
+	if not stripe or not family.stripe_customer_id:
+		flash("No billing account found.", "error")
+		return redirect(url_for("public.parent_settings"))
+	try:
+		portal = stripe.billing_portal.Session.create(
+			customer=family.stripe_customer_id,
+			return_url=f"{base_url}/parent/settings",
+		)
+		return redirect(portal.url, code=303)
+	except Exception as exc:
+		current_app.logger.error("Stripe portal error: %s", exc)
+		flash("Could not open billing portal. Please try again.", "error")
+		return redirect(url_for("public.parent_settings"))
+
+
+@public_bp.post("/webhooks/stripe")
+def stripe_webhook():
+	stripe = _get_stripe()
+	if not stripe:
+		return jsonify({"error": "stripe not configured"}), 500
+
+	payload = request.get_data(as_text=True)
+	sig_header = request.headers.get("Stripe-Signature", "")
+	webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
+	try:
+		event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+	except (ValueError, stripe.error.SignatureVerificationError) as exc:
+		current_app.logger.warning("Stripe webhook bad signature: %s", exc)
+		return jsonify({"error": "invalid signature"}), 400
+
+	obj = event["data"]["object"]
+	family_id = None
+
+	# Try to resolve family from metadata or subscription
+	if event["type"] == "checkout.session.completed":
+		family_id = obj.get("metadata", {}).get("family_id")
+		if family_id:
+			family = Family.query.get(int(family_id))
+			if family:
+				sub = stripe.Subscription.retrieve(obj["subscription"])
+				family.plan = "pro"
+				family.stripe_subscription_id = sub.id
+				family.subscription_status = sub.status
+				db.session.commit()
+
+	elif event["type"] == "invoice.payment_succeeded":
+		sub_id = obj.get("subscription")
+		if sub_id:
+			family = Family.query.filter_by(stripe_subscription_id=sub_id).first()
+			if family:
+				family.subscription_status = "active"
+				db.session.commit()
+
+	elif event["type"] == "invoice.payment_failed":
+		sub_id = obj.get("subscription")
+		if sub_id:
+			family = Family.query.filter_by(stripe_subscription_id=sub_id).first()
+			if family:
+				family.subscription_status = "past_due"
+				db.session.commit()
+				# Send dunning email to all parents
+				_send_payment_failed_email(family)
+
+	elif event["type"] == "customer.subscription.deleted":
+		sub_id = obj.get("id")
+		if sub_id:
+			family = Family.query.filter_by(stripe_subscription_id=sub_id).first()
+			if family:
+				family.plan = "free"
+				family.subscription_status = "canceled"
+				family.stripe_subscription_id = None
+				db.session.commit()
+
+	return jsonify({"received": True}), 200
+
+
+def _send_payment_failed_email(family: "Family") -> None:
+	base_url = os.environ.get("APP_BASE_URL", "https://app.stewardwell.com")
+	for parent in family.parents:
+		html = f"""
+		<p>Hi {parent.name},</p>
+		<p>We were unable to process your Stewardwell Pro payment. Your account has been
+		flagged as <strong>past due</strong>. Please update your payment method to keep your Pro access.</p>
+		<p style="text-align:center;margin:24px 0;">
+			<a href="{base_url}/billing/portal"
+			   style="background:#e53e3e;color:#fff;padding:12px 28px;border-radius:8px;
+			          text-decoration:none;font-weight:700;font-size:15px;">
+				Update Payment Method
+			</a>
+		</p>
+		<p style="color:#888;font-size:12px;">If you have questions, reply to this email.</p>
+		"""
+		send_email(
+			to_email=parent.email,
+			to_name=parent.name,
+			subject="Action required: Stewardwell payment failed",
+			html_content=html,
+		)
 
 
 def _run_daily_chore_reset(family: "Family") -> None:
@@ -972,6 +1245,14 @@ def parent_schedule():
 @public_bp.post("/parent/chores/create")
 @parent_web_login_required
 def parent_create_chore():
+	# Tier limit check
+	_fam = Family.query.get(session["family_id"])
+	if _fam:
+		_current = Chore.query.filter_by(family_id=_fam.id, is_active=True).count()
+		if not can_add(_fam, "chores", _current):
+			flash(limit_reached_message("chores"), "warning")
+			return redirect(url_for("public.parent_chores"))
+
 	parsed = _parse_chore_form_data(request.form, session["family_id"])
 	if parsed is None:
 		return redirect(url_for("public.parent_chores"))
@@ -1256,6 +1537,14 @@ def parent_store():
 @public_bp.post("/parent/store/items/create")
 @parent_web_login_required
 def parent_store_create_item():
+	# Tier limit check
+	_fam = Family.query.get(session["family_id"])
+	if _fam:
+		_current = StoreItem.query.filter_by(family_id=_fam.id, is_active=True).count()
+		if not can_add(_fam, "store_items", _current):
+			flash(limit_reached_message("store_items"), "warning")
+			return redirect(url_for("public.parent_store"))
+
 	name = (request.form.get("name") or "").strip()
 	description = (request.form.get("description") or "").strip()
 	item_scope = (request.form.get("item_scope") or "").strip()
@@ -1758,6 +2047,12 @@ def parent_challenge_create():
 	if not parent or not family:
 		return redirect(url_for("public.login"))
 
+	# Tier limit check
+	_current = Challenge.query.filter_by(family_id=family.id, is_active=True).count()
+	if not can_add(family, "challenges", _current):
+		flash(limit_reached_message("challenges"), "warning")
+		return redirect(url_for("public.parent_challenges"))
+
 	title = (request.form.get("title") or "").strip()
 	description = (request.form.get("description") or "").strip()
 	difficulty = (request.form.get("difficulty") or "bronze").strip()
@@ -1965,6 +2260,14 @@ def parent_history():
 def parent_add_kid():
 	display_name = request.form.get("display_name", "").strip()
 	pin = request.form.get("pin", "").strip()
+
+	# Tier limit check
+	_fam = Family.query.get(session["family_id"])
+	if _fam:
+		_current = Kid.query.filter_by(family_id=_fam.id, is_active=True).count()
+		if not can_add(_fam, "kids", _current):
+			flash(limit_reached_message("kids"), "warning")
+			return redirect(url_for("public.parent_dashboard"))
 
 	if not display_name:
 		flash("Kid name is required.", "error")
@@ -3890,6 +4193,14 @@ def parent_tasks():
 def parent_tasks_create():
 	parent = Parent.query.get(session["parent_id"])
 	family_id = session["family_id"]
+
+	# Tier limit check
+	_fam = Family.query.get(family_id)
+	if _fam:
+		_current = Task.query.filter_by(family_id=family_id, is_active=True).count()
+		if not can_add(_fam, "tasks", _current):
+			flash(limit_reached_message("tasks"), "warning")
+			return redirect(url_for("public.parent_tasks"))
 
 	title = (request.form.get("title") or "").strip()
 	description = (request.form.get("description") or "").strip() or None

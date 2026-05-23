@@ -1,0 +1,24 @@
+{% extends "bases/public.html" %}
+{% block title %}Resend Verification — Stewardwell{% endblock %}
+
+{% block content %}
+<section class="two-col-layout" style="max-width:480px;margin:60px auto;padding:0 16px;">
+	<article class="panel">
+		<span class="auth-badge">EMAIL VERIFICATION</span>
+		<h1 style="font-size:28px;margin:8px 0 6px;">Resend verification email</h1>
+		<p class="muted" style="margin-bottom:24px;">
+			Enter the email address you used to register and we'll send a fresh verification link.
+		</p>
+
+		<form method="post" action="{{ url_for('public.resend_verification') }}">
+			<label class="field-label">Email address</label>
+			<input type="email" name="email" class="field-input" placeholder="you@example.com" required />
+			<button type="submit" class="btn btn-primary" style="width:100%;margin-top:12px;">Send verification link</button>
+		</form>
+
+		<p style="margin-top:18px;font-size:.85rem;text-align:center;">
+			Already verified? <a href="{{ url_for('public.login') }}">Log in</a>
+		</p>
+	</article>
+</section>
+{% endblock %}

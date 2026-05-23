@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard — Stewardwell Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stat-grid">
+	<div class="stat-card">
+		<div class="value">{{ total_families }}</div>
+		<div class="label">Total Families</div>
+	</div>
+	<div class="stat-card">
+		<div class="value">{{ pro_families }}</div>
+		<div class="label">Pro Subscribers</div>
+	</div>
+	<div class="stat-card">
+		<div class="value">{{ trialing_families }}</div>
+		<div class="label">Active Trials</div>
+	</div>
+	<div class="stat-card">
+		<div class="value">{{ total_parents }}</div>
+		<div class="label">Total Parents</div>
+	</div>
+	<div class="stat-card">
+		<div class="value">{{ new_this_week }}</div>
+		<div class="label">New (7 days)</div>
+	</div>
+	<div class="stat-card">
+		<div class="value">{{ new_this_month }}</div>
+		<div class="label">New (30 days)</div>
+	</div>
+	{% if past_due > 0 %}
+	<div class="stat-card" style="border: 2px solid #ef4444;">
+		<div class="value" style="color:#ef4444;">{{ past_due }}</div>
+		<div class="label">Past Due ⚠️</div>
+	</div>
+	{% endif %}
+</div>
+
+<div style="display:flex;gap:16px;flex-wrap:wrap;">
+	<a href="{{ url_for('admin.admin_families') }}" class="btn btn-primary">View All Families</a>
+	<a href="{{ url_for('admin.admin_parents') }}" class="btn btn-outline">View All Parents</a>
+</div>
+{% endblock %}

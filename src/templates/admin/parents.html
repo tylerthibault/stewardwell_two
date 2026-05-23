@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% block title %}Parents — Stewardwell Admin{% endblock %}
+{% block page_title %}Parents{% endblock %}
+
+{% block content %}
+<form class="search-form" method="get">
+	<input type="text" name="q" value="{{ q }}" placeholder="Search by name or email…" />
+	<button type="submit" class="btn btn-primary">Search</button>
+	{% if q %}<a href="{{ url_for('admin.admin_parents') }}" class="btn btn-outline">Clear</a>{% endif %}
+</form>
+
+<div class="admin-table-wrap">
+	<table>
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Email</th>
+				<th>Verified</th>
+				<th>Superuser</th>
+				<th>Family</th>
+				<th>Last Login</th>
+				<th>Created</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for p in parents %}
+		<tr>
+			<td>{{ p.name }}</td>
+			<td>{{ p.email }}</td>
+			<td>{{ '✅' if p.email_verified else '❌' }}</td>
+			<td>{{ '⭐' if p.is_superuser else '—' }}</td>
+			<td>
+				{% if p.family %}
+				<a href="{{ url_for('admin.admin_family_detail', family_id=p.family_id) }}">{{ p.family.name }}</a>
+				{% else %}—{% endif %}
+			</td>
+			<td>{{ p.last_login_at.strftime('%b %d, %Y') if p.last_login_at else 'Never' }}</td>
+			<td>{{ p.created_at.strftime('%b %d, %Y') }}</td>
+			<td>
+				<form method="post" action="{{ url_for('admin.admin_trigger_password_reset', parent_id=p.id) }}" onsubmit="return confirm('Send password reset?');" style="display:inline;">
+					<button type="submit" class="btn btn-sm btn-outline">Reset PW</button>
+				</form>
+			</td>
+		</tr>
+		{% else %}
+		<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:32px;">No parents found.</td></tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "bases/public.html" %}
+{% block title %}Terms of Service — Stewardwell{% endblock %}
+
+{% block content %}
+<section style="max-width:760px;margin:48px auto;padding:0 24px;">
+	<h1 style="font-size:2rem;font-weight:800;margin-bottom:8px;">Terms of Service</h1>
+	<p style="color:var(--duo-muted);margin-bottom:32px;">Last updated: May 2026</p>
+
+	<div style="line-height:1.8;color:var(--duo-text);">
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">1. Acceptance of Terms</h2>
+		<p>By accessing or using Stewardwell ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Service.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">2. Description of Service</h2>
+		<p>Stewardwell is a family chore and reward management application. We offer a Free tier and a paid Pro tier with additional features.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">3. Accounts and Registration</h2>
+		<p>You must provide accurate information when registering. You are responsible for maintaining the security of your account credentials. You must be 18 years or older to create an account. Children use the Service only through a parent/guardian account.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">4. Subscriptions and Billing</h2>
+		<p>Pro subscriptions are billed monthly or annually through our payment processor (Stripe). You may cancel at any time. Cancellations take effect at the end of the current billing period. We do not offer refunds for partial billing periods unless required by law.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">5. Children's Privacy (COPPA)</h2>
+		<p>The Service allows parents to create child profiles. We do not knowingly collect personal information directly from children under 13. All child data is associated with the parent's account and managed by the parent. For questions, contact us at privacy@stewardwell.com.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">6. Acceptable Use</h2>
+		<p>You agree not to misuse the Service, attempt unauthorized access, reverse-engineer the application, or use it for any unlawful purpose.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">7. Intellectual Property</h2>
+		<p>All content, code, and branding in Stewardwell are owned by Stewardwell and protected by copyright. You may not reproduce or distribute any part of the Service without written permission.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">8. Disclaimer of Warranties</h2>
+		<p>The Service is provided "as is" without warranties of any kind. We do not guarantee uninterrupted or error-free operation.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">9. Limitation of Liability</h2>
+		<p>To the maximum extent permitted by law, Stewardwell is not liable for any indirect, incidental, or consequential damages arising from your use of the Service.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">10. Changes to Terms</h2>
+		<p>We may update these Terms at any time. We will notify you by email or an in-app message. Continued use after notice constitutes acceptance of the updated Terms.</p>
+
+		<h2 style="font-size:1.1rem;font-weight:700;margin:28px 0 8px;">11. Contact</h2>
+		<p>Questions? Email us at <a href="mailto:hello@stewardwell.com">hello@stewardwell.com</a>.</p>
+	</div>
+
+	<p style="margin-top:40px;"><a href="{{ url_for('public.landing') }}" style="color:var(--duo-muted);">← Back to home</a></p>
+</section>
+{% endblock %}

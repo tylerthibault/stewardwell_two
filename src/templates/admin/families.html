@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+{% block title %}Families — Stewardwell Admin{% endblock %}
+{% block page_title %}Families{% endblock %}
+
+{% block content %}
+<form class="search-form" method="get">
+	<input type="text" name="q" value="{{ q }}" placeholder="Search by family name…" />
+	<button type="submit" class="btn btn-primary">Search</button>
+	{% if q %}<a href="{{ url_for('admin.admin_families') }}" class="btn btn-outline">Clear</a>{% endif %}
+</form>
+
+<div class="admin-table-wrap">
+	<table>
+		<thead>
+			<tr>
+				<th>Family Name</th>
+				<th>Plan</th>
+				<th>Status</th>
+				<th>Trial Ends</th>
+				<th>Created</th>
+				<th>Parents</th>
+				<th>Kids</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for f in families %}
+		<tr>
+			<td><a href="{{ url_for('admin.admin_family_detail', family_id=f.id) }}">{{ f.name }}</a></td>
+			<td>
+				{% if f.plan == 'pro' %}
+				<span class="badge badge-pro">Pro</span>
+				{% elif f.trial_active %}
+				<span class="badge badge-trial">Trial ({{ f.trial_days_remaining }}d)</span>
+				{% else %}
+				<span class="badge badge-free">Free</span>
+				{% endif %}
+			</td>
+			<td>
+				{% if f.subscription_status %}
+				<span class="badge badge-{{ 'active' if f.subscription_status == 'active' else 'past-due' if f.subscription_status == 'past_due' else 'free' }}">{{ f.subscription_status }}</span>
+				{% else %}—{% endif %}
+			</td>
+			<td>{{ f.trial_ends_at.strftime('%b %d, %Y') if f.trial_ends_at else '—' }}</td>
+			<td>{{ f.created_at.strftime('%b %d, %Y') }}</td>
+			<td>{{ f.parents | length }}</td>
+			<td>{{ f.kids | selectattr('is_active') | list | length }}</td>
+			<td><a href="{{ url_for('admin.admin_family_detail', family_id=f.id) }}" class="btn btn-sm btn-outline">View →</a></td>
+		</tr>
+		{% else %}
+		<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:32px;">No families found.</td></tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+{% endblock %}

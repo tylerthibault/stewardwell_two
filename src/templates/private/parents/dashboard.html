@@ -32,6 +32,37 @@
 
 	<!-- Stat cards -->
 	<section>
+
+	{# ── Email verification banner ── #}
+	{% if not parent.email_verified and parent.email_verify_token_hash %}
+	<article style="margin-bottom:16px;padding:14px 18px;border-radius:12px;background:color-mix(in srgb,var(--duo-yellow,#ffd700) 15%,var(--duo-panel));border-left:4px solid var(--duo-yellow,#ffd700);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+		<div>
+			<strong>📧 Verify your email address</strong>
+			<p style="margin:2px 0 0;font-size:.83rem;color:var(--duo-muted);">Check your inbox for a verification link from Stewardwell.</p>
+		</div>
+		<a href="{{ url_for('public.resend_verification') }}" class="btn" style="font-size:.82rem;padding:7px 14px;white-space:nowrap;">Resend email</a>
+	</article>
+	{% endif %}
+
+	{# ── Pro trial / upgrade banner ── #}
+	{% if family.trial_active %}
+	<article style="margin-bottom:16px;padding:14px 18px;border-radius:12px;background:color-mix(in srgb,#4f8ef7 12%,var(--duo-panel));border-left:4px solid #4f8ef7;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+		<div>
+			<strong>⭐ Pro Trial — {{ family.trial_days_remaining }} day{{ 's' if family.trial_days_remaining != 1 }} left</strong>
+			<p style="margin:2px 0 0;font-size:.83rem;color:var(--duo-muted);">You're enjoying full Pro access. Subscribe to keep it after your trial ends.</p>
+		</div>
+		<a href="{{ url_for('public.billing_upgrade') }}" class="btn primary" style="font-size:.82rem;padding:7px 14px;white-space:nowrap;">Upgrade to Pro</a>
+	</article>
+	{% elif not family.is_pro %}
+	<article style="margin-bottom:16px;padding:14px 18px;border-radius:12px;background:color-mix(in srgb,#a855f7 10%,var(--duo-panel));border-left:4px solid #a855f7;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+		<div>
+			<strong>🚀 Upgrade to Stewardwell Pro</strong>
+			<p style="margin:2px 0 0;font-size:.83rem;color:var(--duo-muted);">Unlock unlimited kids, chores, store items, challenges, tasks, and more.</p>
+		</div>
+		<a href="{{ url_for('public.billing_upgrade') }}" class="btn primary" style="font-size:.82rem;padding:7px 14px;white-space:nowrap;">See Plans</a>
+	</article>
+	{% endif %}
+
 						<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:16px;">
 			<!-- Family code status -->
 			<article class="dashboard-card">
