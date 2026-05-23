@@ -820,3 +820,73 @@ class TaskClaim(db.Model):
 	family = db.relationship("Family", backref=db.backref("task_claims", lazy=True, cascade="all, delete-orphan"))
 	kid = db.relationship("Kid", backref=db.backref("task_claims", lazy=True, cascade="all, delete-orphan"))
 	resolved_by_parent = db.relationship("Parent", foreign_keys=[resolved_by_parent_id])
+
+
+# ---------------------------------------------------------------------------
+# Promo Codes
+# ---------------------------------------------------------------------------
+
+class PromoCode(db.Model):
+	"""Admin-managed promotional codes.
+
+	behavior:
+	  "discount"    — a Stripe Promotion Code applied at Checkout (requires stripe_promotion_code_id)
+	  "grant_trial" — extends the family's Pro trial by `benefit_days` days (no Stripe needed)
+
+	billing_cycle:
+	  "any" | "monthly" | "annual"  (informational / Stripe coupon constraint)
+	"""
+
+	__tablename__ = "promo_codes"
+
+	id = db.Column(db.Integer, primary_key=True)
+	code = db.Column(db.String(64), nullable=False, unique=True, index=True)
+	description = db.Column(db.String(255), nullable=True)
+	# "discount" | "grant_trial"
+	behavior = db.Column(db.String(30), nullable=False, default="discount")
+	# "pro" (only tier for now)
+	target_tier = db.Column(db.String(20), nullable=False, default="pro")
+	# "any" | "monthly" | "annual"
+	billing_cycle = db.Column(db.String(20), nullable=False, default="any")
+	expires_at = db.Column(db.DateTime, nullable=True)
+	# days to extend trial (grant_trial only)
+	benefit_days = db.Column(db.Integer, nullable=True)
+	max_uses = db.Column(db.Integer, nullable=True)
+	use_count = db.Column(db.Integer, nullable=False, default=0)
+	# Stripe promo code ID (discount behavior)
+	stripe_promotion_code_id = db.Column(db.String(120), nullable=True)
+	is_active = db.Column(db.Boolean, nullable=False, default=True)
+	created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+	# Track which families have used this code
+	redemptions = db.relationship("PromoRedemption", back_populates="promo_code", cascade="all, delete-orphan")
+
+	@property
+	def is_expired(self) -> bool:
+		return bool(self.expires_at and datetime.utcnow() > self.expires_at)
+
+	@property
+	def is_maxed(self) -> bool:
+		return bool(self.max_uses and self.use_count >= self.max_uses)
+
+	@property
+	def is_usable(self) -> bool:
+		return self.is_active and not self.is_expired and not self.is_maxed
+
+	def record_use(self, family_id: int) -> None:
+		self.use_count += 1
+		db.session.add(PromoRedemption(promo_code_id=self.id, family_id=family_id))
+
+
+class PromoRedemption(db.Model):
+	"""Tracks which families have redeemed a promo code."""
+
+	__tablename__ = "promo_redemptions"
+
+	id = db.Column(db.Integer, primary_key=True)
+	promo_code_id = db.Column(db.Integer, db.ForeignKey("promo_codes.id"), nullable=False, index=True)
+	family_id = db.Column(db.Integer, db.ForeignKey("families.id"), nullable=False, index=True)
+	redeemed_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+	promo_code = db.relationship("PromoCode", back_populates="redemptions")
+	family = db.relationship("Family", backref=db.backref("promo_redemptions", lazy=True))

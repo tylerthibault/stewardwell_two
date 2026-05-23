@@ -30,6 +30,8 @@ from src.models.main import (
 	StoreTimedSession,
 	Task,
 	TaskClaim,
+	PromoCode,
+	PromoRedemption,
 	TrustedDevice,
 	db,
 	generate_family_code,
@@ -958,6 +960,48 @@ def billing_success():
 @parent_web_login_required
 def billing_cancel():
 	flash("Upgrade cancelled. You can upgrade anytime from Settings.", "info")
+	return redirect(url_for("public.parent_settings"))
+
+
+@public_bp.post("/billing/apply-promo")
+@parent_web_login_required
+def billing_apply_promo():
+	"""Apply a `grant_trial` promo code to extend the family's trial."""
+	parent, family = _load_parent_and_family()
+	code_str = (request.form.get("promo_code") or "").strip().upper()
+	if not code_str:
+		flash("Please enter a promo code.", "danger")
+		return redirect(url_for("public.parent_settings"))
+
+	promo = PromoCode.query.filter_by(code=code_str).first()
+
+	# Validate
+	if not promo:
+		flash("Promo code not found.", "danger")
+		return redirect(url_for("public.parent_settings"))
+	if not promo.is_usable:
+		flash("That promo code is no longer valid.", "danger")
+		return redirect(url_for("public.parent_settings"))
+	if promo.behavior != "grant_trial":
+		flash("That code must be applied at checkout.", "info")
+		return redirect(url_for("public.parent_settings"))
+
+	# Check not already redeemed by this family
+	already = PromoRedemption.query.filter_by(
+		promo_code_id=promo.id, family_id=family.id
+	).first()
+	if already:
+		flash("Your family has already redeemed that code.", "warning")
+		return redirect(url_for("public.parent_settings"))
+
+	# Extend trial
+	benefit = promo.benefit_days or 30
+	from datetime import datetime, timedelta
+	before = family.trial_ends_at or datetime.utcnow()
+	family.trial_ends_at = max(before, datetime.utcnow()) + timedelta(days=benefit)
+	promo.record_use(family.id)
+	db.session.commit()
+	flash(f"🎉 Promo applied! Your trial has been extended by {benefit} days.", "success")
 	return redirect(url_for("public.parent_settings"))
 
 

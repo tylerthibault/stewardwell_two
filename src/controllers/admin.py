@@ -13,7 +13,7 @@ from flask import (
     render_template, request, session, url_for, current_app,
 )
 
-from src.models.main import Family, Kid, Parent, TrustedDevice, db
+from src.models.main import Family, Kid, Parent, PromoCode, PromoRedemption, TrustedDevice, db
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -240,3 +240,84 @@ def admin_trigger_password_reset(parent_id: int):
     send_email(to_email=parent.email, to_name=parent.name, subject="Stewardwell password reset", html_content=html)
     flash(f"Password reset email sent to {parent.email}.", "success")
     return redirect(url_for("admin.admin_parents"))
+
+
+# ── Promo Codes ───────────────────────────────────────────────────────────────
+
+@admin_bp.get("/promo-codes")
+@admin_required
+def admin_promo_codes():
+    codes = PromoCode.query.order_by(PromoCode.created_at.desc()).all()
+    return render_template("admin/promo_codes.html", codes=codes)
+
+
+@admin_bp.post("/promo-codes/create")
+@admin_required
+def admin_promo_codes_create():
+    code_str = (request.form.get("code") or "").strip().upper()
+    if not code_str:
+        flash("Code is required.", "danger")
+        return redirect(url_for("admin.admin_promo_codes"))
+
+    if PromoCode.query.filter_by(code=code_str).first():
+        flash(f"Code '{code_str}' already exists.", "danger")
+        return redirect(url_for("admin.admin_promo_codes"))
+
+    expires_raw = request.form.get("expires_at") or ""
+    expires_at = None
+    if expires_raw:
+        try:
+            expires_at = datetime.fromisoformat(expires_raw)
+        except ValueError:
+            pass
+
+    benefit_days = None
+    if request.form.get("benefit_days"):
+        try:
+            benefit_days = int(request.form["benefit_days"])
+        except ValueError:
+            pass
+
+    max_uses = None
+    if request.form.get("max_uses"):
+        try:
+            max_uses = int(request.form["max_uses"])
+        except ValueError:
+            pass
+
+    promo = PromoCode(
+        code=code_str,
+        description=request.form.get("description") or None,
+        behavior=request.form.get("behavior", "discount"),
+        target_tier=request.form.get("target_tier", "pro"),
+        billing_cycle=request.form.get("billing_cycle", "any"),
+        expires_at=expires_at,
+        benefit_days=benefit_days,
+        max_uses=max_uses,
+        stripe_promotion_code_id=request.form.get("stripe_promotion_code_id") or None,
+    )
+    db.session.add(promo)
+    db.session.commit()
+    flash(f"Promo code '{code_str}' created.", "success")
+    return redirect(url_for("admin.admin_promo_codes"))
+
+
+@admin_bp.post("/promo-codes/<int:promo_id>/toggle")
+@admin_required
+def admin_promo_toggle(promo_id: int):
+    promo = PromoCode.query.get_or_404(promo_id)
+    promo.is_active = not promo.is_active
+    db.session.commit()
+    state = "activated" if promo.is_active else "deactivated"
+    flash(f"Promo code '{promo.code}' {state}.", "success")
+    return redirect(url_for("admin.admin_promo_codes"))
+
+
+@admin_bp.post("/promo-codes/<int:promo_id>/delete")
+@admin_required
+def admin_promo_delete(promo_id: int):
+    promo = PromoCode.query.get_or_404(promo_id)
+    db.session.delete(promo)
+    db.session.commit()
+    flash(f"Promo code deleted.", "success")
+    return redirect(url_for("admin.admin_promo_codes"))

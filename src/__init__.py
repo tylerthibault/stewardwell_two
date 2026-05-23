@@ -167,12 +167,34 @@ def create_app() -> Flask:
 	with app.app_context():
 		db.create_all()
 		_apply_sqlite_schema_fixes()
+		_seed_dev_admin()
 
 	# ── Background scheduler ─────────────────────────────────────────────────
 	if not app.debug or os.environ.get("SCHEDULER_ENABLED"):
 		_start_scheduler(app)
 
 	return app
+
+
+def _seed_dev_admin() -> None:
+	"""Create a default superuser for development if one doesn't already exist.
+	Credentials: admin@email.com / admin
+	Remove or guard with an env check before going to production.
+	"""
+	if os.environ.get("FLASK_ENV") == "production":
+		return
+	from src.models.main import Family, Parent, generate_family_code
+	if Parent.query.filter_by(email="admin@email.com").first():
+		return
+	family = Family(name="Admin Family")
+	family.set_family_code(generate_family_code())
+	admin = Parent(family=family, name="Admin", email="admin@email.com")
+	admin.set_password("admin")
+	admin.is_superuser = True
+	admin.email_verified = True
+	db.session.add(family)
+	db.session.add(admin)
+	db.session.commit()
 
 
 def _start_scheduler(app: "Flask") -> None:

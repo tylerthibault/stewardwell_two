@@ -6,25 +6,25 @@ A step-by-step checklist for turning Stewardwell into a paid, multi-tenant produ
 
 ## 1. Define Tiers
 
-- [ ] Finalize Free vs. Pro feature limits
-- [ ] Suggested defaults:
-  - [ ] Kids: Free = 2, Pro = Unlimited
-  - [ ] Chores: Free = 5, Pro = Unlimited
-  - [ ] Store items: Free = 5, Pro = Unlimited
-  - [ ] Challenges: Free = 3, Pro = Unlimited
-  - [ ] Tasks: Free = 5, Pro = Unlimited
-  - [ ] Trusted devices: Free = 1, Pro = Unlimited
-  - [ ] Multiple parents: Free = No, Pro = Yes
-  - [ ] Chore history: Free = 7 days, Pro = Full
+- [x] Finalize Free vs. Pro feature limits
+- [x] Suggested defaults:
+  - [x] Kids: Free = 2, Pro = Unlimited
+  - [x] Chores: Free = 5, Pro = Unlimited
+  - [x] Store items: Free = 5, Pro = Unlimited
+  - [x] Challenges: Free = 3, Pro = Unlimited
+  - [x] Tasks: Free = 5, Pro = Unlimited
+  - [x] Trusted devices: Free = 1, Pro = Unlimited
+  - [x] Multiple parents: Free = No, Pro = Yes
+  - [x] Chore history: Free = 7 days, Pro = Full
 - [ ] Decide monthly and annual pricing (e.g. $4.99/mo or $39.99/yr)
-- [ ] Decide trial length (suggested: 14 days Pro trial on signup)
+- [x] Decide trial length — **14-day Pro trial on signup** ✅
 
 ---
 
 ## 2. Migrate to PostgreSQL
 
 - [ ] Choose a managed Postgres provider (Render, Railway, Supabase, or Neon)
-- [ ] Update `DATABASE_URL` env var and `src/__init__.py` connection config
+- [x] `DATABASE_URL` env var already wired in `src/__init__.py` — just set it to point to Postgres
 - [ ] Run and verify all existing migrations against Postgres
 - [ ] Remove SQLite-specific `_apply_sqlite_schema_fixes()` workarounds or make them conditional
 - [ ] Test full app flow against Postgres locally before deploying
@@ -33,128 +33,130 @@ A step-by-step checklist for turning Stewardwell into a paid, multi-tenant produ
 
 ## 3. Model Changes
 
-- [ ] Add to `Family` model (`src/models/main.py`):
-  - [ ] `plan` — string, default `"free"` (values: `free`, `pro`)
-  - [ ] `trial_ends_at` — datetime, nullable
-  - [ ] `stripe_customer_id` — string, nullable
-  - [ ] `stripe_subscription_id` — string, nullable
-  - [ ] `subscription_status` — string, nullable (`active`, `past_due`, `canceled`, `trialing`)
-- [ ] Write migration for new columns
-- [ ] Add a `is_pro` property to `Family` that returns `True` if plan is pro OR trial is still active
+- [x] Add to `Family` model (`src/models/main.py`):
+  - [x] `plan` — string, default `"free"` (values: `free`, `pro`)
+  - [x] `trial_ends_at` — datetime, nullable
+  - [x] `stripe_customer_id` — string, nullable
+  - [x] `stripe_subscription_id` — string, nullable
+  - [x] `subscription_status` — string, nullable (`active`, `past_due`, `canceled`, `trialing`)
+- [x] SQLite `ALTER TABLE` migrations added to `_apply_sqlite_schema_fixes()` in `src/__init__.py`
+- [x] `is_pro` property on `Family` — returns `True` if plan is pro OR trial is still active
+- [x] `trial_active` and `trial_days_remaining` properties also added
 
 ---
 
 ## 4. Email Verification on Registration
 
-- [ ] Add `email_verified` boolean to `Parent` model
-- [ ] Add `email_verify_token_hash` and `email_verify_expires_at` to `Parent` model
-- [ ] On registration: send verification email via Brevo with a signed link
-- [ ] Add `GET /verify-email/<token>` route that sets `email_verified = True`
-- [ ] Block login for unverified parents (with a helpful resend link)
-- [ ] Add "Resend verification email" route
+- [x] Add `email_verified` boolean to `Parent` model
+- [x] Add `email_verify_token_hash` and `email_verify_expires_at` to `Parent` model
+- [x] `generate_verify_token()` and `verify_email_token()` methods added to `Parent`
+- [x] On registration: sends verification email via Brevo + starts 14-day trial
+- [x] `GET /verify-email/<token>` route added
+- [ ] Block login for unverified parents (with a helpful resend link) — *not yet enforced at login*
+- [x] `GET /POST /resend-verification` route added + template at `src/templates/public/auth/resend_verification.html`
 
 ---
 
 ## 5. Stripe Integration
 
-- [ ] Add `stripe` to `requirements.txt` and install
-- [ ] Add env vars: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`
-- [ ] Create Stripe products and prices in the Stripe dashboard
+- [x] `stripe==15.1.0` added to `requirements.txt` and installed
+- [x] Env vars documented: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`
+- [ ] Create Stripe products and prices in the Stripe dashboard *(external step)*
 
 ### Checkout Flow
-- [ ] `GET /billing/upgrade` — creates a Stripe Checkout Session and redirects
-- [ ] `GET /billing/success` — handles post-checkout redirect, updates `Family.plan`
-- [ ] `GET /billing/cancel` — handles abandoned checkout
+- [x] `GET /billing/upgrade` — creates Stripe Checkout Session, auto-creates Stripe Customer if needed
+- [x] `GET /billing/success` — updates `Family.plan`, stores subscription ID
+- [x] `GET /billing/cancel` — redirects back to settings with info flash
 
 ### Customer Portal
-- [ ] `POST /billing/portal` — creates a Stripe Customer Portal session so families can manage/cancel
+- [x] `POST /billing/portal` — creates Stripe Customer Portal session
 
 ### Webhooks
-- [ ] `POST /webhooks/stripe` — verify signature with `STRIPE_WEBHOOK_SECRET`
-  - [ ] Handle `checkout.session.completed` → set plan to pro, store subscription ID
-  - [ ] Handle `invoice.payment_succeeded` → confirm plan is active
-  - [ ] Handle `invoice.payment_failed` → set `subscription_status = past_due`, send dunning email
-  - [ ] Handle `customer.subscription.deleted` → downgrade to free
+- [x] `POST /webhooks/stripe` — verifies signature with `STRIPE_WEBHOOK_SECRET`
+  - [x] `checkout.session.completed` → set plan to pro, store subscription ID
+  - [x] `invoice.payment_succeeded` → set status to active
+  - [x] `invoice.payment_failed` → set `subscription_status = past_due`, send dunning email to all parents
+  - [x] `customer.subscription.deleted` → downgrade to free, clear subscription ID
 
 ### Donate Button
-- [ ] Create a one-time Stripe Payment Link in the dashboard
-- [ ] Add donate button to landing page and/or settings pointing to that link
+- [ ] Create a one-time Stripe Payment Link in the Stripe dashboard *(external step)*
+- [ ] Add donate button to landing page pointing to that link
 - [ ] (Optional) Handle `payment_intent.succeeded` webhook to log donations
 
 ---
 
 ## 6. Discount Codes
 
-- [ ] Create coupon codes in the Stripe dashboard (% off or flat off, usage limits, expiry)
-- [ ] Enable promotion codes on the Stripe Checkout Session (`allow_promotion_codes=True`)
+- [x] `allow_promotion_codes=True` enabled on Stripe Checkout Session
+- [ ] Create coupon codes in the Stripe dashboard *(external step)*
 - [ ] (Optional) Build admin UI to create/deactivate codes via Stripe API
 
 ---
 
 ## 7. Limit Enforcement
 
-- [ ] Create a helper `src/utils/limits.py` with functions like `family_can_add_kid(family)`, etc.
-- [ ] Add enforcement in routes:
-  - [ ] Add kid → check kid count
-  - [ ] Add chore → check chore count
-  - [ ] Add store item → check store item count
-  - [ ] Add challenge → check challenge count
-  - [ ] Add task → check task count
-  - [ ] Add trusted device → check device count
-  - [ ] Invite co-parent → check if plan is Pro
-- [ ] Show "Upgrade to Pro" flash message / modal when limit is hit
-- [ ] Add upgrade CTA banner to parent dashboard for Free users
+- [x] `src/utils/limits.py` created — `FREE_LIMITS` dict, `can_add()`, `limit_reached_message()`
+- [x] Enforcement added in routes:
+  - [x] Add kid → checks active kid count
+  - [x] Add chore → checks active chore count
+  - [x] Add store item → checks active store item count
+  - [x] Add challenge → checks active challenge count
+  - [x] Add task → checks active task count
+  - [ ] Add trusted device → check device count *(pending)*
+  - [ ] Invite co-parent → check if plan is Pro *(pending)*
+- [x] "Upgrade to Pro" flash message shown when limit is hit
+- [x] Upgrade CTA banner on parent dashboard (trial countdown + free upgrade prompt)
 
 ---
 
 ## 8. Admin Portal
 
 ### Setup
-- [ ] Create `admin` blueprint at `src/controllers/admin.py`
-- [ ] Add `is_superuser` boolean to `Parent` model
-- [ ] Add admin login guard decorator — only allow superusers
-- [ ] Register admin blueprint under `/admin/` prefix
+- [x] `src/controllers/admin.py` created — `admin_bp` Blueprint
+- [x] `is_superuser` boolean added to `Parent` model
+- [x] `admin_required` decorator — 403 for non-superusers
+- [x] Registered under `/admin/` prefix in `create_app()`
 
 ### Dashboard
-- [ ] Total families count
-- [ ] Active Pro subscriptions count
-- [ ] MRR (pull from Stripe API)
-- [ ] New signups this week / month
-- [ ] Failed payments count
+- [x] Total families count
+- [x] Active Pro subscriptions count
+- [ ] MRR (pull from Stripe API) *(not yet implemented)*
+- [x] New signups this week / month
+- [x] Past-due count (highlighted in red if > 0)
 
 ### Family Management
-- [ ] Searchable family list (by name, email, family code)
-- [ ] Family detail view: plan, billing status, kid count, parent emails, last login
-- [ ] Manually override plan (upgrade/downgrade without Stripe)
-- [ ] Extend trial (set `trial_ends_at`)
-- [ ] Deactivate / delete a family
-- [ ] Impersonate a family (log in as that family for support purposes)
+- [x] Searchable family list (by family name)
+- [x] Family detail view: plan, billing status, kid count, parent emails, last login, Stripe IDs
+- [x] Manually override plan (set Free or Pro)
+- [x] Extend trial (specify number of days)
+- [x] Deactivate a family
+- [x] Impersonate a family + `GET /admin/stop-impersonating` to return
 
 ### User / Parent Management
-- [ ] List all parents with email, family name, last login
-- [ ] Trigger password reset email for a parent
-- [ ] Deactivate a parent account
+- [x] Searchable parent list (by name or email)
+- [x] Trigger password reset email for a parent
+- [ ] Deactivate a parent account *(stub added, needs `is_active` field on Parent)*
 
 ### Billing & Revenue
-- [ ] List all Stripe subscriptions with status (pull from Stripe API)
-- [ ] Per-family payment history
-- [ ] Issue refund (passthrough to Stripe API)
+- [ ] List all Stripe subscriptions with status *(not yet implemented)*
+- [ ] Per-family payment history *(not yet implemented)*
+- [ ] Issue refund *(not yet implemented)*
 
 ### Discount Codes
-- [ ] List all Stripe coupons/promotion codes
-- [ ] Create new discount code (name, % or flat, usage limit, expiry)
-- [ ] Deactivate a code
-- [ ] View per-code usage stats
+- [ ] List all Stripe coupons/promotion codes *(not yet implemented)*
+- [ ] Create new discount code *(not yet implemented)*
+- [ ] Deactivate a code *(not yet implemented)*
+- [ ] View per-code usage stats *(not yet implemented)*
 
 ### Donations
-- [ ] Log and display one-time donation history (from Stripe webhook)
+- [ ] Log and display one-time donation history *(not yet implemented)*
 - [ ] (Optional) Trigger thank-you email on donation
 
 ### System Health
-- [ ] Display app version / last deploy time
-- [ ] Log of failed Stripe webhook deliveries
-- [ ] Log of Brevo email send failures
-- [ ] Link to Sentry dashboard
+- [ ] Display app version / last deploy time *(not yet implemented)*
+- [ ] Log of failed Stripe webhook deliveries *(not yet implemented)*
+- [ ] Log of Brevo email send failures *(not yet implemented)*
+- [ ] Link to Sentry dashboard *(not yet implemented)*
 
 ### Feature Flags *(optional)*
 - [ ] Add `FeatureFlag` model (name, enabled_globally, enabled_family_ids)
@@ -165,22 +167,23 @@ A step-by-step checklist for turning Stewardwell into a paid, multi-tenant produ
 
 ## 9. Transactional Emails
 
-- [ ] Email verification on signup
-- [ ] Welcome email (sent after verification)
-- [ ] Trial ending in 3 days reminder (requires background job)
-- [ ] Trial expired — downgraded to Free notification
-- [ ] Payment failed / dunning email
-- [ ] Subscription canceled confirmation
+- [x] Email verification on signup (via Brevo, `_send_verify_email()`)
+- [ ] Welcome email (sent after verification) *(not yet implemented)*
+- [x] Trial ending in 3 days reminder — APScheduler background job
+- [x] Trial expired — downgraded to Free notification — APScheduler background job
+- [x] Payment failed / dunning email — `_send_payment_failed_email()` called from Stripe webhook
+- [ ] Subscription canceled confirmation *(not yet implemented)*
 - [ ] (Optional) Donation thank-you email
 
 ---
 
 ## 10. Background Jobs
 
-- [ ] Add APScheduler or Celery + Redis to `requirements.txt`
-- [ ] Daily job: check families with `trial_ends_at < now` and `plan == free` → send trial expired email
-- [ ] Daily job: check families with `trial_ends_at` in 3 days → send reminder email
-- [ ] Daily job: purge expired `PendingDeviceRegistration` records
+- [x] `APScheduler==3.11.2` added to `requirements.txt` and installed
+- [x] `BackgroundScheduler` started in `create_app()` (runs every 12 hours)
+- [x] `_job_expire_trials()` — downgrades families with expired trials + sends email
+- [x] `_job_trial_reminders()` — sends reminder email to families with ~3 days left
+- [x] `_job_purge_pending_devices()` — deletes `PendingDeviceRegistration` records older than 24 hours past expiry
 
 ---
 
@@ -191,7 +194,8 @@ A step-by-step checklist for turning Stewardwell into a paid, multi-tenant produ
 - [ ] Store all secrets in environment variables (never commit keys)
 - [ ] Set a strong random `SECRET_KEY` in production
 - [ ] Add Redis if using Celery for background jobs
-- [ ] Set up Sentry (free tier) for error monitoring — add `sentry-sdk[flask]` to requirements
+- [x] `sentry-sdk[flask]==2.60.0` added to `requirements.txt` and installed *(not yet initialized in app)*
+- [ ] Initialize Sentry in `create_app()` with `SENTRY_DSN` env var
 - [ ] Configure Stripe webhook endpoint in Stripe dashboard pointing to production URL
 - [ ] Set up log aggregation (Papertrail, Logtail, or Render's built-in logs)
 
@@ -199,11 +203,11 @@ A step-by-step checklist for turning Stewardwell into a paid, multi-tenant produ
 
 ## 12. Legal Pages
 
-- [ ] Write / procure Terms of Service
-- [ ] Write / procure Privacy Policy
-- [ ] Add links to both in footer of public pages
+- [x] Terms of Service — `src/templates/public/legal/terms.html`, served at `GET /terms`
+- [x] Privacy Policy — `src/templates/public/legal/privacy.html`, served at `GET /privacy` (includes COPPA section)
+- [ ] Add links to both in footer of public pages *(not yet added to footer)*
 - [ ] Required by Stripe before going live with real payments
-- [ ] Review COPPA compliance (app involves children's data)
+- [x] COPPA compliance section included in Privacy Policy
 
 ---
 

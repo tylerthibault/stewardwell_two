@@ -1,0 +1,204 @@
+{% extends "admin/base.html" %}
+{% block title %}Promo Codes — Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">🏷 Promo Codes</h2>
+</div>
+
+{# ── Create Form ─────────────────────────────────────────────────────────── #}
+<div class="card bg-dark text-light border-secondary mb-5">
+  <div class="card-header border-secondary fw-semibold">Create Promo Code</div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('admin.admin_promo_codes_create') }}">
+
+      <div class="row g-3">
+
+        <div class="col-md-4">
+          <label class="form-label">Code <span class="text-danger">*</span></label>
+          <input type="text" name="code" class="form-control bg-dark text-light border-secondary"
+                 placeholder="SPRINGPRO25" required autocomplete="off"
+                 style="text-transform:uppercase;">
+        </div>
+
+        <div class="col-md-8">
+          <label class="form-label">Description</label>
+          <input type="text" name="description" class="form-control bg-dark text-light border-secondary"
+                 placeholder="Spring 2025 — 25% off first year">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Behavior</label>
+          <select name="behavior" id="behaviorSelect" class="form-select bg-dark text-light border-secondary">
+            <option value="discount">Discount at checkout</option>
+            <option value="grant_trial">Grant trial extension</option>
+          </select>
+          <div class="form-text text-muted">
+            "Discount" applies a Stripe coupon at checkout.
+            "Grant trial" extends the trial locally — no Stripe needed.
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Target Tier</label>
+          <select name="target_tier" class="form-select bg-dark text-light border-secondary">
+            <option value="pro">Pro</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Billing Cycle Constraint</label>
+          <select name="billing_cycle" class="form-select bg-dark text-light border-secondary">
+            <option value="any">Any</option>
+            <option value="monthly">Monthly</option>
+            <option value="annual">Annual</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Code Expires At</label>
+          <input type="datetime-local" name="expires_at"
+                 class="form-control bg-dark text-light border-secondary">
+          <div class="form-text text-muted">Leave blank for no expiry.</div>
+        </div>
+
+        <div class="col-md-4" id="benefitDaysField">
+          <label class="form-label">Benefit Duration (days)</label>
+          <input type="number" name="benefit_days" min="1"
+                 class="form-control bg-dark text-light border-secondary"
+                 placeholder="e.g. 30">
+          <div class="form-text text-muted">Required for "Grant trial extension".</div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Global Max Uses</label>
+          <input type="number" name="max_uses" min="1"
+                 class="form-control bg-dark text-light border-secondary"
+                 placeholder="Leave blank for unlimited">
+        </div>
+
+        <div class="col-12" id="stripePromoField">
+          <label class="form-label">Stripe Promotion Code ID</label>
+          <input type="text" name="stripe_promotion_code_id"
+                 class="form-control bg-dark text-light border-secondary"
+                 placeholder="promo_...">
+          <div class="form-text text-muted">
+            Required for "Discount" behavior. Create it in the Stripe dashboard → Coupons → Promotion codes.
+          </div>
+        </div>
+
+      </div>{# /row #}
+
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary px-4">Create Promo Code</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Existing Codes Table ────────────────────────────────────────────────── #}
+<div class="card bg-dark text-light border-secondary">
+  <div class="card-header border-secondary fw-semibold">Existing Codes ({{ codes|length }})</div>
+  <div class="card-body p-0">
+    {% if codes %}
+    <div class="table-responsive">
+      <table class="table table-dark table-striped table-hover mb-0 align-middle">
+        <thead class="table-dark border-secondary">
+          <tr>
+            <th>Code</th>
+            <th>Description</th>
+            <th>Behavior</th>
+            <th>Tier</th>
+            <th>Cycle</th>
+            <th>Expires</th>
+            <th>Days</th>
+            <th>Uses</th>
+            <th>Status</th>
+            <th>Stripe ID</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in codes %}
+          <tr>
+            <td><code class="text-warning">{{ c.code }}</code></td>
+            <td>{{ c.description or '—' }}</td>
+            <td>
+              {% if c.behavior == "grant_trial" %}
+                <span class="badge bg-success">Grant trial</span>
+              {% else %}
+                <span class="badge bg-info text-dark">Discount</span>
+              {% endif %}
+            </td>
+            <td>{{ c.target_tier|title }}</td>
+            <td>{{ c.billing_cycle|title }}</td>
+            <td>
+              {% if c.expires_at %}
+                <span class="{{ 'text-danger' if c.is_expired else 'text-light' }}">
+                  {{ c.expires_at.strftime('%Y-%m-%d') }}
+                  {% if c.is_expired %}<small>(expired)</small>{% endif %}
+                </span>
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ c.benefit_days if c.benefit_days else '—' }}</td>
+            <td>
+              {{ c.use_count }}{% if c.max_uses %} / {{ c.max_uses }}{% endif %}
+            </td>
+            <td>
+              {% if c.is_usable %}
+                <span class="badge bg-success">Active</span>
+              {% elif not c.is_active %}
+                <span class="badge bg-secondary">Disabled</span>
+              {% elif c.is_expired %}
+                <span class="badge bg-danger">Expired</span>
+              {% elif c.is_maxed %}
+                <span class="badge bg-warning text-dark">Maxed</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.stripe_promotion_code_id %}
+                <small class="text-muted">{{ c.stripe_promotion_code_id[:18] }}…</small>
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-end">
+              <form method="post"
+                    action="{{ url_for('admin.admin_promo_toggle', promo_id=c.id) }}"
+                    class="d-inline">
+                <button class="btn btn-sm {{ 'btn-outline-secondary' if c.is_active else 'btn-outline-success' }}"
+                        type="submit">
+                  {{ 'Disable' if c.is_active else 'Enable' }}
+                </button>
+              </form>
+              <form method="post"
+                    action="{{ url_for('admin.admin_promo_delete', promo_id=c.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('Delete code {{ c.code }}? This cannot be undone.');">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted p-3 mb-0">No promo codes yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  const behaviorSelect = document.getElementById('behaviorSelect');
+  const benefitDaysField = document.getElementById('benefitDaysField');
+  const stripePromoField = document.getElementById('stripePromoField');
+
+  function updateFields() {
+    const isGrant = behaviorSelect.value === 'grant_trial';
+    benefitDaysField.style.display = isGrant ? '' : '';   // always visible
+    stripePromoField.style.display  = isGrant ? 'none' : '';
+  }
+
+  behaviorSelect.addEventListener('change', updateFields);
+  updateFields();
+</script>
+{% endblock %}

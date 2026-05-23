@@ -85,6 +85,7 @@
 			<a href="{{ url_for('admin.admin_dashboard') }}" {% if request.endpoint == 'admin.admin_dashboard' %}class="active"{% endif %}>📊 Dashboard</a>
 			<a href="{{ url_for('admin.admin_families') }}" {% if 'families' in request.endpoint %}class="active"{% endif %}>🏠 Families</a>
 			<a href="{{ url_for('admin.admin_parents') }}" {% if 'parents' in request.endpoint %}class="active"{% endif %}>👤 Parents</a>
+			<a href="{{ url_for('admin.admin_promo_codes') }}" {% if 'promo' in request.endpoint %}class="active"{% endif %}>🏷 Promo Codes</a>
 			<a href="{{ url_for('admin.admin_logout') }}" style="margin-top:auto;color:#94a3b8;">⬅ Logout</a>
 		</nav>
 	</aside>
