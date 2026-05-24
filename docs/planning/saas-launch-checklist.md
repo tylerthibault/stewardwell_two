@@ -80,8 +80,8 @@ A step-by-step checklist for turning Stewardwell into a paid, multi-tenant produ
 
 ### Donate Button
 - [ ] Create a one-time Stripe Payment Link in the Stripe dashboard *(external step)*
-- [ ] Add donate button to landing page pointing to that link
-- [ ] (Optional) Handle `payment_intent.succeeded` webhook to log donations
+- [x] Add donate button to landing page pointing to that link — shown when `STRIPE_DONATE_URL` env var is set
+- [x] Handle `payment_intent.succeeded` webhook to log donations → `Donation` model (`donations` table)
 
 ---
 
