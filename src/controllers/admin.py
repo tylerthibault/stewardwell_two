@@ -27,7 +27,8 @@ def admin_required(f):
             return redirect(url_for("admin.admin_login"))
         parent = Parent.query.get(session.get("parent_id"))
         if not parent or not parent.is_superuser:
-            abort(403)
+            session.clear()
+            return redirect(url_for("admin.admin_login"))
         return f(*args, **kwargs)
     return decorated
 
