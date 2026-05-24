@@ -15,7 +15,7 @@ from flask import (
 
 from src.models.main import Family, Kid, Parent, PromoCode, PromoRedemption, TrustedDevice, db
 
-admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+admin_bp = Blueprint("admin", __name__, url_prefix="/sw-admin")
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
