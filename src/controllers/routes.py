@@ -1901,6 +1901,56 @@ def parent_store_add_kid_coins():
 	return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
 
 
+@public_bp.post("/parent/store/kid-coins/cash-to-coins")
+@parent_web_login_required
+def parent_store_cash_to_coins():
+	kid_id_raw = (request.form.get("kid_id") or "").strip()
+	dollars_raw = (request.form.get("dollars") or "0").strip()
+	next_path = (request.form.get("next") or "").strip()
+
+	try:
+		kid_id = int(kid_id_raw)
+	except ValueError:
+		flash("Please choose a valid kid.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
+
+	try:
+		dollars = float(dollars_raw)
+	except ValueError:
+		flash("Dollar amount must be a number.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
+
+	if dollars <= 0:
+		flash("Dollar amount must be greater than zero.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
+
+	kid = Kid.query.get(kid_id)
+	if not kid or kid.family_id != session.get("family_id"):
+		flash("Kid not found.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
+
+	family = Family.query.get(kid.family_id)
+	rate = (family.coins_per_dollar if family and family.coins_per_dollar else 10)
+	coins = int(dollars * rate)
+
+	if coins <= 0:
+		flash("Amount too small to convert to coins.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
+
+	kid.coin_balance += coins
+	db.session.add(CoinTransaction(
+		kid_id=kid.id,
+		family_id=kid.family_id,
+		amount=coins,
+		kind="manual_add",
+		reason=f"Cash to coins: ${dollars:.2f} = {coins} coins",
+		created_by_parent_id=session.get("parent_id"),
+	))
+	db.session.commit()
+	flash(f"Converted ${dollars:.2f} → {coins} coins for {kid.display_name}.", "success")
+	return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
+
+
 @public_bp.post("/parent/store/family/redemptions/<int:redemption_id>/approve")
 @parent_web_login_required
 def parent_store_approve_family_redemption(redemption_id: int):
