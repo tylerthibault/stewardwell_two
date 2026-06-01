@@ -1961,6 +1961,7 @@ def parent_store_add_kid_coins():
 def parent_store_cash_to_coins():
 	kid_id_raw = (request.form.get("kid_id") or "").strip()
 	dollars_raw = (request.form.get("dollars") or "0").strip()
+	description = (request.form.get("description") or "").strip()
 	next_path = (request.form.get("next") or "").strip()
 
 	try:
@@ -1998,7 +1999,7 @@ def parent_store_cash_to_coins():
 		family_id=kid.family_id,
 		amount=coins,
 		kind="manual_add",
-		reason=f"Cash to coins: ${dollars:.2f} = {coins} coins",
+		reason=f"Cash to coins: ${dollars:.2f} = {coins} coins" + (f" — {description}" if description else ""),
 		created_by_parent_id=session.get("parent_id"),
 	))
 	db.session.commit()

@@ -307,6 +307,10 @@
 			</div>
 			<p id="cashToCoinPreview" style="margin:.5rem 0 0;font-size:.85rem;color:var(--duo-muted);"></p>
 		</div>
+		<div style="margin-bottom:1rem;">
+			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Description <span style="color:var(--duo-red);">*</span></label>
+			<input id="cashToCoinsDescription" type="text" class="form-control" placeholder="e.g. Allowance, chore bonus…" style="font-size:1rem;">
+		</div>
 		<div id="cashToCoinsError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
 		<div style="display:flex;justify-content:flex-end;gap:10px;">
 			<button type="button" class="btn" onclick="closeCashToCoinsModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
@@ -322,6 +326,7 @@
 		_cashToCoinsKidId = kidId;
 		document.getElementById('cashToCoinsKidName').textContent = kidName;
 		document.getElementById('cashToCoinsAmount').value = '';
+		document.getElementById('cashToCoinsDescription').value = '';
 		document.getElementById('cashToCoinPreview').textContent = '';
 		document.getElementById('cashToCoinsError').style.display = 'none';
 		document.getElementById('cashToCoinsModal').style.display = 'flex';
@@ -342,10 +347,16 @@
 	});
 	async function submitCashToCoins() {
 		const dollars = parseFloat(document.getElementById('cashToCoinsAmount').value);
+		const description = document.getElementById('cashToCoinsDescription').value.trim();
 		const errEl = document.getElementById('cashToCoinsError');
 		errEl.style.display = 'none';
 		if (!dollars || dollars <= 0) {
 			errEl.textContent = 'Enter a valid dollar amount.';
+			errEl.style.display = 'block';
+			return;
+		}
+		if (!description) {
+			errEl.textContent = 'A description is required.';
 			errEl.style.display = 'block';
 			return;
 		}
@@ -355,6 +366,7 @@
 		const form = new FormData();
 		form.append('kid_id', _cashToCoinsKidId);
 		form.append('dollars', dollars);
+		form.append('description', description);
 		form.append('next', window.location.pathname);
 		form.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
 		try {
