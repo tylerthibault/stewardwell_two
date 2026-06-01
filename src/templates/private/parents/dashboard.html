@@ -356,6 +356,7 @@
 		form.append('kid_id', _cashToCoinsKidId);
 		form.append('dollars', dollars);
 		form.append('next', window.location.pathname);
+		form.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
 		try {
 			const resp = await fetch('{{ url_for("public.parent_store_cash_to_coins") }}', { method: 'POST', body: form });
 			if (resp.redirected || resp.ok) {
