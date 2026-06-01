@@ -893,6 +893,48 @@ class PromoRedemption(db.Model):
 
 
 # ---------------------------------------------------------------------------
+# Feature Flags
+# ---------------------------------------------------------------------------
+
+class FeatureFlag(db.Model):
+	"""Persists per-feature tier overrides set via the admin UI.
+
+	Tier values: 'free' | 'pro' | 'disabled'
+	The code-level FEATURES dict in limits.py is used as the default;
+	rows here override those defaults at runtime.
+	"""
+
+	__tablename__ = "feature_flags"
+
+	key = db.Column(db.String(64), primary_key=True)
+	tier = db.Column(db.String(20), nullable=False)  # 'free' | 'pro' | 'disabled'
+	updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ---------------------------------------------------------------------------
+# App Settings (admin-managed env-var overrides)
+# ---------------------------------------------------------------------------
+
+class AppSetting(db.Model):
+	"""Key/value store for runtime configuration set via the admin UI.
+
+	At startup these values are loaded into os.environ, so they override
+	anything set in the deployment environment (Coolify env vars etc.).
+	Secret values (API keys, webhook secrets) are stored in plaintext here;
+	protect this DB accordingly.
+	"""
+
+	__tablename__ = "app_settings"
+
+	key = db.Column(db.String(128), primary_key=True)
+	value = db.Column(db.Text, nullable=True)
+	updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+	def __repr__(self) -> str:
+		return f"<AppSetting {self.key}>"
+
+
+# ---------------------------------------------------------------------------
 # Donations
 # ---------------------------------------------------------------------------
 

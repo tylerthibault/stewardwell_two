@@ -3,26 +3,12 @@
 {% block title %}Kid Store - Stewardwell{% endblock %}
 
 {% block nav %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Store</h1>
-	<div class="d-flex gap-2 align-items-center">
-		<span class="pill">{{ kid.display_name }} • 🪙 {{ kid.coin_balance }}</span>
-		<span class="pill">Family ⭐ {{ family.family_points_balance }}</span>
-		<form method="post" action="{{ url_for('public.kid_logout_web') }}">
-			<button type="submit" class="btn">Logout</button>
-		</form>
-	</div>
-</div>
+{% set kid_page_title = 'Store' %}
+{% include 'private/kids/components/navbar.html' %}
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-	<div class="d-flex flex-wrap gap-2 mb-3">
-		<a href="{{ url_for('public.kid_chores') }}" class="btn">Chores</a>
-		<a href="{{ url_for('public.kid_store', tab='kid') }}" class="btn {% if active_tab == 'kid' %}primary{% endif %}">Kid Store</a>
-		<a href="{{ url_for('public.kid_store', tab='family') }}" class="btn {% if active_tab == 'family' %}primary{% endif %}">Family Goals</a>
-		<a href="{{ url_for('public.kid_challenges') }}" class="btn">Challenges</a>
-	</div>
 
 	{% if active_tab == 'kid' %}
 		{# ── Permanent Cash Out card ── #}

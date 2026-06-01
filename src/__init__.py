@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from sqlalchemy import inspect, text
 from dotenv import load_dotenv
 import os
@@ -152,6 +152,15 @@ def create_app() -> Flask:
 	app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 	app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL") or "sqlite:///stewardwell.db"
 	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+	app.config["WTF_CSRF_ENABLED"] = True
+	app.config["WTF_CSRF_TIME_LIMIT"] = 3600
+
+	# ── Security headers / session cookies in production ─────────────────────
+	if os.environ.get("FLASK_ENV") == "production":
+		app.config["SESSION_COOKIE_SECURE"] = True
+		app.config["SESSION_COOKIE_HTTPONLY"] = True
+		app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+		app.config["REMEMBER_COOKIE_SECURE"] = True
 
 	from src.controllers.routes import public_bp
 	from src.controllers.parent_controller import parent_bp
@@ -164,14 +173,55 @@ def create_app() -> Flask:
 	app.register_blueprint(kid_bp)
 	app.register_blueprint(admin_bp)
 
+	# ── CSRF protection ──────────────────────────────────────────────────────
+	from flask_wtf.csrf import CSRFProtect
+	csrf = CSRFProtect(app)  # noqa: F841
+	# Note: if you add a Stripe webhook route, decorate it with @csrf.exempt
+	# since Stripe POSTs don't carry a session cookie or CSRF token.
+
+	# ── Rate limiter ─────────────────────────────────────────────────────────
+	from flask_limiter import Limiter
+	from flask_limiter.util import get_remote_address
+	limiter = Limiter(get_remote_address, app=app, default_limits=[], storage_uri="memory://")
+	app.extensions["limiter"] = limiter
+
+	# ── Jinja2 globals ──────────────────────────────────────────────────────
+	from src.utils.limits import feature_can_access as _fca, get_feature_tier as _gft, FEATURES as _FEATURES
+	app.jinja_env.globals["feature_can_access"] = _fca
+	app.jinja_env.globals["get_feature_tier"] = _gft
+	app.jinja_env.globals["FEATURES"] = _FEATURES
+
 	with app.app_context():
 		db.create_all()
 		_apply_sqlite_schema_fixes()
 		_seed_dev_admin()
+		# Load admin-managed env-var overrides from DB into os.environ
+		from src.utils.settings import load_app_settings
+		load_app_settings()
+		# Load any DB-persisted feature-flag overrides into the runtime dict
+		from src.utils.limits import load_features_from_db
+		load_features_from_db()
 
 	# ── Background scheduler ─────────────────────────────────────────────────
 	if not app.debug or os.environ.get("SCHEDULER_ENABLED"):
 		_start_scheduler(app)
+
+	# ── Error handlers ───────────────────────────────────────────────────────
+	@app.errorhandler(404)
+	def not_found(e):
+		return render_template("errors/404.html"), 404
+
+	@app.errorhandler(500)
+	def server_error(e):
+		return render_template("errors/500.html"), 500
+
+	@app.errorhandler(429)
+	def too_many_requests(e):
+		return render_template("errors/429.html"), 429
+
+	@app.errorhandler(403)
+	def forbidden(e):
+		return render_template("errors/403.html"), 403
 
 	return app
 

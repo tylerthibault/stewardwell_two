@@ -31,6 +31,7 @@ def send_email(
     api_key = os.environ.get("BREVO_API_KEY", "")
     sender_name = os.environ.get("BREVO_SENDER_NAME", "Stewardwell")
     sender_email = os.environ.get("BREVO_SENDER_EMAIL", "")
+    reply_to_email = os.environ.get("BREVO_REPLY_TO_EMAIL", "")
 
     if not api_key or not sender_email:
         import sys
@@ -46,6 +47,8 @@ def send_email(
         "subject": subject,
         "htmlContent": html_content,
     }
+    if reply_to_email:
+        payload["replyTo"] = {"email": reply_to_email}
 
     try:
         resp = requests.post(

@@ -682,6 +682,9 @@ html[data-theme="dark"] .join-player-row:has(input[type="checkbox"]:checked) {
 .flash.warning { border-color: #ffe082; background: #fffde7; color: #7a5200; }
 .flash.warning .flash-progress { background: #f9a825; }
 
+.flash.upgrade { border-color: #ffd980; background: #fffbee; color: #7a5200; }
+.flash.upgrade .flash-progress { background: #ffc800; }
+
 .flash:not(.success):not(.error):not(.warning) .flash-progress { background: var(--duo-primary, #4d8df7); }
 
 .my-tabs {
@@ -906,6 +909,20 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
   color: var(--duo-green-dark);
 }
 
+.nav-pro-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--duo-yellow, #ffc800) 25%, transparent);
+  color: var(--duo-yellow-dark, #a37200);
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
 .app-nav-actions {
   display: flex;
   align-items: center;
@@ -1105,9 +1122,8 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
 .settings-list-name {
   font-weight: 700;
   font-size: 0.95rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 .mb-2 { margin-bottom: 8px; }
 .mb-4 { margin-bottom: 16px; }
@@ -1146,5 +1162,219 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
   .guest-join-grid,
   .guest-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── Settings list: stack action below info on narrow screens ─────────────── */
+@media (max-width: 480px) {
+  .settings-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .settings-list-item .form-flex-shrink,
+  .settings-list-item > form,
+  .settings-list-item > a,
+  .settings-list-item > button {
+    width: 100%;
+  }
+}
+
+/* ── Kids nav bar: sticky position ──────────────────────────────────────── */
+.kid-nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--duo-bg);
+  padding: 12px 16px 0;
+  margin: -20px -20px 12px;
+  border-bottom: 2px solid var(--duo-border);
+  box-shadow: 0 3px 0 var(--duo-shadow);
+}
+/* Eliminate 300ms tap delay and highlight flash on all interactive elements */
+a,
+button,
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-success,
+.btn-sm,
+input[type="submit"],
+input[type="button"],
+label[for],
+.my-tab-link,
+.app-nav-link,
+.app-nav-mobile-link,
+.app-nav-icon-btn,
+.app-nav-hamburger {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Minimum 44×44px touch targets */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-success,
+button {
+  min-height: 44px;
+}
+
+.btn-sm {
+  min-height: 40px;
+}
+
+.app-nav-icon-btn,
+.app-nav-hamburger,
+.app-nav-link,
+.app-nav-mobile-link {
+  min-height: 44px;
+}
+
+/* ── Prevent iOS auto-zoom on input focus ────────────────────────────────── */
+input,
+select,
+textarea,
+.form-control {
+  font-size: max(16px, 1rem);
+}
+
+/* ── h2 / h3 responsive sizing ───────────────────────────────────────────── */
+h2 { font-size: clamp(1.15rem, 2.8vw, 1.55rem); }
+h3 { font-size: clamp(1rem, 2.2vw, 1.25rem); }
+
+/* ── Respect reduced-motion preference ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Flash banner: full-width on narrow screens ──────────────────────────── */
+@media (max-width: 560px) {
+  .flash-stack {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    transform: none;
+  }
+}
+
+/* ── Tighten page padding on very small screens ──────────────────────────── */
+@media (max-width: 360px) {
+  .page-wrap { padding: 10px; }
+  .page-title-wrap { padding: 10px 10px 0; }
+}
+
+/* ── Kid nav pill row: horizontal scroll instead of wrapping ─────────────── */
+.kid-nav-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+}
+.kid-nav-pills::-webkit-scrollbar { display: none; }
+.kid-nav-pills .btn {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  white-space: nowrap;
+}
+
+/* ── History tables: card-list collapse on mobile ───────────────────────── */
+@media (max-width: 640px) {
+  .table-responsive table,
+  .table-responsive thead,
+  .table-responsive tbody,
+  .table-responsive th,
+  .table-responsive td,
+  .table-responsive tr {
+    display: block;
+  }
+
+  .table-responsive thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .table-responsive tr {
+    border: 2px solid var(--duo-border);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    background: var(--duo-panel);
+    box-shadow: 0 3px 0 var(--duo-shadow);
+    overflow: hidden;
+  }
+
+  .table-responsive td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--duo-border);
+    font-size: 0.88rem;
+    min-height: 0;
+  }
+
+  .table-responsive td:last-child {
+    border-bottom: none;
+  }
+
+  .table-responsive td::before {
+    content: attr(data-label);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--duo-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+}
+
+/* ── Schedule: horizontal snap-scroll on mobile ─────────────────────────── */
+.schedule-scroll-outer {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  /* fade edge hint that content is scrollable */
+  -webkit-mask-image: linear-gradient(to right, black 92%, transparent 100%);
+  mask-image: linear-gradient(to right, black 92%, transparent 100%);
+}
+
+@media (min-width: 700px) {
+  .schedule-scroll-outer {
+    -webkit-mask-image: none;
+    mask-image: none;
+    overflow-x: visible;
+  }
+}
+
+/* ── Modal: bottom-sheet feel on mobile ─────────────────────────────────── */
+@media (max-width: 560px) {
+  .modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-content {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: var(--radius) var(--radius) 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
   }
 }

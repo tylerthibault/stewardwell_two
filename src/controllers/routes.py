@@ -1,5 +1,6 @@
 import os
 import secrets
+import time
 from datetime import date, datetime, timedelta
 from functools import wraps
 
@@ -7,6 +8,21 @@ from flask import Blueprint, abort, current_app, flash, jsonify, redirect, rende
 from werkzeug.utils import secure_filename
 
 import math
+
+# ── Simple in-process rate limiter for login endpoints ────────────────────
+_login_attempts: dict = {}  # ip -> (count, window_start)
+
+def _rate_limit_login(max_per_minute: int = 10) -> None:
+    """Abort 429 if the calling IP has exceeded max_per_minute POST login attempts."""
+    ip = request.remote_addr or "unknown"
+    now = time.time()
+    count, window = _login_attempts.get(ip, (0, now))
+    if now - window > 60:
+        count, window = 0, now
+    count += 1
+    _login_attempts[ip] = (count, window)
+    if count > max_per_minute:
+        abort(429)
 
 from src.models.main import (
 	Challenge,
@@ -38,7 +54,7 @@ from src.models.main import (
 	generate_family_code,
 )
 from src.utils.email import send_email
-from src.utils.limits import can_add, limit_reached_message
+from src.utils.limits import can_add, limit_reached_message, feature_can_access, get_feature_tier, FEATURE_LABELS
 from src.controllers.parent_controller import _record_coin_transaction
 
 
@@ -84,6 +100,35 @@ def kid_web_login_required(func):
 		return func(*args, **kwargs)
 
 	return wrapper
+
+
+def feature_required(feature_key: str):
+	"""Decorator factory — gates a parent route behind a feature tier.
+
+	- 'pro' features redirect free-plan families to the upgrade page.
+	- 'disabled' features return 404 for everyone.
+	- 'free' features are always accessible (decorator is a no-op).
+
+	Must be stacked BELOW @parent_web_login_required so the session is valid.
+	"""
+	def decorator(func):
+		@wraps(func)
+		def wrapper(*args, **kwargs):
+			tier = get_feature_tier(feature_key)
+			if tier == "disabled":
+				abort(404)
+			if tier == "pro":
+				_, family = _load_parent_and_family()
+				if not family or not family.is_pro:
+					label = FEATURE_LABELS.get(feature_key, feature_key.title())
+					flash(
+						f"{label} is a Pro feature. Upgrade to unlock it.",
+						"upgrade",
+					)
+					return redirect(url_for("public.billing_upgrade"))
+			return func(*args, **kwargs)
+		return wrapper
+	return decorator
 
 
 def _load_parent_and_family():
@@ -620,7 +665,14 @@ def _build_chore_slot_lookup(chore: Chore) -> dict[tuple[int, int], int]:
 @public_bp.get("/")
 def landing():
 	donate_url = os.environ.get("STRIPE_DONATE_URL", "")
-	return render_template("public/landing/index.html", donate_url=donate_url)
+	bmac_url = os.environ.get("BMAC_URL", "")
+	bmac_widget = os.environ.get("BMAC_WIDGET_ENABLED", "").lower() == "true"
+	return render_template(
+		"public/landing/index.html",
+		donate_url=donate_url,
+		bmac_url=bmac_url,
+		bmac_widget=bmac_widget,
+	)
 
 
 @public_bp.get("/terms")
@@ -637,6 +689,8 @@ def privacy():
 def login():
 	if request.method == "GET":
 		return render_template("public/auth/login.html")
+
+	_rate_limit_login()
 
 	email = request.form.get("email", "").strip().lower()
 	password = request.form.get("password", "").strip()
@@ -1253,6 +1307,7 @@ def parent_reorder_chores():
 
 @public_bp.get("/parent/schedule")
 @parent_web_login_required
+@feature_required("schedule")
 def parent_schedule():
 	parent, family = _load_parent_and_family()
 	if not parent or not family:
@@ -2079,6 +2134,7 @@ def parent_cancel_store_session(timed_session_id: int):
 
 @public_bp.get("/parent/challenges")
 @parent_web_login_required
+@feature_required("challenges")
 def parent_challenges():
 	parent, family = _load_parent_and_family()
 	if not parent or not family:
@@ -2331,6 +2387,7 @@ def parent_challenge_submission_decision(submission_id: int):
 
 @public_bp.get("/parent/activities")
 @parent_web_login_required
+@feature_required("activities")
 def parent_activities():
 	return render_template("private/parents/coming_soon.html", page_title="Activities")
 
@@ -2338,6 +2395,7 @@ def parent_activities():
 
 @public_bp.get("/parent/history")
 @parent_web_login_required
+@feature_required("history")
 def parent_history():
 	parent, family = _load_parent_and_family()
 	if not parent or not family:
@@ -2714,6 +2772,8 @@ def kid_login():
 
 @public_bp.post("/kid/login")
 def kid_login_submit():
+	_rate_limit_login()
+
 	pin = (request.form.get("pin") or "").strip()
 	kid_id_raw = (request.form.get("kid_id") or "").strip()
 

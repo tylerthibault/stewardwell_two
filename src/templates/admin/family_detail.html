@@ -3,7 +3,7 @@
 {% block page_title %}{{ family.name }}{% endblock %}
 
 {% block topbar_actions %}
-<a href="{{ url_for('admin.admin_families') }}" class="btn btn-outline btn-sm">← Back to Families</a>
+<a href="{{ url_for('admin.admin_families') }}" class="btn btn-outline btn-sm">Back to Families</a>
 {% endblock %}
 
 {% block content %}
@@ -15,7 +15,7 @@
 		<div class="kv"><span class="key">Name</span> <span>{{ family.name }}</span></div>
 		<div class="kv"><span class="key">Family Code</span> <span><code>{{ family.family_code_plain or '—' }}</code></span></div>
 		<div class="kv"><span class="key">Created</span> <span>{{ family.created_at.strftime('%b %d, %Y') }}</span></div>
-		<div class="kv"><span class="key">Active</span> <span>{{ '✅ Yes' if family.is_active else '❌ No' }}</span></div>
+		<div class="kv"><span class="key">Active</span> <span>{% if family.is_active %}<span class="badge badge-yes">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</span></div>
 	</div>
 
 	<!-- Billing -->
@@ -55,9 +55,7 @@
 
 	<!-- Impersonate -->
 	<form method="post" action="{{ url_for('admin.admin_impersonate', family_id=family.id) }}" onsubmit="return confirm('Impersonate this family?');">
-		<button type="submit" class="btn btn-sm" style="background:#f59e0b;color:#fff;">👁 Impersonate</button>
-	</form>
-
+		<button type="submit" class="btn btn-sm" style="background:#f59e0b;color:#fff;">Impersonate</button>
 	<!-- Deactivate -->
 	{% if family.is_active %}
 	<form method="post" action="{{ url_for('admin.admin_deactivate_family', family_id=family.id) }}" onsubmit="return confirm('Deactivate this family? This cannot be undone easily.');">
@@ -75,8 +73,8 @@
 		<tr>
 			<td>{{ p.name }}</td>
 			<td>{{ p.email }}</td>
-			<td>{{ '✅' if p.email_verified else '❌' }}</td>
-			<td>{{ '⭐' if p.is_superuser else '—' }}</td>
+		<td>{% if p.email_verified %}<span class="badge badge-yes">Verified</span>{% else %}<span class="badge badge-no">Unverified</span>{% endif %}</td>
+				<td>{% if p.is_superuser %}<span class="badge badge-admin">Admin</span>{% else %}<span style="color:#94a3b8;">—</span>{% endif %}</td>
 			<td>{{ p.last_login_at.strftime('%b %d, %Y') if p.last_login_at else 'Never' }}</td>
 			<td>
 				<form method="post" action="{{ url_for('admin.admin_trigger_password_reset', parent_id=p.id) }}" onsubmit="return confirm('Send password reset email?');" style="display:inline;">
@@ -101,7 +99,7 @@
 		<tr>
 			<td>{{ k.display_name }}</td>
 			<td>{{ k.coin_balance }}</td>
-			<td>{{ '✅' if k.is_active else '❌' }}</td>
+			<td>{% if k.is_active %}<span class="badge badge-yes">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
 		</tr>
 		{% else %}
 		<tr><td colspan="3" style="text-align:center;color:#94a3b8;">No kids.</td></tr>

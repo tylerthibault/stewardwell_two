@@ -11,12 +11,26 @@
 		a:hover { text-decoration: underline; }
 
 		/* Layout */
-		.admin-layout { display: flex; min-height: 100vh; }
-		.admin-sidebar { width: 220px; background: #1a2236; color: #c8d7f7; flex-shrink: 0; padding: 24px 0; }
-		.admin-sidebar .brand { font-size: 1.1rem; font-weight: 800; color: #fff; padding: 0 20px 24px; border-bottom: 1px solid #2d3d5a; margin-bottom: 16px; }
+		.admin-layout { display: flex; height: 100vh; overflow: hidden; }
+		.admin-sidebar { width: 220px; background: #1a2236; color: #c8d7f7; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+		.admin-sidebar .brand { font-size: 1.1rem; font-weight: 800; color: #fff; padding: 20px 20px 18px; border-bottom: 1px solid #2d3d5a; flex-shrink: 0; }
 		.admin-sidebar .brand span { color: #4f8ef7; }
-		.admin-sidebar nav a { display: block; padding: 10px 20px; color: #c8d7f7; font-size: .9rem; border-left: 3px solid transparent; }
-		.admin-sidebar nav a:hover, .admin-sidebar nav a.active { background: #243354; color: #fff; border-left-color: #4f8ef7; text-decoration: none; }
+		.admin-sidebar nav { flex: 1; overflow-y: auto; padding: 10px 0; display: flex; flex-direction: column; }
+		/* Top-level links */
+		.admin-sidebar nav > a { display: block; padding: 10px 20px; color: #c8d7f7; font-size: .9rem; border-left: 3px solid transparent; }
+		.admin-sidebar nav > a:hover, .admin-sidebar nav > a.active { background: #243354; color: #fff; border-left-color: #4f8ef7; text-decoration: none; }
+		/* Logout pinned to bottom */
+		.admin-sidebar nav > a.nav-logout { margin-top: auto; color: #64748b; font-size: .85rem; }
+		.admin-sidebar nav > a.nav-logout:hover { color: #94a3b8; background: none; border-left-color: transparent; }
+		/* Group dropdowns */
+		.nav-group { border-left: 3px solid transparent; }
+		.nav-group summary { list-style: none; padding: 10px 20px; color: #94a3b8; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+		.nav-group summary::-webkit-details-marker { display: none; }
+		.nav-group summary::after { content: '▸'; font-size: .65rem; transition: transform .2s; }
+		.nav-group[open] summary::after { transform: rotate(90deg); }
+		.nav-group summary:hover { color: #c8d7f7; }
+		.nav-group a { display: block; padding: 8px 20px 8px 32px; color: #c8d7f7; font-size: .87rem; border-left: 3px solid transparent; margin-left: -3px; }
+		.nav-group a:hover, .nav-group a.active { background: #243354; color: #fff; border-left-color: #4f8ef7; text-decoration: none; }
 		.admin-main { flex: 1; overflow-y: auto; }
 
 		/* Top bar */
@@ -48,6 +62,10 @@
 		.badge-trial { background: #fef9c3; color: #92400e; }
 		.badge-past-due { background: #fee2e2; color: #b91c1c; }
 		.badge-active { background: #dcfce7; color: #166534; }
+		.badge-inactive { background: #f1f5f9; color: #94a3b8; }
+		.badge-yes { background: #dcfce7; color: #166534; }
+		.badge-no  { background: #f1f5f9; color: #94a3b8; }
+		.badge-admin { background: #ede9fe; color: #6d28d9; }
 
 		/* Forms / buttons */
 		.btn { display: inline-block; padding: 8px 18px; border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; }
@@ -76,17 +94,49 @@
 		.kv:last-child { border-bottom: none; }
 		.kv .key { color: #64748b; }
 	</style>
+	<meta name="csrf-token" content="{{ csrf_token() }}" />
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var t = document.querySelector('meta[name="csrf-token"]');
+			if (!t) return;
+			var token = t.getAttribute('content');
+			document.querySelectorAll('form').forEach(function (form) {
+				var m = (form.getAttribute('method') || '').toLowerCase();
+				if (m === 'post' && !form.querySelector('input[name="csrf_token"]')) {
+					var inp = document.createElement('input');
+					inp.type = 'hidden'; inp.name = 'csrf_token'; inp.value = token;
+					form.appendChild(inp);
+				}
+			});
+		});
+	</script>
 </head>
 <body>
 <div class="admin-layout">
 	<aside class="admin-sidebar">
 		<div class="brand">Steward<span>well</span> Admin</div>
 		<nav>
-			<a href="{{ url_for('admin.admin_dashboard') }}" {% if request.endpoint == 'admin.admin_dashboard' %}class="active"{% endif %}>📊 Dashboard</a>
-			<a href="{{ url_for('admin.admin_families') }}" {% if 'families' in request.endpoint %}class="active"{% endif %}>🏠 Families</a>
-			<a href="{{ url_for('admin.admin_parents') }}" {% if 'parents' in request.endpoint %}class="active"{% endif %}>👤 Parents</a>
-			<a href="{{ url_for('admin.admin_promo_codes') }}" {% if 'promo' in request.endpoint %}class="active"{% endif %}>🏷 Promo Codes</a>
-			<a href="{{ url_for('admin.admin_logout') }}" style="margin-top:auto;color:#94a3b8;">⬅ Logout</a>
+			<a href="{{ url_for('admin.admin_dashboard') }}" {% if request.endpoint == 'admin.admin_dashboard' %}class="active"{% endif %}>Dashboard</a>
+
+			<details class="nav-group" {% if 'families' in request.endpoint or 'parents' in request.endpoint %}open{% endif %}>
+				<summary>Users</summary>
+				<a href="{{ url_for('admin.admin_families') }}" {% if 'families' in request.endpoint %}class="active"{% endif %}>Families</a>
+				<a href="{{ url_for('admin.admin_parents') }}"  {% if 'parents'  in request.endpoint %}class="active"{% endif %}>Parents</a>
+			</details>
+
+			<details class="nav-group" {% if 'promo' in request.endpoint %}open{% endif %}>
+				<summary>Marketing</summary>
+				<a href="{{ url_for('admin.admin_promo_codes') }}" {% if 'promo' in request.endpoint %}class="active"{% endif %}>Promo Codes</a>
+			</details>
+
+			<details class="nav-group" {% if 'features' in request.endpoint or 'payment_settings' in request.endpoint or 'email_settings' in request.endpoint %}open{% endif %}>
+				<summary>Config</summary>
+				<a href="{{ url_for('admin.admin_features') }}"         {% if 'features'         in request.endpoint %}class="active"{% endif %}>Features</a>
+				<a href="{{ url_for('admin.admin_payment_settings') }}" {% if 'payment_settings' in request.endpoint %}class="active"{% endif %}>Payment</a>
+				<a href="{{ url_for('admin.admin_email_settings') }}"   {% if 'email_settings'   in request.endpoint %}class="active"{% endif %}>Email</a>
+			</details>
+
+			<a href="{{ url_for('admin.admin_logout') }}" class="nav-logout">Sign Out</a>
 		</nav>
 	</aside>
 	<div class="admin-main">

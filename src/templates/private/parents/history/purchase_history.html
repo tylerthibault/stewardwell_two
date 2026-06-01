@@ -39,15 +39,15 @@
                 <tbody>
                     {% for r in purchase_history %}
                     <tr class="purchase-row" data-kid-id="{{ r.requested_by_kid_id }}" data-status="{{ r.status }}">
-                        <td><strong>{{ r.requested_by_kid.display_name if r.requested_by_kid else '—' }}</strong></td>
-                        <td>{{ r.store_item.name if r.store_item else '—' }}</td>
-                        <td>
+                        <td data-label="Kid"><strong>{{ r.requested_by_kid.display_name if r.requested_by_kid else '—' }}</strong></td>
+                        <td data-label="Item">{{ r.store_item.name if r.store_item else '—' }}</td>
+                        <td data-label="Coins">
                             {% if r.store_item %}
                             <span class="coin-badge">🪙 {{ r.store_item.kid_coin_cost }}</span>
                             {% else %}—{% endif %}
                         </td>
-                        <td>{{ r.requested_at.strftime('%b %d, %Y') }}</td>
-                        <td>
+                        <td data-label="Date">{{ r.requested_at.strftime('%b %d, %Y') }}</td>
+                        <td data-label="Status">
                             {% if r.status == 'fulfilled' %}
                             <span style="color:var(--success-primary,#27ae60);font-weight:700;">✓ Fulfilled</span>
                             {% elif r.status == 'approved' %}

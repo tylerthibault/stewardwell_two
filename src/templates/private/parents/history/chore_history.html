@@ -48,15 +48,15 @@
                 <tbody>
                     {% for s in chore_submissions %}
                     <tr class="chore-row" data-kid-id="{{ s.kid_id }}" data-chore-id="{{ s.chore_id }}" data-status="{{ s.status }}">
-                        <td><strong>{{ s.kid.display_name if s.kid else '—' }}</strong></td>
-                        <td>{{ s.chore.name if s.chore else '—' }}</td>
-                        <td>
+                        <td data-label="Kid"><strong>{{ s.kid.display_name if s.kid else '—' }}</strong></td>
+                        <td data-label="Chore">{{ s.chore.name if s.chore else '—' }}</td>
+                        <td data-label="Coins Earned">
                             {% if s.status == 'approved' and s.awarded_coin_amount %}
                             <span class="coin-badge">🪙 {{ s.awarded_coin_amount }}</span>
                             {% else %}—{% endif %}
                         </td>
-                        <td>{{ s.claimed_at.strftime('%b %d, %Y') }}</td>
-                        <td>
+                        <td data-label="Date">{{ s.claimed_at.strftime('%b %d, %Y') }}</td>
+                        <td data-label="Status">
                             {% if s.status == 'approved' %}
                             <span style="color:var(--success-primary,#27ae60);font-weight:700;">✓ Approved</span>
                             {% elif s.status == 'submitted' %}
