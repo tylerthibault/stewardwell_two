@@ -62,16 +62,37 @@
 		</div>
 	</section>
 
-	{% if donate_url %}
+	{% if bmac_url or donate_url %}
 	<section class="panel" style="margin-top:12px;text-align:center;">
 		<h2 style="font-size:22px;margin-bottom:8px;">❤️ Support Stewardwell</h2>
 		<p class="muted" style="max-width:520px;margin:0 auto 16px;">
 			Stewardwell is built by a small team. If it's brought value to your family,
 			consider buying us a coffee — every contribution helps!
 		</p>
-		<a class="btn primary" href="{{ donate_url }}" target="_blank" rel="noopener">
-			☕ Donate
-		</a>
+		<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+			{% if bmac_url %}
+			<a href="{{ bmac_url }}" target="_blank" rel="noopener"
+			   style="display:inline-flex;align-items:center;gap:8px;background:#FFDD00;color:#000000;font-weight:700;font-size:15px;padding:10px 20px;border-radius:8px;text-decoration:none;">
+				<img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="" style="height:20px;width:20px;">
+				Buy me a coffee
+			</a>
+			{% endif %}
+			{% if donate_url %}
+			<a class="btn primary" href="{{ donate_url }}" target="_blank" rel="noopener">
+				☕ Donate via Stripe
+			</a>
+			{% endif %}
+		</div>
 	</section>
+	{% endif %}
+
+	{% if bmac_widget %}
+	<script data-name="BMC-Widget" data-cfasync="false"
+		src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
+		data-id="{{ bmac_url.split('buymeacoffee.com/')[-1] if bmac_url else '' }}"
+		data-description="Support me on Buy me a coffee!"
+		data-message="" data-color="#FFDD00" data-position="Right"
+		data-x_margin="18" data-y_margin="18">
+	</script>
 	{% endif %}
 {% endblock %}

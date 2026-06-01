@@ -77,17 +77,17 @@
                             <tbody>
                                 {% for gs in game_sessions %}
                                 <tr class="session-row" data-kid-id="{{ gs.kid_id }}">
-                                    <td><strong>{{ gs.kid.name }}</strong></td>
-                                    <td>{{ gs.activity.name }}</td>
-                                    <td>{{ gs.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                    <td>{{ gs.ended_at.strftime('%Y-%m-%d %H:%M') if gs.ended_at else '—' }}</td>
-                                    <td>{{ gs.minutes_played if gs.minutes_played is not none else '—' }}</td>
-                                    <td>
+                                    <td data-label="Kid"><strong>{{ gs.kid.name }}</strong></td>
+                                    <td data-label="Activity">{{ gs.activity.name }}</td>
+                                    <td data-label="Started">{{ gs.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td data-label="Ended">{{ gs.ended_at.strftime('%Y-%m-%d %H:%M') if gs.ended_at else '—' }}</td>
+                                    <td data-label="Minutes">{{ gs.minutes_played if gs.minutes_played is not none else '—' }}</td>
+                                    <td data-label="Coins Spent">
                                         {% if gs.coins_spent is not none %}
                                         <span class="coin-badge" style="display:inline-block; font-size:0.85rem;">🪙 {{ gs.coins_spent }}</span>
                                         {% else %}—{% endif %}
                                     </td>
-                                    <td>
+                                    <td data-label="Status">
                                         {% if gs.status == 'completed' %}
                                         <span style="color: var(--success-primary, #27ae60); font-weight:700;">✓ Completed</span>
                                         {% elif gs.status == 'ended_by_parent' %}
@@ -274,11 +274,11 @@
                 const date = new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 const reason = tx.reason ? tx.reason : (tx.ref_type ? tx.ref_type.replace(/_/g, ' ') : '—');
                 return `<tr>
-                    <td>${date}</td>
-                    <td><strong>${tx.kid_name || '—'}</strong></td>
-                    <td><span style="background:${kindInfo.color}22;color:${kindInfo.color};padding:2px 8px;border-radius:99px;font-size:0.8rem;font-weight:700;">${kindInfo.label}</span></td>
-                    <td style="color:${amountColor};font-weight:700;">🪙 ${amountSign}${tx.amount}</td>
-                    <td>${reason}</td>
+                    <td data-label="Date">${date}</td>
+                    <td data-label="Kid"><strong>${tx.kid_name || '—'}</strong></td>
+                    <td data-label="Type"><span style="background:${kindInfo.color}22;color:${kindInfo.color};padding:2px 8px;border-radius:99px;font-size:0.8rem;font-weight:700;">${kindInfo.label}</span></td>
+                    <td data-label="Amount" style="color:${amountColor};font-weight:700;">🪙 ${amountSign}${tx.amount}</td>
+                    <td data-label="Reason">${reason}</td>
                 </tr>`;
             }).join('');
         }

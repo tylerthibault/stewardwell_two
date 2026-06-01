@@ -29,12 +29,24 @@
     {# Desktop nav links #}
     <nav class="app-nav-links" aria-label="Primary navigation">
       <a href="{{ url_for('public.parent_dashboard') }}" class="app-nav-link{% if _ep == 'public.parent_dashboard' %} active{% endif %}">{{ _ico_dashboard() }} Dashboard</a>
+      {% if get_feature_tier('chores') != 'disabled' %}
       <a href="{{ url_for('public.parent_chores') }}" class="app-nav-link{% if _ep in ['public.parent_chores','public.parent_edit_chore'] %} active{% endif %}">{{ _ico_chores() }} Chores</a>
-      <a href="{{ url_for('public.parent_schedule') }}" class="app-nav-link{% if _ep == 'public.parent_schedule' %} active{% endif %}">{{ _ico_schedule() }} Schedule</a>
+      {% endif %}
+      {% if get_feature_tier('schedule') != 'disabled' %}
+      <a href="{{ url_for('public.parent_schedule') }}" class="app-nav-link{% if _ep == 'public.parent_schedule' %} active{% endif %}">{{ _ico_schedule() }} Schedule{% if get_feature_tier('schedule') == 'pro' and family and not family.is_pro %}<span class="nav-pro-badge">Pro</span>{% endif %}</a>
+      {% endif %}
+      {% if get_feature_tier('store') != 'disabled' %}
       <a href="{{ url_for('public.parent_store') }}" class="app-nav-link{% if _ep == 'public.parent_store' %} active{% endif %}">{{ _ico_store() }} Store</a>
-      <a href="{{ url_for('public.parent_challenges') }}" class="app-nav-link{% if _ep == 'public.parent_challenges' %} active{% endif %}">{{ _ico_challenges() }} Challenges</a>
+      {% endif %}
+      {% if get_feature_tier('challenges') != 'disabled' %}
+      <a href="{{ url_for('public.parent_challenges') }}" class="app-nav-link{% if _ep == 'public.parent_challenges' %} active{% endif %}">{{ _ico_challenges() }} Challenges{% if get_feature_tier('challenges') == 'pro' and family and not family.is_pro %}<span class="nav-pro-badge">Pro</span>{% endif %}</a>
+      {% endif %}
+      {% if get_feature_tier('tasks') != 'disabled' %}
       <a href="{{ url_for('public.parent_tasks') }}" class="app-nav-link{% if _ep == 'public.parent_tasks' %} active{% endif %}">{{ _ico_tasks() }} Tasks</a>
-      <a href="{{ url_for('public.parent_history') }}" class="app-nav-link{% if 'parent_history' in _ep %} active{% endif %}">{{ _ico_history() }} History</a>
+      {% endif %}
+      {% if get_feature_tier('history') != 'disabled' %}
+      <a href="{{ url_for('public.parent_history') }}" class="app-nav-link{% if 'parent_history' in _ep %} active{% endif %}">{{ _ico_history() }} History{% if get_feature_tier('history') == 'pro' and family and not family.is_pro %}<span class="nav-pro-badge">Pro</span>{% endif %}</a>
+      {% endif %}
     </nav>
 
     {# Right actions — visible on desktop #}
@@ -48,26 +60,33 @@
 
     {# Hamburger (mobile only) #}
     <button class="app-nav-hamburger" id="app-nav-ham" aria-label="Toggle navigation menu" aria-expanded="false"
-            onclick="(function(btn){
-              var m=document.getElementById('app-nav-mobile');
-              var open=m.style.display==='flex';
-              m.style.display=open?'none':'flex';
-              btn.setAttribute('aria-expanded',String(!open));
-            })(this)">{{ _ico_ham() }}</button>
+            onclick="_swNavToggle(this)">{{ _ico_ham() }}</button>
 
   </div>
 
   {# Mobile dropdown menu #}
   <div class="app-nav-mobile-menu" id="app-nav-mobile" style="display:none;">
-    <a href="{{ url_for('public.parent_dashboard') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_dashboard' %} active{% endif %}">{{ _ico_dashboard() }} Dashboard</a>
-    <a href="{{ url_for('public.parent_chores') }}" class="app-nav-mobile-link{% if _ep in ['public.parent_chores','public.parent_edit_chore'] %} active{% endif %}">{{ _ico_chores() }} Chores</a>
-    <a href="{{ url_for('public.parent_schedule') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_schedule' %} active{% endif %}">{{ _ico_schedule() }} Schedule</a>
-    <a href="{{ url_for('public.parent_store') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_store' %} active{% endif %}">{{ _ico_store() }} Store</a>
-    <a href="{{ url_for('public.parent_challenges') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_challenges' %} active{% endif %}">{{ _ico_challenges() }} Challenges</a>
-    <a href="{{ url_for('public.parent_tasks') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_tasks' %} active{% endif %}">{{ _ico_tasks() }} Tasks</a>
-    <a href="{{ url_for('public.parent_history') }}" class="app-nav-mobile-link{% if 'parent_history' in _ep %} active{% endif %}">{{ _ico_history() }} History</a>
+    <a href="{{ url_for('public.parent_dashboard') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_dashboard' %} active{% endif %}" onclick="_swNavClose()">{{ _ico_dashboard() }} Dashboard</a>
+    {% if get_feature_tier('chores') != 'disabled' %}
+    <a href="{{ url_for('public.parent_chores') }}" class="app-nav-mobile-link{% if _ep in ['public.parent_chores','public.parent_edit_chore'] %} active{% endif %}" onclick="_swNavClose()">{{ _ico_chores() }} Chores</a>
+    {% endif %}
+    {% if get_feature_tier('schedule') != 'disabled' %}
+    <a href="{{ url_for('public.parent_schedule') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_schedule' %} active{% endif %}" onclick="_swNavClose()">{{ _ico_schedule() }} Schedule{% if get_feature_tier('schedule') == 'pro' and family and not family.is_pro %}<span class="nav-pro-badge">Pro</span>{% endif %}</a>
+    {% endif %}
+    {% if get_feature_tier('store') != 'disabled' %}
+    <a href="{{ url_for('public.parent_store') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_store' %} active{% endif %}" onclick="_swNavClose()">{{ _ico_store() }} Store</a>
+    {% endif %}
+    {% if get_feature_tier('challenges') != 'disabled' %}
+    <a href="{{ url_for('public.parent_challenges') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_challenges' %} active{% endif %}" onclick="_swNavClose()">{{ _ico_challenges() }} Challenges{% if get_feature_tier('challenges') == 'pro' and family and not family.is_pro %}<span class="nav-pro-badge">Pro</span>{% endif %}</a>
+    {% endif %}
+    {% if get_feature_tier('tasks') != 'disabled' %}
+    <a href="{{ url_for('public.parent_tasks') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_tasks' %} active{% endif %}" onclick="_swNavClose()">{{ _ico_tasks() }} Tasks</a>
+    {% endif %}
+    {% if get_feature_tier('history') != 'disabled' %}
+    <a href="{{ url_for('public.parent_history') }}" class="app-nav-mobile-link{% if 'parent_history' in _ep %} active{% endif %}" onclick="_swNavClose()">{{ _ico_history() }} History{% if get_feature_tier('history') == 'pro' and family and not family.is_pro %}<span class="nav-pro-badge">Pro</span>{% endif %}</a>
+    {% endif %}
     <div class="app-nav-mobile-divider"></div>
-    <a href="{{ url_for('public.parent_settings') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_settings' %} active{% endif %}">{{ _ico_settings() }} Settings</a>
+    <a href="{{ url_for('public.parent_settings') }}" class="app-nav-mobile-link{% if _ep == 'public.parent_settings' %} active{% endif %}" onclick="_swNavClose()">{{ _ico_settings() }} Settings</a>
     <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;">
       <button id="theme-toggle-mobile" class="app-nav-icon-btn" type="button" onclick="document.getElementById('theme-toggle').click()" style="padding:0;font-size:.9rem;font-weight:700;color:var(--duo-muted);">{{ _ico_moon() }} Toggle theme</button>
     </div>
@@ -77,5 +96,25 @@
   </div>
 </header>
 
-
-
+<script>
+function _swNavToggle(btn) {
+  var m = document.getElementById('app-nav-mobile');
+  var open = m.style.display === 'flex';
+  m.style.display = open ? 'none' : 'flex';
+  btn.setAttribute('aria-expanded', String(!open));
+}
+function _swNavClose() {
+  var m = document.getElementById('app-nav-mobile');
+  var btn = document.getElementById('app-nav-ham');
+  if (m) m.style.display = 'none';
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', function(e) {
+  var nav = document.getElementById('app-nav-mobile');
+  var ham = document.getElementById('app-nav-ham');
+  if (!nav || nav.style.display === 'none') return;
+  if (!nav.contains(e.target) && !ham.contains(e.target)) {
+    _swNavClose();
+  }
+});
+</script>

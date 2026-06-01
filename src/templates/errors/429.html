@@ -1,0 +1,10 @@
+{% extends "bases/public.html" %}
+{% block title %}Too Many Requests — Stewardwell{% endblock %}
+{% block content %}
+<section style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px;">
+  <h1 style="font-size:72px;font-weight:900;margin:0;color:var(--duo-accent);">429</h1>
+  <h2 style="font-size:22px;margin:8px 0 12px;">Too many attempts</h2>
+  <p class="muted">You've made too many login attempts. Please wait a minute and try again.</p>
+  <a href="/" class="btn primary" style="margin-top:24px;display:inline-block;">Go home</a>
+</section>
+{% endblock %}

@@ -28,8 +28,8 @@
 		<tr>
 			<td>{{ p.name }}</td>
 			<td>{{ p.email }}</td>
-			<td>{{ '✅' if p.email_verified else '❌' }}</td>
-			<td>{{ '⭐' if p.is_superuser else '—' }}</td>
+			<td>{% if p.email_verified %}<span class="badge badge-yes">Verified</span>{% else %}<span class="badge badge-no">Unverified</span>{% endif %}</td>
+			<td>{% if p.is_superuser %}<span class="badge badge-admin">Admin</span>{% else %}<span style="color:#94a3b8;">—</span>{% endif %}</td>
 			<td>
 				{% if p.family %}
 				<a href="{{ url_for('admin.admin_family_detail', family_id=p.family_id) }}">{{ p.family.name }}</a>

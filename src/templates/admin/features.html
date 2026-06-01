@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Features{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Feature Flags</h1>
+    <small style="color:#94a3b8;">Changes take effect immediately for all users.</small>
+  </div>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="flash {% if cat == 'error' %}danger{% else %}{{ cat }}{% endif %}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="detail-card">
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Key</th>
+          <th>Default Tier</th>
+          <th>Current Tier</th>
+          <th>Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in features %}
+        <tr>
+          <td><strong>{{ f.label }}</strong></td>
+          <td><code style="font-size:.8rem;color:#94a3b8;">{{ f.key }}</code></td>
+          <td>
+            {% if f.default_tier == 'pro' %}
+              <span class="badge-pro">Pro</span>
+            {% elif f.default_tier == 'disabled' %}
+              <span class="badge-inactive">Disabled</span>
+            {% else %}
+              <span class="badge-active">Free</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if f.current_tier == 'pro' %}
+              <span class="badge-pro">Pro</span>
+            {% elif f.current_tier == 'disabled' %}
+              <span class="badge-inactive">Disabled</span>
+            {% else %}
+              <span class="badge-active">Free</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.admin_feature_set_tier', feature_key=f.key) }}" style="display:flex;gap:.5rem;align-items:center;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+              <select name="tier" style="padding:.35rem .6rem;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.85rem;">
+                <option value="free"      {% if f.current_tier == 'free'     %}selected{% endif %}>Free</option>
+                <option value="pro"       {% if f.current_tier == 'pro'      %}selected{% endif %}>Pro</option>
+                <option value="disabled"  {% if f.current_tier == 'disabled' %}selected{% endif %}>Disabled</option>
+              </select>
+              <button type="submit" class="btn" style="padding:.35rem .85rem;font-size:.85rem;">Save</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

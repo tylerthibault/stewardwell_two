@@ -5,6 +5,7 @@ Only accessible to Parent accounts with is_superuser=True.
 from __future__ import annotations
 
 import os
+import time
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -13,9 +14,25 @@ from flask import (
     render_template, request, session, url_for, current_app,
 )
 
-from src.models.main import Family, Kid, Parent, PromoCode, PromoRedemption, TrustedDevice, db
+from src.models.main import AppSetting, Family, Kid, Parent, PromoCode, PromoRedemption, TrustedDevice, db
+from src.utils.limits import FEATURES, FEATURE_LABELS, _runtime_features, save_feature_tier
+from src.utils.settings import EMAIL_SETTING_DEFS, PAYMENT_SETTING_DEFS, save_app_setting
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+# ── Simple in-process rate limiter for admin login ───────────────────────
+_admin_login_attempts: dict = {}  # ip -> (count, window_start)
+
+def _rate_limit_admin_login(max_per_minute: int = 10) -> None:
+    ip = request.remote_addr or "unknown"
+    now = time.time()
+    count, window = _admin_login_attempts.get(ip, (0, now))
+    if now - window > 60:
+        count, window = 0, now
+    count += 1
+    _admin_login_attempts[ip] = (count, window)
+    if count > max_per_minute:
+        abort(429)
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
@@ -39,6 +56,8 @@ def admin_required(f):
 def admin_login():
     if request.method == "GET":
         return render_template("admin/login.html")
+
+    _rate_limit_admin_login()
 
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "").strip()
@@ -322,3 +341,124 @@ def admin_promo_delete(promo_id: int):
     db.session.commit()
     flash(f"Promo code deleted.", "success")
     return redirect(url_for("admin.admin_promo_codes"))
+
+
+# ── Feature Flags ──────────────────────────────────────────────────────
+
+@admin_bp.get("/features")
+@admin_required
+def admin_features():
+    features = [
+        {
+            "key": key,
+            "label": FEATURE_LABELS.get(key, key.title()),
+            "default_tier": FEATURES.get(key, "free"),
+            "current_tier": _runtime_features.get(key, FEATURES.get(key, "free")),
+        }
+        for key in FEATURES
+    ]
+    return render_template("admin/features.html", features=features)
+
+
+@admin_bp.post("/features/<feature_key>/set-tier")
+@admin_required
+def admin_feature_set_tier(feature_key: str):
+    if feature_key not in FEATURES:
+        flash(f"Unknown feature '{feature_key}'.", "error")
+        return redirect(url_for("admin.admin_features"))
+    tier = request.form.get("tier", "free")
+    if tier not in ("free", "pro", "disabled"):
+        flash("Invalid tier.", "error")
+        return redirect(url_for("admin.admin_features"))
+    save_feature_tier(feature_key, tier)
+    label = FEATURE_LABELS.get(feature_key, feature_key)
+    flash(f"{label} set to '{tier}'.", "success")
+    return redirect(url_for("admin.admin_features"))
+
+
+# ── Payment / Stripe Settings ─────────────────────────────────────────────────
+
+@admin_bp.get("/payment-settings")
+@admin_required
+def admin_payment_settings():
+    # Build current values: DB overrides env vars
+    current: dict[str, str] = {}
+    for group in PAYMENT_SETTING_DEFS:
+        for field in group["fields"]:
+            key = field["key"]
+            row = AppSetting.query.get(key)
+            current[key] = row.value if row else os.environ.get(key, "")
+    return render_template(
+        "admin/payment_settings.html",
+        groups=PAYMENT_SETTING_DEFS,
+        current=current,
+    )
+
+
+@admin_bp.post("/payment-settings")
+@admin_required
+def admin_payment_settings_save():
+    updated = []
+    for group in PAYMENT_SETTING_DEFS:
+        for field in group["fields"]:
+            key = field["key"]
+            val = request.form.get(key, "").strip()
+            if field.get("secret") and not val:
+                continue
+            save_app_setting(key, val)
+            updated.append(key)
+    flash(f"Saved {len(updated)} setting(s). Changes are live immediately.", "success")
+    return redirect(url_for("admin.admin_payment_settings"))
+
+
+# ── Email / Brevo Settings ───────────────────────────────────────────────
+
+@admin_bp.get("/email-settings")
+@admin_required
+def admin_email_settings():
+    current: dict[str, str] = {}
+    for group in EMAIL_SETTING_DEFS:
+        for field in group["fields"]:
+            key = field["key"]
+            row = AppSetting.query.get(key)
+            current[key] = row.value if row else os.environ.get(key, "")
+    return render_template("admin/email_settings.html", groups=EMAIL_SETTING_DEFS, current=current)
+
+
+@admin_bp.post("/email-settings")
+@admin_required
+def admin_email_settings_save():
+    updated = []
+    for group in EMAIL_SETTING_DEFS:
+        for field in group["fields"]:
+            key = field["key"]
+            val = request.form.get(key, "").strip()
+            if field.get("secret") and not val:
+                continue
+            save_app_setting(key, val)
+            updated.append(key)
+    flash(f"Saved {len(updated)} email setting(s). Changes are live immediately.", "success")
+    return redirect(url_for("admin.admin_email_settings"))
+
+
+@admin_bp.post("/email-settings/test")
+@admin_required
+def admin_email_settings_test():
+    from src.utils.email import send_email
+    parent = Parent.query.get(session["parent_id"])
+    ok = send_email(
+        to_email=parent.email,
+        to_name=parent.name,
+        subject="Stewardwell — test email",
+        html_content=(
+            "<p>Hi " + parent.name + ",</p>"
+            "<p>This is a test email sent from the Stewardwell admin panel to confirm "
+            "your Brevo configuration is working correctly.</p>"
+            "<p>If you received this, everything is set up!</p>"
+        ),
+    )
+    if ok:
+        flash(f"Test email sent to {parent.email}. Check your inbox.", "success")
+    else:
+        flash("Failed to send test email — check your API key and sender address.", "error")
+    return redirect(url_for("admin.admin_email_settings"))

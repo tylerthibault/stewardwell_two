@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Payment Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Payment &amp; Stripe Settings</h1>
+    <small style="color:#94a3b8;">
+      Values saved here override environment variables immediately — no redeploy needed.
+      Secret fields (marked 🔒) show a masked preview; leave blank to keep the current value.
+    </small>
+  </div>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="flash {% if cat == 'error' %}danger{% else %}{{ cat }}{% endif %}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<form method="POST" action="{{ url_for('admin.admin_payment_settings_save') }}">
+
+  {% for group in groups %}
+  <div class="detail-card" style="margin-bottom:1.5rem;">
+    <h3 style="margin:0 0 1.25rem;font-size:1rem;color:#93c5fd;border-bottom:1px solid #1e3a5f;padding-bottom:.6rem;">
+      {{ group.group }}
+    </h3>
+
+    {% for field in group.fields %}
+    {% set val = current.get(field.key, '') %}
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:.4rem;">
+        {% if field.secret %}🔒 {% endif %}{{ field.label }}
+        <code style="font-size:.75rem;color:#64748b;margin-left:.4rem;">{{ field.key }}</code>
+      </label>
+
+      {% if field.secret %}
+        {# Show masked current value as hint, password input for new value #}
+        {% if val %}
+          <p style="font-size:.78rem;color:#64748b;margin:0 0 .35rem;">
+            Current: <code>{{ val[:6] }}••••••••{{ val[-4:] if val|length > 10 else '' }}</code>
+          </p>
+        {% else %}
+          <p style="font-size:.78rem;color:#f87171;margin:0 0 .35rem;">Not set</p>
+        {% endif %}
+        <input
+          type="password"
+          name="{{ field.key }}"
+          placeholder="{{ field.placeholder }}"
+          autocomplete="off"
+          style="width:100%;max-width:480px;padding:.45rem .7rem;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.85rem;font-family:monospace;"
+        >
+      {% else %}
+        <input
+          type="text"
+          name="{{ field.key }}"
+          value="{{ val }}"
+          placeholder="{{ field.placeholder }}"
+          style="width:100%;max-width:480px;padding:.45rem .7rem;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.85rem;font-family:monospace;"
+        >
+      {% endif %}
+
+      {% if field.help %}
+        <p style="font-size:.78rem;color:#64748b;margin:.35rem 0 0;">{{ field.help }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+  </div>
+  {% endfor %}
+
+  <div style="margin-top:.5rem;">
+    <button type="submit" class="btn" style="padding:.55rem 1.5rem;font-size:.95rem;">
+      Save All Settings
+    </button>
+  </div>
+
+</form>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Email Settings{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;">
+  <div>
+    <h1 class="page-title" style="font-size:1.4rem;font-weight:800;margin-bottom:.25rem;">Brevo — Transactional Email</h1>
+    <small style="color:#94a3b8;">
+      Configure the Brevo API key and sender identity used for all transactional emails
+      (password resets, verification, etc). Changes take effect immediately.
+    </small>
+  </div>
+  <form method="POST" action="{{ url_for('admin.admin_email_settings_test') }}" style="flex-shrink:0;margin-left:1rem;">
+    <button type="submit" class="btn btn-outline" style="font-size:.85rem;padding:.45rem 1rem;white-space:nowrap;">
+      Send Test Email
+    </button>
+  </form>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <ul class="flash-list"><li class="{{ cat }}">{{ msg }}</li></ul>
+  {% endfor %}
+{% endwith %}
+
+{# Status banner #}
+{% set api_key_set    = current.get('BREVO_API_KEY', '')    != '' %}
+{% set sender_set     = current.get('BREVO_SENDER_EMAIL', '') != '' %}
+<div style="background:{% if api_key_set and sender_set %}#dcfce7{% else %}#fef9c3{% endif %};border-radius:10px;padding:12px 18px;margin-bottom:1.5rem;font-size:.88rem;color:{% if api_key_set and sender_set %}#166534{% else %}#92400e{% endif %};">
+  {% if api_key_set and sender_set %}
+    Brevo is configured. Use "Send Test Email" to verify delivery.
+  {% else %}
+    Brevo is <strong>not fully configured</strong> —
+    {% if not api_key_set %}API key missing{% endif %}
+    {% if not api_key_set and not sender_set %} &amp; {% endif %}
+    {% if not sender_set %}sender email missing{% endif %}.
+    Emails will <strong>not</strong> be sent until both are set.
+  {% endif %}
+</div>
+
+<form method="POST" action="{{ url_for('admin.admin_email_settings_save') }}">
+
+  {% for group in groups %}
+  <div class="detail-card" style="margin-bottom:1.25rem;">
+    <h3 style="margin:0 0 1.1rem;font-size:.9rem;color:#93c5fd;border-bottom:1px solid #1e3a5f;padding-bottom:.5rem;">
+      {{ group.group }}
+    </h3>
+
+    {% for field in group.fields %}
+    {% set val = current.get(field.key, '') %}
+    <div style="margin-bottom:1.1rem;">
+      <label style="display:block;font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:.35rem;">
+        {% if field.secret %}🔒 {% endif %}{{ field.label }}
+        <code style="font-size:.73rem;color:#64748b;margin-left:.4rem;">{{ field.key }}</code>
+      </label>
+
+      {% if field.secret %}
+        {% if val %}
+          <p style="font-size:.77rem;color:#64748b;margin:0 0 .3rem;">
+            Current: <code>{{ val[:8] }}••••••••</code>
+          </p>
+        {% else %}
+          <p style="font-size:.77rem;color:#f87171;margin:0 0 .3rem;">Not set</p>
+        {% endif %}
+        <input type="password" name="{{ field.key }}" placeholder="{{ field.placeholder }}"
+               autocomplete="off"
+               style="width:100%;max-width:460px;padding:.42rem .65rem;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.85rem;font-family:monospace;">
+      {% else %}
+        <input type="text" name="{{ field.key }}" value="{{ val }}"
+               placeholder="{{ field.placeholder }}"
+               style="width:100%;max-width:460px;padding:.42rem .65rem;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.85rem;">
+      {% endif %}
+
+      {% if field.help %}
+        <p style="font-size:.77rem;color:#64748b;margin:.3rem 0 0;">{{ field.help }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  <button type="submit" class="btn btn-primary" style="padding:.55rem 1.5rem;font-size:.95rem;">
+    Save Email Settings
+  </button>
+
+</form>
+
+<div class="detail-card" style="margin-top:2rem;">
+  <h3 style="margin:0 0 .75rem;font-size:.9rem;color:#93c5fd;border-bottom:1px solid #1e3a5f;padding-bottom:.5rem;">
+    Brevo Setup Checklist
+  </h3>
+  <ol style="padding-left:1.2rem;line-height:2;font-size:.87rem;color:#94a3b8;">
+    <li>Create a free account at <a href="https://www.brevo.com" target="_blank" rel="noopener">brevo.com</a></li>
+    <li>Go to <strong>SMTP &amp; API → API Keys</strong> and create a key with <em>Transactional emails</em> permission</li>
+    <li>Go to <strong>Senders &amp; IP → Senders</strong> and add/verify your sender email address</li>
+    <li>Paste the API key and sender address above, then click <strong>Save</strong></li>
+    <li>Click <strong>Send Test Email</strong> — you should receive it in your inbox within seconds</li>
+  </ol>
+</div>
+{% endblock %}

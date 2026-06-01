@@ -3,15 +3,8 @@
 {% block title %}Session Setup - Stewardwell{% endblock %}
 
 {% block nav %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-	<h1 style="font-size: clamp(1.6rem, 3.4vw, 2.3rem);">Session Setup</h1>
-	<div class="d-flex gap-2 align-items-center">
-		<span class="pill">{{ kid.display_name }} • 🪙 {{ kid.coin_balance }}</span>
-		<form method="post" action="{{ url_for('public.kid_logout_web') }}">
-			<button type="submit" class="btn">Logout</button>
-		</form>
-	</div>
-</div>
+{% set kid_page_title = 'Session Setup' %}
+{% include 'private/kids/components/navbar.html' %}
 {% endblock %}
 
 {% block content %}
