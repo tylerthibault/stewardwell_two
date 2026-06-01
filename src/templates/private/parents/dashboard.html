@@ -132,14 +132,22 @@
 									</span>
 								</div>
 							</div>
-							<!-- Fine button -->
-							<button
-								type="button"
-								onclick="openFineModal({{ kid.id }}, '{{ kid.display_name }}')"
-								style="flex-shrink:0;background:var(--duo-yellow);color:var(--duo-ink);border:2px solid color-mix(in srgb,var(--duo-yellow) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-yellow) 50%,#000 50%);transition:transform .08s ease;"
-								onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
-								Fine
-							</button>
+							<!-- Cash → Coins button -->
+								<button
+									type="button"
+									onclick="openCashToCoinsModal({{ kid.id }}, '{{ kid.display_name }}')"
+									style="flex-shrink:0;background:var(--duo-green,#58cc02);color:#fff;border:2px solid color-mix(in srgb,var(--duo-green,#58cc02) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-green,#58cc02) 50%,#000 50%);transition:transform .08s ease;"
+									onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+									$ → 🪙
+								</button>
+								<!-- Fine button -->
+								<button
+									type="button"
+									onclick="openFineModal({{ kid.id }}, '{{ kid.display_name }}')"
+									style="flex-shrink:0;background:var(--duo-yellow);color:var(--duo-ink);border:2px solid color-mix(in srgb,var(--duo-yellow) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-yellow) 50%,#000 50%);transition:transform .08s ease;"
+									onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
+									Fine
+								</button>
 							<!-- View as Kid button -->
 							<form method="post" action="{{ url_for('public.parent_switch_to_kid', kid_id=kid.id) }}" style="margin:0;flex-shrink:0;">
 								<button
@@ -282,6 +290,89 @@
 	document.getElementById('fineModal').addEventListener('click', function(e) {
 		if (e.target === this) closeFineModal();
 	});
+	document.getElementById('cashToCoinsModal').addEventListener('click', function(e) {
+		if (e.target === this) closeCashToCoinsModal();
+	});
+</script>
+
+<!-- Cash → Coins Modal -->
+<div id="cashToCoinsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
+	<div style="background:var(--duo-panel);border-radius:16px;padding:1.5rem;width:min(360px,92vw);border:2px solid var(--duo-border);box-shadow:0 8px 32px rgba(0,0,0,.35);">
+		<h3 style="margin:0 0 1.2rem;font-size:1.1rem;">Cash → Coins for <span id="cashToCoinsKidName" style="color:var(--duo-green,#58cc02);"></span></h3>
+		<div style="margin-bottom:1rem;">
+			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Dollar amount</label>
+			<div style="display:flex;align-items:center;gap:6px;">
+				<span style="font-size:1.1rem;font-weight:900;">$</span>
+				<input id="cashToCoinsAmount" type="number" min="0.01" step="0.01" class="form-control" placeholder="e.g. 5.00" style="font-size:1rem;">
+			</div>
+			<p id="cashToCoinPreview" style="margin:.5rem 0 0;font-size:.85rem;color:var(--duo-muted);"></p>
+		</div>
+		<div id="cashToCoinsError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
+		<div style="display:flex;justify-content:flex-end;gap:10px;">
+			<button type="button" class="btn" onclick="closeCashToCoinsModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
+			<button type="button" class="btn" id="cashToCoinsSubmitBtn" onclick="submitCashToCoins()" style="font-size:.88rem;padding:8px 18px;background:var(--duo-green,#58cc02);color:#fff;border-color:var(--duo-green,#58cc02);">Give Coins</button>
+		</div>
+	</div>
+</div>
+<script>
+	let _cashToCoinsKidId = null;
+	const _coinsPerDollar = {{ family.coins_per_dollar or 10 }};
+
+	function openCashToCoinsModal(kidId, kidName) {
+		_cashToCoinsKidId = kidId;
+		document.getElementById('cashToCoinsKidName').textContent = kidName;
+		document.getElementById('cashToCoinsAmount').value = '';
+		document.getElementById('cashToCoinPreview').textContent = '';
+		document.getElementById('cashToCoinsError').style.display = 'none';
+		document.getElementById('cashToCoinsModal').style.display = 'flex';
+		document.getElementById('cashToCoinsAmount').focus();
+	}
+	function closeCashToCoinsModal() {
+		document.getElementById('cashToCoinsModal').style.display = 'none';
+	}
+	document.getElementById('cashToCoinsAmount').addEventListener('input', function() {
+		const dollars = parseFloat(this.value);
+		const preview = document.getElementById('cashToCoinPreview');
+		if (!isNaN(dollars) && dollars > 0) {
+			const coins = Math.floor(dollars * _coinsPerDollar);
+			preview.textContent = `= ${coins} coins`;
+		} else {
+			preview.textContent = '';
+		}
+	});
+	async function submitCashToCoins() {
+		const dollars = parseFloat(document.getElementById('cashToCoinsAmount').value);
+		const errEl = document.getElementById('cashToCoinsError');
+		errEl.style.display = 'none';
+		if (!dollars || dollars <= 0) {
+			errEl.textContent = 'Enter a valid dollar amount.';
+			errEl.style.display = 'block';
+			return;
+		}
+		const btn = document.getElementById('cashToCoinsSubmitBtn');
+		btn.disabled = true;
+		btn.textContent = 'Processing…';
+		const form = new FormData();
+		form.append('kid_id', _cashToCoinsKidId);
+		form.append('dollars', dollars);
+		form.append('next', window.location.pathname);
+		try {
+			const resp = await fetch('{{ url_for("public.parent_store_cash_to_coins") }}', { method: 'POST', body: form });
+			if (resp.redirected || resp.ok) {
+				window.location.reload();
+			} else {
+				errEl.textContent = 'Something went wrong. Try again.';
+				errEl.style.display = 'block';
+				btn.disabled = false;
+				btn.textContent = 'Give Coins';
+			}
+		} catch(e) {
+			errEl.textContent = 'Network error. Try again.';
+			errEl.style.display = 'block';
+			btn.disabled = false;
+			btn.textContent = 'Give Coins';
+		}
+	}
 </script>
 
 {% include 'private/parents/components/_wizard_modal.html' %}
