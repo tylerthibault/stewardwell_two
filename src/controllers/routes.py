@@ -1956,6 +1956,53 @@ def parent_store_add_kid_coins():
 	return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
 
 
+@public_bp.post("/parent/store/kid-coins/reward")
+@parent_web_login_required
+def parent_store_reward_kid():
+	kid_id_raw = (request.form.get("kid_id") or "").strip()
+	coins_raw = (request.form.get("coins") or "0").strip()
+	description = (request.form.get("description") or "").strip()
+	next_path = (request.form.get("next") or "").strip()
+
+	try:
+		kid_id = int(kid_id_raw)
+	except ValueError:
+		flash("Please choose a valid kid.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_dashboard")
+
+	try:
+		coins = int(coins_raw)
+	except ValueError:
+		flash("Coins must be a number.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_dashboard")
+
+	if coins <= 0:
+		flash("Coins must be greater than zero.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_dashboard")
+
+	if not description:
+		flash("A description is required.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_dashboard")
+
+	kid = Kid.query.get(kid_id)
+	if not kid or kid.family_id != session.get("family_id"):
+		flash("Kid not found.", "error")
+		return _redirect_to_next_or_default(next_path, "public.parent_dashboard")
+
+	kid.coin_balance += coins
+	db.session.add(CoinTransaction(
+		kid_id=kid.id,
+		family_id=kid.family_id,
+		amount=coins,
+		kind="manual_add",
+		reason=f"Reward: {description}",
+		created_by_parent_id=session.get("parent_id"),
+	))
+	db.session.commit()
+	flash(f"🏆 Rewarded {kid.display_name} with {coins} coins — {description}!", "success")
+	return _redirect_to_next_or_default(next_path, "public.parent_dashboard")
+
+
 @public_bp.post("/parent/store/kid-coins/cash-to-coins")
 @parent_web_login_required
 def parent_store_cash_to_coins():
