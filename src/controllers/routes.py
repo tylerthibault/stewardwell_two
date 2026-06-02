@@ -2884,6 +2884,20 @@ def kid_login_submit():
 	session["kid_id"] = authenticated_kid.id
 	session["family_id"] = family.id
 
+	# Flash any unseen rewards/fines since last login
+	unseen = CoinTransaction.query.filter_by(
+		kid_id=authenticated_kid.id,
+		seen_by_kid=False,
+	).filter(CoinTransaction.kind.in_(["fine", "manual_add"])).order_by(CoinTransaction.created_at.asc()).all()
+	for txn in unseen:
+		if txn.amount > 0:
+			flash(f"🏆 You earned {txn.amount} coins! {txn.reason or ''}", "success")
+		else:
+			flash(f"⚠️ You lost {abs(txn.amount)} coins. {txn.reason or ''}", "error")
+		txn.seen_by_kid = True
+	if unseen:
+		db.session.commit()
+
 	flash(f"Welcome, {authenticated_kid.display_name}!", "success")
 	return redirect(url_for("public.kid_chores"))
 
