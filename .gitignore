@@ -8,3 +8,4 @@ instance/
 *.db
 *.sqlite
 *.sqlite3
+venv/
