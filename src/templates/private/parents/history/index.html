@@ -272,9 +272,13 @@
                 const amountSign = tx.amount >= 0 ? '+' : '';
                 const amountColor = tx.amount >= 0 ? '#27ae60' : '#e74c3c';
                 const date = new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const approvedDate = tx.approved_at ? new Date(tx.approved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+                const dateCell = approvedDate && approvedDate !== date
+                    ? `${date}<br><small style="color:#999;font-size:0.75rem;">approved ${approvedDate}</small>`
+                    : date;
                 const reason = tx.reason ? tx.reason : (tx.ref_type ? tx.ref_type.replace(/_/g, ' ') : '—');
                 return `<tr>
-                    <td data-label="Date">${date}</td>
+                    <td data-label="Date">${dateCell}</td>
                     <td data-label="Kid"><strong>${tx.kid_name || '—'}</strong></td>
                     <td data-label="Type"><span style="background:${kindInfo.color}22;color:${kindInfo.color};padding:2px 8px;border-radius:99px;font-size:0.8rem;font-weight:700;">${kindInfo.label}</span></td>
                     <td data-label="Amount" style="color:${amountColor};font-weight:700;">🪙 ${amountSign}${tx.amount}</td>

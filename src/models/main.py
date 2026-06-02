@@ -673,6 +673,7 @@ class CoinTransaction(db.Model):
 	ref_id = db.Column(db.Integer)        # soft reference to the related record id
 	created_by_parent_id = db.Column(db.Integer, db.ForeignKey("parents.id"))
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	approved_at = db.Column(db.DateTime, nullable=True)
 	seen_by_kid = db.Column(db.Boolean, nullable=False, default=False)
 
 	kid = db.relationship("Kid", backref=db.backref("coin_transactions", lazy=True, order_by="CoinTransaction.created_at.desc()"))

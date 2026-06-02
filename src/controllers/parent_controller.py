@@ -357,6 +357,7 @@ def list_transactions():
                 "ref_id": tx.ref_id,
                 "created_by_parent_id": tx.created_by_parent_id,
                 "created_at": tx.created_at.isoformat(),
+                "approved_at": tx.approved_at.isoformat() if tx.approved_at else None,
             }
             for tx in transactions
         ],

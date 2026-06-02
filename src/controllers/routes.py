@@ -638,6 +638,7 @@ def _recalculate_chore_split_rewards(chore: Chore, reset_version: int, claimed_d
 		if coin_delta:
 			approved_submission.kid.coin_balance += coin_delta
 			approved_submission.awarded_coin_amount = target_coin_award
+			from datetime import datetime as _dt
 			db.session.add(CoinTransaction(
 				kid_id=approved_submission.kid.id,
 				family_id=approved_submission.family_id,
@@ -647,6 +648,8 @@ def _recalculate_chore_split_rewards(chore: Chore, reset_version: int, claimed_d
 				ref_type="chore_submission",
 				ref_id=approved_submission.id,
 				created_by_parent_id=approved_submission.resolved_by_parent_id,
+				created_at=approved_submission.submitted_at or _dt.utcnow(),
+				approved_at=_dt.utcnow(),
 			))
 
 		if point_delta:
