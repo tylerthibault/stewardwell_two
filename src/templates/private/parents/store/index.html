@@ -15,6 +15,41 @@
 	</div>
 
 	{% if active_tab == 'kid' %}
+		<div class="dashboard-grid" style="margin-bottom:12px;">
+			<div class="dashboard-card">
+				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+					<h2>Pending Kid Purchase Requests</h2>
+					<span class="pill">{{ pending_kid_redemptions|length }} pending</span>
+				</div>
+				<div class="card-body">
+					{% if pending_kid_redemptions %}
+						<div class="d-flex flex-column gap-2">
+							{% for redemption in pending_kid_redemptions %}
+								<div class="chore-item">
+									<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+										<div>
+											<strong>{{ redemption.store_item.name }}</strong>
+											<div class="muted">Requested by {{ redemption.requested_by_kid.display_name }} • 🪙 {{ redemption.store_item.kid_coin_cost }} • {{ redemption.requested_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+											{% if redemption.participants and redemption.participants|length > 1 %}
+												<div class="muted" style="font-size:.8rem;">Split: {% for participant in redemption.participants %}{{ participant.kid.display_name if participant.kid else 'Kid' }} (🪙 {{ participant.coin_share }}){% if not loop.last %}, {% endif %}{% endfor %}</div>
+											{% endif %}
+										</div>
+										<span class="pill">PENDING</span>
+									</div>
+									<div class="d-flex gap-2 mt-2">
+										<form method="post" action="{{ url_for('public.parent_store_approve_kid_redemption', redemption_id=redemption.id) }}"><button type="submit" class="btn primary">Approve</button></form>
+										<form method="post" action="{{ url_for('public.parent_store_reject_kid_redemption', redemption_id=redemption.id) }}"><button type="submit" class="btn-danger">Reject</button></form>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					{% else %}
+						<div class="empty-state">No pending kid purchase requests.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+
 		<div class="dashboard-grid">
 			<div class="dashboard-card">
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -50,6 +85,9 @@
 											</div>
 										{% else %}
 											<span class="coin-badge">🪙 {{ item.kid_coin_cost }} coins</span>
+											{% if item.require_parent_approval %}
+												<span class="pill">Parent approval required</span>
+											{% endif %}
 										{% endif %}
 										{% if item.stock_qty == -1 %}
 											<span class="pill">∞ Unlimited</span>
@@ -75,7 +113,8 @@
 											data-session-flat-cost="{{ item.session_flat_cost }}"
 											data-session-coin-per-minute="{{ item.session_coin_per_minute }}"
 											data-session-max-participants="{{ item.session_max_participants }}"
-											data-stock-qty="{{ item.stock_qty }}">Edit</button>
+											data-stock-qty="{{ item.stock_qty }}"
+											data-require-parent-approval="{{ 'true' if item.require_parent_approval else 'false' }}">Edit</button>
 										<form method="post" action="{{ url_for('public.parent_store_delete_item', item_id=item.id) }}" onsubmit="return confirm('Delete {{ item.name | e }}? This cannot be undone.');">
 											<button type="submit" class="btn-danger">Delete</button>
 										</form>
@@ -169,7 +208,8 @@
 												data-session-flat-cost="{{ item.session_flat_cost }}"
 												data-session-coin-per-minute="{{ item.session_coin_per_minute }}"
 												data-session-max-participants="{{ item.session_max_participants }}"
-												data-stock-qty="{{ item.stock_qty }}">Edit</button>
+												data-stock-qty="{{ item.stock_qty }}"
+												data-require-parent-approval="{{ 'true' if item.require_parent_approval else 'false' }}">Edit</button>
 											<form method="post" action="{{ url_for('public.parent_store_delete_item', item_id=item.id) }}" onsubmit="return confirm('Delete {{ item.name | e }}? This cannot be undone.');">
 												<button type="submit" class="btn-danger">Delete</button>
 											</form>
@@ -257,6 +297,10 @@
 						<label for="create_kid_coin_cost">Kid Coin Cost</label>
 						<input id="create_kid_coin_cost" name="kid_coin_cost" type="number" min="1" value="10" />
 						<input type="hidden" name="family_point_cost" value="0" />
+						<label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+							<input id="create_require_parent_approval" name="require_parent_approval" type="checkbox" style="width:auto;" />
+							Require parent approval before charging coins and completing purchase
+						</label>
 									<label for="create_basic_stock" style="margin-top:8px;">Quantity (-1 for unlimited)</label>
 									<input id="create_basic_stock" name="stock_qty" type="number" min="-1" value="-1" />
 					</div>
@@ -345,6 +389,10 @@
 						<label for="edit_kid_coin_cost">Kid Coin Cost</label>
 						<input id="edit_kid_coin_cost" name="kid_coin_cost" type="number" min="1" value="10" />
 						<input type="hidden" name="family_point_cost" value="0" />
+						<label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+							<input id="edit_require_parent_approval" name="require_parent_approval" type="checkbox" style="width:auto;" />
+							Require parent approval before charging coins and completing purchase
+						</label>
 						<label for="edit_basic_stock" style="margin-top:8px;">Quantity (-1 for unlimited)</label>
 						<input id="edit_basic_stock" name="stock_qty" type="number" min="-1" value="-1" />
 					</div>
@@ -545,8 +593,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 			if (type === 'basic') {
 				document.getElementById('edit_kid_coin_cost').value = btn.dataset.kidCoinCost || '10';
+				document.getElementById('edit_require_parent_approval').checked = (btn.dataset.requireParentApproval === 'true');
 				document.getElementById('edit_basic_stock').value   = btn.dataset.stockQty    || '-1';
 			} else {
+				document.getElementById('edit_require_parent_approval').checked = false;
 				var rateType  = btn.dataset.sessionRateType || 'per_minute';
 				var rateRadio = editModal.querySelector('input[name="session_rate_type"][value="' + rateType + '"]');
 				if (rateRadio) rateRadio.checked = true;

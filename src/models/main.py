@@ -439,6 +439,7 @@ class StoreItem(db.Model):
 	session_max_participants = db.Column(db.Integer, default=1)
 	# -1 = unlimited; 0 = out of stock
 	stock_qty = db.Column(db.Integer, default=-1, nullable=False)
+	require_parent_approval = db.Column(db.Boolean, default=False, nullable=False)
 	is_active = db.Column(db.Boolean, default=True, nullable=False)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 	sort_order = db.Column(db.Integer, default=0, nullable=False)
@@ -466,6 +467,12 @@ class StoreRedemption(db.Model):
 	family = db.relationship("Family", backref=db.backref("store_redemptions", lazy=True, cascade="all, delete-orphan"))
 	requested_by_kid = db.relationship("Kid", backref=db.backref("store_redemptions", lazy=True))
 	resolved_by_parent = db.relationship("Parent", foreign_keys=[resolved_by_parent_id])
+	participants = db.relationship(
+		"StoreRedemptionParticipant",
+		back_populates="redemption",
+		cascade="all, delete-orphan",
+		order_by="StoreRedemptionParticipant.id.asc()",
+	)
 
 
 class StoreRedemptionVote(db.Model):
@@ -484,6 +491,22 @@ class StoreRedemptionVote(db.Model):
 
 	__table_args__ = (
 		db.UniqueConstraint("redemption_id", "kid_id", name="uq_store_redemption_vote_kid"),
+	)
+
+
+class StoreRedemptionParticipant(db.Model):
+	__tablename__ = "store_redemption_participants"
+
+	id = db.Column(db.Integer, primary_key=True)
+	redemption_id = db.Column(db.Integer, db.ForeignKey("store_redemptions.id"), nullable=False, index=True)
+	kid_id = db.Column(db.Integer, db.ForeignKey("kids.id"), nullable=False, index=True)
+	coin_share = db.Column(db.Integer, nullable=False, default=0)
+
+	redemption = db.relationship("StoreRedemption", back_populates="participants")
+	kid = db.relationship("Kid", backref=db.backref("store_redemption_participations", lazy=True))
+
+	__table_args__ = (
+		db.UniqueConstraint("redemption_id", "kid_id", name="uq_store_redemption_participant_kid"),
 	)
 
 

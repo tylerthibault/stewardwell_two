@@ -451,8 +451,10 @@
 					<div>
 						<h3 style="font-size:.88rem;font-weight:900;margin:0 0 8px;">Kid Coins</h3>
 						<p style="font-size:.78rem;color:var(--duo-muted);margin:0 0 8px;">Rate: <strong>{{ family.coins_per_dollar }} coins = $1</strong></p>
+						<p style="font-size:.78rem;color:var(--duo-muted);margin:0 0 10px;">Reward Coins is for praise/recognition. Cash → Coins is a dollar conversion.</p>
 						<form method="post" action="{{ url_for('public.parent_store_add_kid_coins') }}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
 							<input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
+							<div style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);">Reward Coins</div>
 							<select name="kid_id" required>
 								<option value="">Select Kid</option>
 								{% for kid in kids %}
@@ -462,11 +464,13 @@
 							<div style="display:flex;gap:8px;align-items:center;">
 								<input name="coins" type="number" min="1" value="5" required style="width:80px;" />
 								<span style="font-size:.8rem;color:var(--duo-muted);">coins</span>
-								<button type="submit" class="btn" style="padding:8px 14px;font-size:.85rem;">Add Coins</button>
+								<button type="submit" class="btn" style="padding:8px 14px;font-size:.85rem;">Reward Coins</button>
 							</div>
+							<input name="reason" type="text" placeholder="Optional reason: helped clean without asking" />
 						</form>
 						<form method="post" action="{{ url_for('public.parent_store_cash_to_coins') }}" style="display:flex;flex-direction:column;gap:8px;">
 							<input type="hidden" name="next" value="{{ url_for('public.parent_settings') }}" />
+							<div style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);">Cash → Coins Conversion</div>
 							<select name="kid_id" required>
 								<option value="">Select Kid</option>
 								{% for kid in kids %}

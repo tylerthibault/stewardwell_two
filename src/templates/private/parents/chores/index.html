@@ -131,6 +131,10 @@
                                             <label for="resolution-note-{{ submission.id }}">Note (optional)</label>
                                             <input id="resolution-note-{{ submission.id }}" name="resolution_note" type="text" placeholder="Great work, but next time tighten corners." />
                                         </div>
+                                        <div style="width:160px;">
+                                            <label for="reward-percent-{{ submission.id }}">Reward %</label>
+                                            <input id="reward-percent-{{ submission.id }}" name="reward_percent" type="number" min="0" max="100" step="1" value="100" />
+                                        </div>
                                         <button type="submit" name="action" value="approve" class="btn primary">Approve</button>
                                         <button type="submit" name="action" value="reject" class="btn-danger">Reject</button>
                                     </form>
