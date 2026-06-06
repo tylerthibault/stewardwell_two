@@ -7,6 +7,16 @@
 {% include 'private/parents/components/page_header.html' %}
 {% endblock %}
 
+{% block extra_css %}
+<style>
+	@media (max-width: 1024px) {
+		.parent-dashboard-grid {
+			grid-template-columns: 1fr !important;
+		}
+	}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
 
@@ -30,7 +40,6 @@
 	</section>
 	{% endif %}
 
-	<!-- Stat cards -->
 	<section>
 
 	{# ── Email verification banner ── #}
@@ -63,149 +72,204 @@
 	</article>
 	{% endif %}
 
-						<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:16px;">
-			<!-- Family code status -->
-			<article class="dashboard-card">
-				<div class="card-body">
-					<div class="metric-label">Family Code Status</div>
-					<div style="font-size:1.6rem;font-weight:900;color:var(--duo-blue);margin:4px 0 6px;">Active</div>
-					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Rotation timestamp tracking is coming next.</p>
-				</div>
-			</article>
-
-			<!-- Last login -->
-			<article class="dashboard-card">
-				<div class="card-body">
-					<div class="metric-label">Parent Last Login</div>
-					<div style="font-size:1.15rem;font-weight:900;margin:4px 0 6px;">
-						{% if parent.last_login_at %}
-							{{ parent.last_login_at.strftime('%b %d, %Y') }}
-						{% else %}
-							First login session
-						{% endif %}
-					</div>
-					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Signed in as <strong>{{ parent.name }}</strong>.</p>
-				</div>
-			</article>
-
-			<!-- Pending approvals -->
+		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:16px;">
 			<article class="dashboard-card">
 				<div class="card-body">
 					<div class="metric-label">Pending Chore Approvals</div>
-					<div style="font-size:2.4rem;font-weight:900;color:var(--duo-yellow);margin:4px 0 6px;line-height:1;">
-						{% if pending_approvals_count is not none %}{{ pending_approvals_count }}{% else %}—{% endif %}
-					</div>
-					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Submissions waiting for parent review.</p>
+					<div style="font-size:2.4rem;font-weight:900;color:var(--duo-yellow);margin:4px 0 6px;line-height:1;">{{ pending_chore_submissions|length }}</div>
+					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Submissions waiting for review.</p>
+				</div>
+			</article>
+			<article class="dashboard-card">
+				<div class="card-body">
+					<div class="metric-label">Pending Store Requests</div>
+					<div style="font-size:2.4rem;font-weight:900;color:var(--duo-blue);margin:4px 0 6px;line-height:1;">{{ pending_store_requests|length }}</div>
+					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Purchases and goals waiting for action.</p>
+				</div>
+			</article>
+			<article class="dashboard-card">
+				<div class="card-body">
+					<div class="metric-label">Household Kids</div>
+					<div style="font-size:2.4rem;font-weight:900;color:var(--duo-green,#58cc02);margin:4px 0 6px;line-height:1;">{{ kids|length }}</div>
+					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Active household members.</p>
+				</div>
+			</article>
+			<article class="dashboard-card">
+				<div class="card-body">
+					<div class="metric-label">Family Points</div>
+					<div style="font-size:2.4rem;font-weight:900;color:var(--duo-purple,#7c3aed);margin:4px 0 6px;line-height:1;">⭐ {{ family.family_points_balance }}</div>
+					<p style="font-size:.82rem;color:var(--duo-muted);margin:0;">Available for family goal redemptions.</p>
 				</div>
 			</article>
 		</div>
 	</section>
 
-	<!-- Kids -->
-	<section>
-		<article class="dashboard-card">
-			<header class="card-header" style="padding:16px 22px;">
-				<div style="display:flex;align-items:center;gap:10px;">
-					<h2 style="font-size:1.1rem;margin:0;">Kids</h2>
-					<span class="pill">{{ kids|length }} total</span>
-				</div>
-				<a href="{{ url_for('public.parent_chores') }}" style="font-size:.85rem;font-weight:800;color:var(--duo-blue);">Manage All</a>
-			</header>
-			<div class="card-body" style="padding:18px 22px;">
-				{% if kids %}
-					<div style="display:flex;flex-direction:column;gap:12px;">
-						{% for kid in kids %}
-			<!-- Kid row -->
-							<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:2px solid var(--duo-border);background:color-mix(in srgb,var(--duo-panel) 90%,var(--duo-bg) 10%);flex-wrap:wrap;">
-							<!-- Avatar -->
-							<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--duo-blue),var(--duo-purple));display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;flex-shrink:0;">
-								{{ kid.display_name[0].upper() }}
-							</div>
-							<!-- Info -->
-								<div style="flex:1;min-width:120px;">
-								<div style="font-weight:900;font-size:1rem;">{{ kid.display_name }}</div>
-								<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px;">
-									<span style="font-size:.78rem;color:var(--duo-muted);">Joined {{ kid.created_at.strftime('%b %d, %Y') }}</span>
-									<span style="display:inline-flex;align-items:center;gap:4px;font-size:.8rem;font-weight:800;color:var(--duo-ink);background:color-mix(in srgb,var(--coin-primary) 18%,transparent);border-radius:999px;padding:2px 10px;">
-										<span style="color:var(--coin-primary);">⬤</span>
-										<span id="kid-balance-{{ kid.id }}">{{ kid.coin_balance }}</span> coins
-									</span>
-								</div>
-							</div>
-							<!-- Cash → Coins button -->
-								<button
-									type="button"
-									onclick="openCashToCoinsModal({{ kid.id }}, '{{ kid.display_name }}')"
-									style="flex-shrink:0;background:var(--duo-green,#58cc02);color:#fff;border:2px solid color-mix(in srgb,var(--duo-green,#58cc02) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-green,#58cc02) 50%,#000 50%);transition:transform .08s ease;"
-									onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
-									$ → 🪙
-								</button>
-								<!-- Reward button -->
-								<button
-									type="button"
-									onclick="openRewardModal({{ kid.id }}, '{{ kid.display_name }}')"
-									style="flex-shrink:0;background:#a855f7;color:#fff;border:2px solid color-mix(in srgb,#a855f7 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,#a855f7 50%,#000 50%);transition:transform .08s ease;"
-									onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
-									🏆 Reward
-								</button>
-								<!-- Fine button -->
-								<button
-									type="button"
-									onclick="openFineModal({{ kid.id }}, '{{ kid.display_name }}')"
-									style="flex-shrink:0;background:var(--duo-yellow);color:var(--duo-ink);border:2px solid color-mix(in srgb,var(--duo-yellow) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-yellow) 50%,#000 50%);transition:transform .08s ease;"
-									onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
-									Fine
-								</button>
-							<!-- View as Kid button -->
-							<form method="post" action="{{ url_for('public.parent_switch_to_kid', kid_id=kid.id) }}" style="margin:0;flex-shrink:0;">
-								<button
-									type="submit"
-									style="background:var(--duo-blue);color:#fff;border:2px solid color-mix(in srgb,var(--duo-blue) 60%,#000 40%);border-radius:999px;padding:7px 18px;font-weight:900;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--duo-blue) 50%,#000 50%);transition:transform .08s ease;"
-									onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
-									View
-								</button>
-							</form>
+	<section style="margin-top:16px;">
+		<div class="parent-dashboard-grid" style="display:grid;grid-template-columns:minmax(0,2.1fr) minmax(280px,1fr);gap:16px;align-items:start;">
+			<div style="display:flex;flex-direction:column;gap:16px;">
+				<article class="dashboard-card">
+					<header class="card-header" style="padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+						<div style="display:flex;align-items:center;gap:10px;">
+							<h2 style="font-size:1.1rem;margin:0;">Needs Your Approval</h2>
+							<span class="pill">{{ pending_chore_submissions|length + pending_store_requests|length }} pending</span>
 						</div>
-						{% endfor %}
+					</header>
+					<div class="card-body" style="padding:18px 22px;">
+						{% if pending_chore_submissions or pending_store_requests %}
+							<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+								{% for submission in pending_chore_submissions %}
+									<div class="store-item" style="display:flex;flex-direction:column;gap:10px;">
+										<div>
+											<strong>{{ submission.kid.display_name }}</strong>
+											<div>{{ submission.chore.name }}</div>
+											<div class="muted" style="font-size:.8rem;">Chore completion • {{ submission.submitted_at.strftime('%I:%M %p') if submission.submitted_at else 'Just now' }}</div>
+										</div>
+										<div style="display:flex;gap:8px;flex-wrap:wrap;">
+											<form method="post" action="{{ url_for('public.parent_chore_submission_decision', submission_id=submission.id) }}" style="margin:0;">
+												<input type="hidden" name="action" value="approve" />
+												<input type="hidden" name="reward_percent" value="100" />
+												<button type="submit" class="btn primary">Approve</button>
+											</form>
+											<form method="post" action="{{ url_for('public.parent_chore_submission_decision', submission_id=submission.id) }}" style="margin:0;">
+												<input type="hidden" name="action" value="reject" />
+												<button type="submit" class="btn-danger">Reject</button>
+											</form>
+										</div>
+									</div>
+								{% endfor %}
+								{% for redemption in pending_store_requests %}
+									<div class="store-item" style="display:flex;flex-direction:column;gap:10px;">
+										<div>
+											<strong>{{ redemption.requested_by_kid.display_name }}</strong>
+											<div>{{ redemption.store_item.name }}</div>
+											<div class="muted" style="font-size:.8rem;">{{ redemption.store_item.item_scope|capitalize }} store request • {{ redemption.requested_at.strftime('%I:%M %p') }}</div>
+											{% if redemption.store_item.item_scope == 'kid' and redemption.participants and redemption.participants|length > 1 %}
+												<div class="muted" style="font-size:.78rem;">Split: {% for participant in redemption.participants %}{{ participant.kid.display_name if participant.kid else 'Kid' }} (🪙 {{ participant.coin_share }}){% if not loop.last %}, {% endif %}{% endfor %}</div>
+											{% endif %}
+										</div>
+										<div style="display:flex;gap:8px;flex-wrap:wrap;">
+											{% if redemption.store_item.item_scope == 'kid' %}
+												<form method="post" action="{{ url_for('public.parent_store_approve_kid_redemption', redemption_id=redemption.id) }}" style="margin:0;"><button type="submit" class="btn primary">Approve</button></form>
+												<form method="post" action="{{ url_for('public.parent_store_reject_kid_redemption', redemption_id=redemption.id) }}" style="margin:0;"><button type="submit" class="btn-danger">Reject</button></form>
+											{% else %}
+												<form method="post" action="{{ url_for('public.parent_store_approve_family_redemption', redemption_id=redemption.id) }}" style="margin:0;"><button type="submit" class="btn primary">Approve</button></form>
+												<form method="post" action="{{ url_for('public.parent_store_reject_family_redemption', redemption_id=redemption.id) }}" style="margin:0;"><button type="submit" class="btn-danger">Reject</button></form>
+											{% endif %}
+										</div>
+									</div>
+								{% endfor %}
+							</div>
+						{% else %}
+							<div class="empty-state">No pending approvals right now.</div>
+						{% endif %}
 					</div>
-				{% else %}
-					<div style="text-align:center;padding:32px;color:var(--duo-muted);font-weight:700;">No kids yet. Add your first kid in Settings.</div>
-				{% endif %}
+				</article>
+
+				<article class="dashboard-card">
+					<header class="card-header" style="padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+						<div style="display:flex;align-items:center;gap:10px;">
+							<h2 style="font-size:1.1rem;margin:0;">Kid Progress</h2>
+						</div>
+						<a href="{{ url_for('public.parent_chores') }}" style="font-size:.85rem;font-weight:800;color:var(--duo-blue);">Manage Chores</a>
+					</header>
+					<div class="card-body" style="padding:18px 22px;">
+						{% if kids %}
+							<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;">
+								{% for kid in kids %}
+									<div class="store-item" style="display:flex;flex-direction:column;gap:10px;min-height:170px;">
+										<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+											<div style="display:flex;align-items:center;gap:10px;">
+												<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--duo-blue),var(--duo-purple));display:flex;align-items:center;justify-content:center;font-size:1.05rem;font-weight:900;color:#fff;">{{ kid.display_name[0].upper() }}</div>
+												<div>
+													<div style="font-weight:900;line-height:1.1;">{{ kid.display_name }}</div>
+													<div class="muted" style="font-size:.78rem;">Joined {{ kid.created_at.strftime('%b %d, %Y') }}</div>
+												</div>
+											</div>
+											<span class="pill" style="font-weight:900;">🪙 <span id="kid-balance-{{ kid.id }}">{{ kid.coin_balance }}</span></span>
+										</div>
+										<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;">
+											<button type="button" onclick="openRewardCoinsModal({{ kid.id }}, '{{ kid.display_name }}')" class="btn" style="background:var(--duo-green,#58cc02);color:#fff;border-color:transparent;">Reward</button>
+											<button type="button" onclick="openFineModal({{ kid.id }}, '{{ kid.display_name }}')" class="btn" style="background:var(--duo-yellow);color:var(--duo-ink);border-color:transparent;">Fine</button>
+											<form method="post" action="{{ url_for('public.parent_switch_to_kid', kid_id=kid.id) }}" style="margin:0;">
+												<button type="submit" class="btn primary">View</button>
+											</form>
+										</div>
+									</div>
+								{% endfor %}
+							</div>
+						{% else %}
+							<div class="empty-state">No kids yet. Add your first kid in Settings.</div>
+						{% endif %}
+					</div>
+				</article>
 			</div>
-		</article>
-	</section>
 
-	<!-- Bottom action cards -->
-	<section>
-		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px;">
-			<!-- Quick action -->
-			<article class="dashboard-card" style="background:linear-gradient(135deg,#1a3a5c,#1e4d7b);border-color:#1a3a5c;box-shadow:0 5px 0 #102a40;">
-				<div class="card-body" style="padding:22px 24px;">
-					<div style="font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:6px;">Quick Action</div>
-					<div style="font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:16px;">Assign New Chore</div>
-					<a href="{{ url_for('public.parent_chores') }}" style="display:inline-flex;align-items:center;gap:6px;background:var(--duo-blue);color:#fff;border:2px solid #0f98d8;border-radius:14px;padding:9px 18px;font-weight:900;font-size:.88rem;box-shadow:0 4px 0 #0f98d8;text-decoration:none;transition:transform .08s ease;"
-						onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-						Create Task
-					</a>
-				</div>
-			</article>
+			<div style="display:flex;flex-direction:column;gap:16px;">
+				<article class="dashboard-card">
+					<header class="card-header" style="padding:16px 18px;">
+						<h2 style="font-size:1.1rem;margin:0;">Household Pulse</h2>
+					</header>
+					<div class="card-body" style="padding:14px 18px;display:flex;flex-direction:column;gap:12px;">
+						<div>
+							<div class="metric-label">Approval Queue</div>
+							<div style="display:flex;justify-content:space-between;align-items:center;font-weight:800;">
+								<span>Total pending</span>
+								<span>{{ pending_chore_submissions|length + pending_store_requests|length }}</span>
+							</div>
+							<div style="margin-top:6px;height:10px;border-radius:999px;background:color-mix(in srgb,var(--duo-border) 45%,transparent);overflow:hidden;">
+								{% set queue = pending_chore_submissions|length + pending_store_requests|length %}
+								{% set queue_pct = 100 if queue >= 8 else queue * 12 %}
+								<div style="height:100%;width:{{ queue_pct }}%;background:var(--duo-green,#58cc02);"></div>
+							</div>
+						</div>
+						<div class="store-item" style="padding:10px 12px;">
+							<div style="font-weight:800;font-size:.9rem;">Parent Last Login</div>
+							<div class="muted" style="font-size:.82rem;">
+								{% if parent.last_login_at %}{{ parent.last_login_at.strftime('%b %d, %Y %I:%M %p') }}{% else %}First login session{% endif %}
+							</div>
+						</div>
+						<div class="store-item" style="padding:10px 12px;">
+							<div style="font-weight:800;font-size:.9rem;">Family Code Status</div>
+							<div class="muted" style="font-size:.82rem;">Active and available for kid sign-in.</div>
+						</div>
+					</div>
+				</article>
 
-			<!-- Family updates -->
-			<article class="dashboard-card" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#c4b5fd;box-shadow:0 5px 0 #a78bfa;">
-				<div class="card-body" style="padding:22px 24px;">
-					<div style="font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;margin-bottom:6px;">Family Updates</div>
-					<div style="font-size:1.2rem;font-weight:900;color:#4c1d95;margin-bottom:16px;">Weekly Reward Ready</div>
-					<a href="{{ url_for('public.parent_store') }}" style="display:inline-flex;align-items:center;gap:6px;background:#7c3aed;color:#fff;border:2px solid #6d28d9;border-radius:14px;padding:9px 18px;font-weight:900;font-size:.88rem;box-shadow:0 4px 0 #6d28d9;text-decoration:none;transition:transform .08s ease;"
-						onmousedown="this.style.transform='translateY(2px)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-						Claim Now
-					</a>
-				</div>
-			</article>
+				<article class="dashboard-card">
+					<header class="card-header" style="padding:16px 18px;">
+						<h2 style="font-size:1.1rem;margin:0;">Quick Actions</h2>
+					</header>
+					<div class="card-body" style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
+						<a href="{{ url_for('public.parent_chores') }}" class="btn primary" style="text-align:center;">Open Chores</a>
+						<a href="{{ url_for('public.parent_store') }}" class="btn" style="text-align:center;">Open Store</a>
+						<a href="{{ url_for('public.parent_schedule') }}" class="btn" style="text-align:center;">Open Schedule</a>
+						<a href="{{ url_for('public.parent_settings') }}" class="btn" style="text-align:center;">Open Settings</a>
+					</div>
+				</article>
+			</div>
 		</div>
 	</section>
 
+</div>
+
+<!-- Reward Coins Modal -->
+<div id="rewardCoinsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
+	<div style="background:var(--duo-panel);border-radius:16px;padding:1.5rem;width:min(420px,92vw);border:2px solid var(--duo-border);box-shadow:0 8px 32px rgba(0,0,0,.35);">
+		<h3 style="margin:0 0 1.2rem;font-size:1.1rem;">Reward Coins for <span id="rewardCoinsKidName" style="color:var(--duo-green,#58cc02);"></span></h3>
+		<div style="margin-bottom:1rem;">
+			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Coin amount</label>
+			<input id="rewardCoinsAmount" type="number" min="1" step="1" class="form-control" placeholder="e.g. 25" style="font-size:1rem;">
+		</div>
+		<div style="margin-bottom:1rem;">
+			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Reason (optional)</label>
+			<input id="rewardCoinsReason" type="text" class="form-control" placeholder="Great attitude helping your sibling" style="font-size:.95rem;">
+		</div>
+		<div id="rewardCoinsError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
+		<div style="display:flex;justify-content:flex-end;gap:10px;">
+			<button type="button" class="btn" onclick="closeRewardCoinsModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
+			<button type="button" class="btn" id="rewardCoinsSubmitBtn" onclick="submitRewardCoins()" style="font-size:.88rem;padding:8px 18px;background:var(--duo-green,#58cc02);color:#fff;border-color:var(--duo-green,#58cc02);">Reward Coins</button>
+		</div>
+	</div>
 </div>
 
 <!-- Fine Modal -->
@@ -231,7 +295,62 @@
 
 {% block scripts %}
 <script>
+	let _rewardCoinsKidId = null;
 	let _fineKidId = null;
+
+	function openRewardCoinsModal(kidId, kidName) {
+		_rewardCoinsKidId = kidId;
+		document.getElementById('rewardCoinsKidName').textContent = kidName;
+		document.getElementById('rewardCoinsAmount').value = '';
+		document.getElementById('rewardCoinsReason').value = '';
+		document.getElementById('rewardCoinsError').style.display = 'none';
+		document.getElementById('rewardCoinsModal').style.display = 'flex';
+		document.getElementById('rewardCoinsAmount').focus();
+	}
+
+	function closeRewardCoinsModal() {
+		document.getElementById('rewardCoinsModal').style.display = 'none';
+		_rewardCoinsKidId = null;
+	}
+
+	async function submitRewardCoins() {
+		const coins = parseInt(document.getElementById('rewardCoinsAmount').value, 10);
+		const reason = document.getElementById('rewardCoinsReason').value.trim();
+		const errEl = document.getElementById('rewardCoinsError');
+		errEl.style.display = 'none';
+
+		if (!coins || coins < 1) {
+			errEl.textContent = 'Enter a coin amount greater than zero.';
+			errEl.style.display = 'block';
+			return;
+		}
+
+		const btn = document.getElementById('rewardCoinsSubmitBtn');
+		btn.disabled = true;
+		btn.textContent = 'Rewarding…';
+
+		const form = new FormData();
+		form.append('kid_id', _rewardCoinsKidId);
+		form.append('coins', coins);
+		form.append('reason', reason);
+		form.append('next', window.location.pathname);
+
+		try {
+			const resp = await fetch('{{ url_for("public.parent_store_add_kid_coins") }}', { method: 'POST', body: form });
+			if (resp.redirected || resp.ok) {
+				window.location.reload();
+			} else {
+				errEl.textContent = 'Something went wrong. Try again.';
+				errEl.style.display = 'block';
+			}
+		} catch (e) {
+			errEl.textContent = 'Network error. Try again.';
+			errEl.style.display = 'block';
+		} finally {
+			btn.disabled = false;
+			btn.textContent = 'Reward Coins';
+		}
+	}
 
 	function openFineModal(kidId, kidName) {
 		_fineKidId = kidId;
@@ -272,7 +391,7 @@
 		try {
 			const resp = await fetch(`/api/parent/kids/${_fineKidId}/fines`, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ amount, reason }),
 			});
 			const data = await resp.json();
@@ -295,186 +414,14 @@
 	}
 
 	// Close modal when clicking backdrop
+	document.getElementById('rewardCoinsModal').addEventListener('click', function(e) {
+		if (e.target === this) closeRewardCoinsModal();
+	});
 	document.getElementById('fineModal').addEventListener('click', function(e) {
 		if (e.target === this) closeFineModal();
 	});
-	document.getElementById('cashToCoinsModal').addEventListener('click', function(e) {
-		if (e.target === this) closeCashToCoinsModal();
-	});
-</script>
-
-<!-- Cash → Coins Modal -->
-<div id="cashToCoinsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
-	<div style="background:var(--duo-panel);border-radius:16px;padding:1.5rem;width:min(360px,92vw);border:2px solid var(--duo-border);box-shadow:0 8px 32px rgba(0,0,0,.35);">
-		<h3 style="margin:0 0 1.2rem;font-size:1.1rem;">Cash → Coins for <span id="cashToCoinsKidName" style="color:var(--duo-green,#58cc02);"></span></h3>
-		<div style="margin-bottom:1rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Dollar amount</label>
-			<div style="display:flex;align-items:center;gap:6px;">
-				<span style="font-size:1.1rem;font-weight:900;">$</span>
-				<input id="cashToCoinsAmount" type="number" min="0.01" step="0.01" class="form-control" placeholder="e.g. 5.00" style="font-size:1rem;">
-			</div>
-			<p id="cashToCoinPreview" style="margin:.5rem 0 0;font-size:.85rem;color:var(--duo-muted);"></p>
-		</div>
-		<div style="margin-bottom:1rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Description <span style="color:var(--duo-red);">*</span></label>
-			<input id="cashToCoinsDescription" type="text" class="form-control" placeholder="e.g. Allowance, chore bonus…" style="font-size:1rem;">
-		</div>
-		<div id="cashToCoinsError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
-		<div style="display:flex;justify-content:flex-end;gap:10px;">
-			<button type="button" class="btn" onclick="closeCashToCoinsModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
-			<button type="button" class="btn" id="cashToCoinsSubmitBtn" onclick="submitCashToCoins()" style="font-size:.88rem;padding:8px 18px;background:var(--duo-green,#58cc02);color:#fff;border-color:var(--duo-green,#58cc02);">Give Coins</button>
-		</div>
-	</div>
-</div>
-<script>
-	let _cashToCoinsKidId = null;
-	const _coinsPerDollar = {{ family.coins_per_dollar or 10 }};
-
-	function openCashToCoinsModal(kidId, kidName) {
-		_cashToCoinsKidId = kidId;
-		document.getElementById('cashToCoinsKidName').textContent = kidName;
-		document.getElementById('cashToCoinsAmount').value = '';
-		document.getElementById('cashToCoinsDescription').value = '';
-		document.getElementById('cashToCoinPreview').textContent = '';
-		document.getElementById('cashToCoinsError').style.display = 'none';
-		document.getElementById('cashToCoinsModal').style.display = 'flex';
-		document.getElementById('cashToCoinsAmount').focus();
-	}
-	function closeCashToCoinsModal() {
-		document.getElementById('cashToCoinsModal').style.display = 'none';
-	}
-	document.getElementById('cashToCoinsAmount').addEventListener('input', function() {
-		const dollars = parseFloat(this.value);
-		const preview = document.getElementById('cashToCoinPreview');
-		if (!isNaN(dollars) && dollars > 0) {
-			const coins = Math.floor(dollars * _coinsPerDollar);
-			preview.textContent = `= ${coins} coins`;
-		} else {
-			preview.textContent = '';
-		}
-	});
-	async function submitCashToCoins() {
-		const dollars = parseFloat(document.getElementById('cashToCoinsAmount').value);
-		const description = document.getElementById('cashToCoinsDescription').value.trim();
-		const errEl = document.getElementById('cashToCoinsError');
-		errEl.style.display = 'none';
-		if (!dollars || dollars <= 0) {
-			errEl.textContent = 'Enter a valid dollar amount.';
-			errEl.style.display = 'block';
-			return;
-		}
-		if (!description) {
-			errEl.textContent = 'A description is required.';
-			errEl.style.display = 'block';
-			return;
-		}
-		const btn = document.getElementById('cashToCoinsSubmitBtn');
-		btn.disabled = true;
-		btn.textContent = 'Processing…';
-		const form = new FormData();
-		form.append('kid_id', _cashToCoinsKidId);
-		form.append('dollars', dollars);
-		form.append('description', description);
-		form.append('next', window.location.pathname);
-		form.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
-		try {
-			const resp = await fetch('{{ url_for("public.parent_store_cash_to_coins") }}', { method: 'POST', body: form });
-			if (resp.redirected || resp.ok) {
-				window.location.reload();
-			} else {
-				errEl.textContent = 'Something went wrong. Try again.';
-				errEl.style.display = 'block';
-				btn.disabled = false;
-				btn.textContent = 'Give Coins';
-			}
-		} catch(e) {
-			errEl.textContent = 'Network error. Try again.';
-			errEl.style.display = 'block';
-			btn.disabled = false;
-			btn.textContent = 'Give Coins';
-		}
-	}
 </script>
 
 {% include 'private/parents/components/_wizard_modal.html' %}
-
-<!-- Reward Modal -->
-<div id="rewardModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
-	<div style="background:var(--duo-panel);border-radius:16px;padding:1.5rem;width:min(360px,92vw);border:2px solid var(--duo-border);box-shadow:0 8px 32px rgba(0,0,0,.35);">
-		<h3 style="margin:0 0 1.2rem;font-size:1.1rem;">🏆 Reward <span id="rewardKidName" style="color:#a855f7;"></span></h3>
-		<div style="margin-bottom:1rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Coin amount</label>
-			<input id="rewardAmount" type="number" min="1" class="form-control" placeholder="e.g. 10" style="font-size:1rem;">
-		</div>
-		<div style="margin-bottom:1rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Description <span style="color:var(--duo-red);">*</span></label>
-			<textarea id="rewardDescription" class="form-control" rows="3" placeholder="e.g. Great attitude today!"></textarea>
-		</div>
-		<div id="rewardError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
-		<div style="display:flex;justify-content:flex-end;gap:10px;">
-			<button type="button" class="btn" onclick="closeRewardModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
-			<button type="button" class="btn" id="rewardSubmitBtn" onclick="submitReward()" style="font-size:.88rem;padding:8px 18px;background:#a855f7;color:#fff;border-color:#a855f7;">Give Reward</button>
-		</div>
-	</div>
-</div>
-<script>
-	let _rewardKidId = null;
-
-	function openRewardModal(kidId, kidName) {
-		_rewardKidId = kidId;
-		document.getElementById('rewardKidName').textContent = kidName;
-		document.getElementById('rewardAmount').value = '';
-		document.getElementById('rewardDescription').value = '';
-		document.getElementById('rewardError').style.display = 'none';
-		document.getElementById('rewardModal').style.display = 'flex';
-		document.getElementById('rewardAmount').focus();
-	}
-	function closeRewardModal() {
-		document.getElementById('rewardModal').style.display = 'none';
-	}
-	document.getElementById('rewardModal').addEventListener('click', function(e) {
-		if (e.target === this) closeRewardModal();
-	});
-	async function submitReward() {
-		const amount = parseInt(document.getElementById('rewardAmount').value, 10);
-		const description = document.getElementById('rewardDescription').value.trim();
-		const errEl = document.getElementById('rewardError');
-		errEl.style.display = 'none';
-		if (!amount || amount < 1) {
-			errEl.textContent = 'Please enter a coin amount greater than 0.';
-			errEl.style.display = 'block';
-			return;
-		}
-		if (!description) {
-			errEl.textContent = 'A description is required.';
-			errEl.style.display = 'block';
-			return;
-		}
-		const btn = document.getElementById('rewardSubmitBtn');
-		btn.disabled = true;
-		btn.textContent = 'Giving…';
-		const form = new FormData();
-		form.append('kid_id', _rewardKidId);
-		form.append('coins', amount);
-		form.append('description', description);
-		form.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
-		try {
-			const resp = await fetch('{{ url_for("public.parent_store_reward_kid") }}', { method: 'POST', body: form });
-			if (resp.redirected || resp.ok) {
-				window.location.reload();
-			} else {
-				errEl.textContent = 'Something went wrong. Try again.';
-				errEl.style.display = 'block';
-				btn.disabled = false;
-				btn.textContent = 'Give Reward';
-			}
-		} catch(e) {
-			errEl.textContent = 'Network error. Try again.';
-			errEl.style.display = 'block';
-			btn.disabled = false;
-			btn.textContent = 'Give Reward';
-		}
-	}
-</script>
 
 {% endblock %}

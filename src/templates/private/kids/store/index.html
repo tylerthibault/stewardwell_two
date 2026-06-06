@@ -47,14 +47,33 @@
 										<strong>{{ item.name }}</strong>
 										{% if item.description %}<p class="muted m-0">{{ item.description }}</p>{% endif %}
 										<span class="coin-badge d-inline-block" style="width:fit-content;">🪙 {{ item.kid_coin_cost }} coins</span>
+										{% if item.require_parent_approval %}
+											<span class="pill">Parent approval required</span>
+										{% endif %}
 															{% if item.stock_qty == 0 %}
 																<span class="pill" style="color:var(--danger);">Out of stock</span>
 															{% elif item.stock_qty > 0 %}
 																<span class="pill">📦 {{ item.stock_qty }} left</span>
 															{% endif %}
 										<form method="post" action="{{ url_for('public.kid_purchase_store_item', item_id=item.id) }}" class="mt-auto">
+																{% if family_kids|length > 1 %}
+																	<details style="margin-bottom:8px;">
+																		<summary style="cursor:pointer;font-size:.8rem;color:var(--duo-muted);font-weight:700;">Split this purchase with other kids</summary>
+																		<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+																			{% for split_kid in family_kids %}
+																				{% if split_kid.id != kid.id %}
+																					<label style="display:flex;align-items:center;gap:8px;font-size:.8rem;">
+																						<input type="checkbox" name="split_kid_ids" value="{{ split_kid.id }}" style="width:auto;" />
+																						<span>{{ split_kid.display_name }} (🪙 {{ split_kid.coin_balance }})</span>
+																					</label>
+																				{% endif %}
+																			{% endfor %}
+																			<p class="muted m-0" style="font-size:.75rem;">Cost splits evenly between selected kids and you.</p>
+																		</div>
+																	</details>
+																{% endif %}
 											<button type="submit" class="btn {% if item.stock_qty != 0 and kid.coin_balance >= item.kid_coin_cost %}primary{% endif %}" {% if item.stock_qty == 0 or kid.coin_balance < item.kid_coin_cost %}disabled{% endif %}>
-												{% if item.stock_qty == 0 %}Out of stock{% elif kid.coin_balance >= item.kid_coin_cost %}Purchase{% else %}Need more coins{% endif %}
+												{% if item.stock_qty == 0 %}Out of stock{% elif kid.coin_balance >= item.kid_coin_cost and item.require_parent_approval %}Request Purchase{% elif kid.coin_balance >= item.kid_coin_cost %}Purchase{% else %}Need more coins{% endif %}
 											</button>
 										</form>
 									</div>

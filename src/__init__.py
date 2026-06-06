@@ -116,6 +116,7 @@ def _apply_sqlite_schema_fixes() -> None:
 			("session_coin_per_minute", "INTEGER NOT NULL DEFAULT 0"),
 			("session_max_participants", "INTEGER NOT NULL DEFAULT 1"),
 			("stock_qty", "INTEGER NOT NULL DEFAULT -1"),
+			("require_parent_approval", "BOOLEAN NOT NULL DEFAULT 0"),
 		]
 		for col_name, col_sql in _si_patches:
 			if col_name not in si_columns:

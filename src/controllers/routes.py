@@ -40,6 +40,7 @@ from src.models.main import (
 	PendingDeviceRegistration,
 	StoreItem,
 	StoreRedemption,
+	StoreRedemptionParticipant,
 	StoreRedemptionVote,
 	StoreSessionParticipant,
 	StoreSessionTurn,
@@ -141,6 +142,34 @@ def _load_kid_and_family():
 	kid = Kid.query.get(session.get("kid_id"))
 	family = Family.query.get(session.get("family_id"))
 	return kid, family
+
+
+def _split_coin_shares(total_coins: int, participant_kid_ids: list[int], primary_kid_id: int | None = None) -> dict[int, int]:
+	if total_coins <= 0 or not participant_kid_ids:
+		return {}
+
+	unique_ids: list[int] = []
+	for kid_id in participant_kid_ids:
+		if kid_id not in unique_ids:
+			unique_ids.append(kid_id)
+
+	ordered_ids: list[int] = []
+	if primary_kid_id in unique_ids:
+		ordered_ids.append(primary_kid_id)
+	for kid_id in unique_ids:
+		if kid_id != primary_kid_id:
+			ordered_ids.append(kid_id)
+
+	participant_count = len(ordered_ids)
+	if participant_count == 0:
+		return {}
+
+	base_share = total_coins // participant_count
+	remainder = total_coins % participant_count
+	shares: dict[int, int] = {}
+	for idx, kid_id in enumerate(ordered_ids):
+		shares[kid_id] = base_share + (1 if idx < remainder else 0)
+	return shares
 
 
 def _active_store_session_for_kid(kid_id: int):
@@ -655,6 +684,30 @@ def _recalculate_chore_split_rewards(chore: Chore, reset_version: int, claimed_d
 		if point_delta:
 			approved_submission.family.family_points_balance += point_delta
 			approved_submission.awarded_point_amount = target_point_award
+
+
+def _apply_chore_award(submission: ChoreSubmission, target_coin_award: int, target_point_award: int) -> None:
+	coin_delta = target_coin_award - (submission.awarded_coin_amount or 0)
+	point_delta = target_point_award - (submission.awarded_point_amount or 0)
+
+	if coin_delta:
+		submission.kid.coin_balance += coin_delta
+		db.session.add(CoinTransaction(
+			kid_id=submission.kid.id,
+			family_id=submission.family_id,
+			amount=coin_delta,
+			kind="chore_reward",
+			reason=f"Chore approved: {submission.chore.name}",
+			ref_type="chore_submission",
+			ref_id=submission.id,
+			created_by_parent_id=submission.resolved_by_parent_id,
+		))
+
+	if point_delta:
+		submission.family.family_points_balance += point_delta
+
+	submission.awarded_coin_amount = target_coin_award
+	submission.awarded_point_amount = target_point_award
 
 
 def _is_chore_locked_today(chore: Chore) -> bool:
@@ -1233,10 +1286,27 @@ def parent_dashboard():
 	_run_daily_chore_reset(family)
 
 	kids = Kid.query.filter_by(family_id=family.id, is_active=True).order_by(Kid.created_at.asc()).all()
-	pending_approvals_count = (
-		ChoreSubmission.query.filter_by(family_id=family.id, status="submitted").count()
-		+ ChallengeSubmission.query.filter_by(family_id=family.id, status="submitted").count()
+	pending_chore_submissions = (
+		ChoreSubmission.query.filter_by(family_id=family.id, status="submitted")
+		.order_by(ChoreSubmission.submitted_at.desc())
+		.limit(8)
+		.all()
 	)
+	pending_store_requests = (
+		StoreRedemption.query.join(StoreItem, StoreRedemption.store_item_id == StoreItem.id)
+		.filter(
+			StoreRedemption.family_id == family.id,
+			StoreRedemption.status == "pending",
+			StoreItem.item_scope.in_(["kid", "family"]),
+		)
+		.order_by(StoreRedemption.requested_at.desc())
+		.limit(8)
+		.all()
+	)
+	pending_approvals_count = len(pending_chore_submissions) + ChallengeSubmission.query.filter_by(
+		family_id=family.id,
+		status="submitted",
+	).count()
 	is_new_family = (
 		Chore.query.filter_by(family_id=family.id).count() == 0
 		and StoreItem.query.filter_by(family_id=family.id).count() == 0
@@ -1249,6 +1319,8 @@ def parent_dashboard():
 		family=family,
 		kids=kids,
 		pending_approvals_count=pending_approvals_count,
+		pending_chore_submissions=pending_chore_submissions,
+		pending_store_requests=pending_store_requests,
 		is_new_family=is_new_family,
 	)
 
@@ -1556,6 +1628,7 @@ def parent_chore_submission_decision(submission_id: int):
 	submission = ChoreSubmission.query.get(submission_id)
 	action = (request.form.get("action") or "").strip().lower()
 	resolution_note = (request.form.get("resolution_note") or "").strip()
+	reward_percent_raw = (request.form.get("reward_percent") or "100").strip()
 
 	if not parent or not submission or submission.family_id != session.get("family_id"):
 		flash("Submission not found.", "error")
@@ -1569,6 +1642,16 @@ def parent_chore_submission_decision(submission_id: int):
 		flash("Invalid decision.", "error")
 		return redirect(url_for("public.parent_chores"))
 
+	try:
+		reward_percent = int(reward_percent_raw)
+	except ValueError:
+		flash("Reward percent must be a number between 0 and 100.", "error")
+		return redirect(url_for("public.parent_chores"))
+
+	if reward_percent < 0 or reward_percent > 100:
+		flash("Reward percent must be between 0 and 100.", "error")
+		return redirect(url_for("public.parent_chores"))
+
 	submission.status = "approved" if action == "approve" else "rejected"
 	submission.resolved_at = datetime.utcnow()
 	submission.resolved_by_parent_id = parent.id
@@ -1579,11 +1662,21 @@ def parent_chore_submission_decision(submission_id: int):
 		submission.awarded_point_amount = 0
 
 	if action == "approve":
-		_recalculate_chore_split_rewards(
-			submission.chore,
-			submission.reset_version,
-			_submission_day_key(submission),
-		)
+		if submission.chore.max_concurrent_claims > 1:
+			if reward_percent != 100:
+				flash(
+					"Partial rewards currently apply only to chores with 1 claim slot; full reward was used for this shared chore.",
+					"info",
+				)
+			_recalculate_chore_split_rewards(
+				submission.chore,
+				submission.reset_version,
+				_submission_day_key(submission),
+			)
+		else:
+			target_coin_award = (submission.chore.coin_reward * reward_percent) // 100
+			target_point_award = (submission.chore.point_value * reward_percent) // 100
+			_apply_chore_award(submission, target_coin_award, target_point_award)
 
 	db.session.commit()
 	flash(
@@ -1626,6 +1719,17 @@ def parent_store():
 		.limit(30)
 		.all()
 	)
+	pending_kid_redemptions = (
+		StoreRedemption.query.join(StoreItem, StoreRedemption.store_item_id == StoreItem.id)
+		.filter(
+			StoreRedemption.family_id == family.id,
+			StoreRedemption.status == "pending",
+			StoreItem.item_scope == "kid",
+		)
+		.order_by(StoreRedemption.requested_at.desc())
+		.limit(30)
+		.all()
+	)
 	vote_summary = _vote_summary_for_redemptions(family_redemptions)
 
 	active_sessions = (
@@ -1651,6 +1755,7 @@ def parent_store():
 		kid_items=kid_items,
 		family_items=family_items,
 		family_redemptions=family_redemptions,
+		pending_kid_redemptions=pending_kid_redemptions,
 		vote_summary=vote_summary,
 		active_tab=active_tab,
 		active_sessions=active_sessions,
@@ -1682,6 +1787,7 @@ def parent_store_create_item():
 	session_per_min_raw = (request.form.get("session_coin_per_minute") or "0").strip()
 	session_max_raw = (request.form.get("session_max_participants") or "1").strip()
 	stock_qty_raw = (request.form.get("stock_qty") or "-1").strip()
+	require_parent_approval = (request.form.get("require_parent_approval") or "").strip().lower() in {"on", "true", "1", "yes"}
 
 	if not name:
 		flash("Item name is required.", "error")
@@ -1762,6 +1868,7 @@ def parent_store_create_item():
 		session_coin_per_minute=session_coin_per_minute,
 		session_max_participants=session_max_participants,
 		stock_qty=stock_qty,
+		require_parent_approval=(require_parent_approval if item_scope == "kid" and item_type == "basic" else False),
 	)
 	db.session.add(item)
 	db.session.commit()
@@ -1802,6 +1909,7 @@ def parent_store_edit_item(item_id: int):
 	session_per_min_raw = (request.form.get("session_coin_per_minute") or "0").strip()
 	session_max_raw = (request.form.get("session_max_participants") or "1").strip()
 	stock_qty_raw = (request.form.get("stock_qty") or "-1").strip()
+	require_parent_approval = (request.form.get("require_parent_approval") or "").strip().lower() in {"on", "true", "1", "yes"}
 
 	if not name:
 		flash("Item name is required.", "error")
@@ -1867,6 +1975,7 @@ def parent_store_edit_item(item_id: int):
 	item.session_coin_per_minute = session_coin_per_minute
 	item.session_max_participants = session_max_participants
 	item.stock_qty = stock_qty
+	item.require_parent_approval = require_parent_approval if item.item_scope == "kid" and item_type == "basic" else False
 	db.session.commit()
 
 	flash(f'"{item.name}" updated.', "success")
@@ -1922,6 +2031,7 @@ def parent_store_add_family_points():
 def parent_store_add_kid_coins():
 	kid_id_raw = (request.form.get("kid_id") or "").strip()
 	coins_raw = (request.form.get("coins") or "0").strip()
+	reason = (request.form.get("reason") or "").strip()
 	next_path = (request.form.get("next") or "").strip()
 
 	try:
@@ -1946,16 +2056,17 @@ def parent_store_add_kid_coins():
 		return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
 
 	kid.coin_balance += coins
+	tx_reason = reason if reason else "Rewarded by parent"
 	db.session.add(CoinTransaction(
 		kid_id=kid.id,
 		family_id=kid.family_id,
 		amount=coins,
 		kind="manual_add",
-		reason="Manually added by parent",
+		reason=tx_reason,
 		created_by_parent_id=session.get("parent_id"),
 	))
 	db.session.commit()
-	flash(f"Added {coins} coins to {kid.display_name}.", "success")
+	flash(f"Rewarded {kid.display_name} with {coins} coins.", "success")
 	return _redirect_to_next_or_default(next_path, "public.parent_store", tab="kid")
 
 
@@ -2142,6 +2253,126 @@ def parent_store_fulfill_family_redemption(redemption_id: int):
 
 	flash(f'Fulfilled "{item.name}".', "success")
 	return redirect(url_for("public.parent_store", tab="family"))
+
+
+@public_bp.post("/parent/store/kid/redemptions/<int:redemption_id>/approve")
+@parent_web_login_required
+def parent_store_approve_kid_redemption(redemption_id: int):
+	redemption = StoreRedemption.query.get(redemption_id)
+
+	if not redemption or redemption.family_id != session.get("family_id"):
+		flash("Kid purchase request not found.", "error")
+		return redirect(url_for("public.parent_store", tab="kid"))
+
+	item = redemption.store_item
+	kid = redemption.requested_by_kid
+	if not item or item.item_scope != "kid" or item.item_type != "basic":
+		flash("Kid purchase request not found.", "error")
+		return redirect(url_for("public.parent_store", tab="kid"))
+
+	if redemption.status != "pending":
+		flash("Only pending requests can be approved.", "error")
+		return redirect(url_for("public.parent_store", tab="kid"))
+
+	if item.stock_qty == 0:
+		flash(f'"{item.name}" is out of stock. Reject this request or restock first.', "error")
+		return redirect(url_for("public.parent_store", tab="kid"))
+
+	participants = list(redemption.participants or [])
+	if participants:
+		participant_ids = [participant.kid_id for participant in participants]
+		participant_kids = {
+			participant_kid.id: participant_kid
+			for participant_kid in Kid.query.filter(
+				Kid.family_id == redemption.family_id,
+				Kid.id.in_(participant_ids),
+				Kid.is_active.is_(True),
+			).all()
+		}
+		insufficient_kids: list[str] = []
+		for participant in participants:
+			participant_kid = participant_kids.get(participant.kid_id)
+			if not participant_kid:
+				insufficient_kids.append("Missing participant")
+				continue
+			if participant_kid.coin_balance < participant.coin_share:
+				insufficient_kids.append(participant_kid.display_name)
+		if insufficient_kids:
+			flash(f"Not enough coins to approve this split purchase: {', '.join(insufficient_kids)}.", "error")
+			return redirect(url_for("public.parent_store", tab="kid"))
+
+		for participant in participants:
+			participant_kid = participant_kids.get(participant.kid_id)
+			if not participant_kid:
+				continue
+			participant_kid.coin_balance -= participant.coin_share
+			db.session.add(CoinTransaction(
+				kid_id=participant_kid.id,
+				family_id=participant_kid.family_id,
+				amount=-participant.coin_share,
+				kind="store_purchase",
+				reason=f"Store split purchase approved: {item.name}",
+				ref_type="store_redemption",
+				ref_id=redemption.id,
+				created_by_parent_id=session.get("parent_id"),
+			))
+	else:
+		if not kid or kid.coin_balance < item.kid_coin_cost:
+			flash(f"{kid.display_name if kid else 'Kid'} no longer has enough coins for this purchase.", "error")
+			return redirect(url_for("public.parent_store", tab="kid"))
+
+		kid.coin_balance -= item.kid_coin_cost
+		db.session.add(CoinTransaction(
+			kid_id=kid.id,
+			family_id=kid.family_id,
+			amount=-item.kid_coin_cost,
+			kind="store_purchase",
+			reason=f"Store purchase approved: {item.name}",
+			ref_type="store_redemption",
+			ref_id=redemption.id,
+			created_by_parent_id=session.get("parent_id"),
+		))
+
+	if item.stock_qty > 0:
+		item.stock_qty -= 1
+
+	redemption.status = "fulfilled"
+	redemption.resolved_at = datetime.utcnow()
+	redemption.resolved_by_parent_id = session["parent_id"]
+	db.session.commit()
+
+	if participants and len(participants) > 1:
+		flash(f'Approved split purchase "{item.name}" for {len(participants)} kids.', "success")
+	else:
+		flash(f'Approved purchase "{item.name}" for {kid.display_name}.', "success")
+	return redirect(url_for("public.parent_store", tab="kid"))
+
+
+@public_bp.post("/parent/store/kid/redemptions/<int:redemption_id>/reject")
+@parent_web_login_required
+def parent_store_reject_kid_redemption(redemption_id: int):
+	redemption = StoreRedemption.query.get(redemption_id)
+
+	if not redemption or redemption.family_id != session.get("family_id"):
+		flash("Kid purchase request not found.", "error")
+		return redirect(url_for("public.parent_store", tab="kid"))
+
+	item = redemption.store_item
+	if not item or item.item_scope != "kid" or item.item_type != "basic":
+		flash("Kid purchase request not found.", "error")
+		return redirect(url_for("public.parent_store", tab="kid"))
+
+	if redemption.status != "pending":
+		flash("Only pending requests can be rejected.", "error")
+		return redirect(url_for("public.parent_store", tab="kid"))
+
+	redemption.status = "rejected"
+	redemption.resolved_at = datetime.utcnow()
+	redemption.resolved_by_parent_id = session["parent_id"]
+	db.session.commit()
+
+	flash(f'Rejected purchase request for "{item.name}".', "success")
+	return redirect(url_for("public.parent_store", tab="kid"))
 
 
 @public_bp.post("/parent/store/sessions/<int:timed_session_id>/cancel")
@@ -3330,7 +3561,6 @@ def kid_purchase_store_item(item_id: int):
 	kid = Kid.query.get(session.get("kid_id"))
 	item = StoreItem.query.get(item_id)
 
-
 	if not kid or kid.family_id != session.get("family_id"):
 		session.clear()
 		flash("Session expired. Please log in again.", "error")
@@ -3344,13 +3574,82 @@ def kid_purchase_store_item(item_id: int):
 		flash("This item is out of stock.", "error")
 		return redirect(url_for("public.kid_store", tab="kid"))
 
-	if kid.coin_balance < item.kid_coin_cost:
-		flash("You do not have enough coins.", "error")
+	raw_split_ids = request.form.getlist("split_kid_ids")
+	split_participant_ids = [kid.id]
+	for raw_kid_id in raw_split_ids:
+		try:
+			split_kid_id = int(raw_kid_id)
+		except (TypeError, ValueError):
+			continue
+		if split_kid_id != kid.id and split_kid_id not in split_participant_ids:
+			split_participant_ids.append(split_kid_id)
+
+	participant_kids = Kid.query.filter(
+		Kid.family_id == kid.family_id,
+		Kid.id.in_(split_participant_ids),
+		Kid.is_active.is_(True),
+	).all()
+	participant_ids_found = {participant.id for participant in participant_kids}
+	if participant_ids_found != set(split_participant_ids):
+		flash("One or more split participants are invalid.", "error")
 		return redirect(url_for("public.kid_store", tab="kid"))
 
-	kid.coin_balance -= item.kid_coin_cost
+	coin_shares = _split_coin_shares(
+		total_coins=item.kid_coin_cost,
+		participant_kid_ids=split_participant_ids,
+		primary_kid_id=kid.id,
+	)
+	if not coin_shares:
+		flash("Unable to split this purchase.", "error")
+		return redirect(url_for("public.kid_store", tab="kid"))
+
+	insufficient = [
+		participant.display_name
+		for participant in participant_kids
+		if participant.coin_balance < coin_shares.get(participant.id, 0)
+	]
+	if insufficient:
+		flash(f"Not enough coins for split purchase: {', '.join(insufficient)}.", "error")
+		return redirect(url_for("public.kid_store", tab="kid"))
+
+	if item.require_parent_approval:
+		existing_pending = StoreRedemption.query.filter_by(
+			store_item_id=item.id,
+			family_id=kid.family_id,
+			requested_by_kid_id=kid.id,
+			status="pending",
+		).first()
+		if existing_pending:
+			flash("You already have a pending request for this item.", "info")
+			return redirect(url_for("public.kid_store", tab="kid"))
+
+		redemption = StoreRedemption(
+			store_item_id=item.id,
+			family_id=kid.family_id,
+			requested_by_kid_id=kid.id,
+			status="pending",
+		)
+		db.session.add(redemption)
+		db.session.flush()
+		for participant in participant_kids:
+			db.session.add(StoreRedemptionParticipant(
+				redemption_id=redemption.id,
+				kid_id=participant.id,
+				coin_share=coin_shares.get(participant.id, 0),
+			))
+		db.session.commit()
+		if len(participant_kids) > 1:
+			flash(f'Requested split purchase approval for "{item.name}".', "success")
+		else:
+			flash(f'Requested purchase approval for "{item.name}".', "success")
+		return redirect(url_for("public.kid_store", tab="kid"))
+
+	for participant in participant_kids:
+		participant.coin_balance -= coin_shares.get(participant.id, 0)
+
 	if item.stock_qty > 0:
 		item.stock_qty -= 1
+
 	redemption = StoreRedemption(
 		store_item_id=item.id,
 		family_id=kid.family_id,
@@ -3359,19 +3658,30 @@ def kid_purchase_store_item(item_id: int):
 		resolved_at=datetime.utcnow(),
 	)
 	db.session.add(redemption)
-	db.session.flush()  # get redemption.id before logging
-	db.session.add(CoinTransaction(
-		kid_id=kid.id,
-		family_id=kid.family_id,
-		amount=-item.kid_coin_cost,
-		kind="store_purchase",
-		reason=f"Store purchase: {item.name}",
-		ref_type="store_redemption",
-		ref_id=redemption.id,
-	))
+	db.session.flush()
+	for participant in participant_kids:
+		share = coin_shares.get(participant.id, 0)
+		db.session.add(StoreRedemptionParticipant(
+			redemption_id=redemption.id,
+			kid_id=participant.id,
+			coin_share=share,
+		))
+		tx_reason = f"Store purchase: {item.name}" if len(participant_kids) == 1 else f"Store split purchase: {item.name}"
+		db.session.add(CoinTransaction(
+			kid_id=participant.id,
+			family_id=participant.family_id,
+			amount=-share,
+			kind="store_purchase",
+			reason=tx_reason,
+			ref_type="store_redemption",
+			ref_id=redemption.id,
+		))
 	db.session.commit()
 
-	flash(f'Purchased "{item.name}" for {item.kid_coin_cost} coins.', "success")
+	if len(participant_kids) > 1:
+		flash(f'Purchased "{item.name}" as a split purchase with {len(participant_kids)} kids.', "success")
+	else:
+		flash(f'Purchased "{item.name}" for {item.kid_coin_cost} coins.', "success")
 	return redirect(url_for("public.kid_store", tab="kid"))
 
 

@@ -44,6 +44,9 @@
                         <td data-label="Coins">
                             {% if r.store_item %}
                             <span class="coin-badge">🪙 {{ r.store_item.kid_coin_cost }}</span>
+                            {% if r.participants and r.participants|length > 1 %}
+                            <div class="muted" style="font-size:.78rem; margin-top:4px;">Split: {% for participant in r.participants %}{{ participant.kid.display_name if participant.kid else 'Kid' }} ({{ participant.coin_share }}){% if not loop.last %}, {% endif %}{% endfor %}</div>
+                            {% endif %}
                             {% else %}—{% endif %}
                         </td>
                         <td data-label="Date">{{ r.requested_at.strftime('%b %d, %Y') }}</td>
