@@ -8,6 +8,14 @@ load_dotenv()
 from src.models.main import db
 
 
+def _normalized_database_url() -> str:
+	raw_url = os.environ.get("DATABASE_URL") or "sqlite:///stewardwell.db"
+	# Some platforms provide postgres:// which SQLAlchemy 2 rejects; normalize it.
+	if raw_url.startswith("postgres://"):
+		return raw_url.replace("postgres://", "postgresql+psycopg://", 1)
+	return raw_url
+
+
 def _apply_sqlite_schema_fixes() -> None:
 	inspector = inspect(db.engine)
 	table_names = set(inspector.get_table_names())
@@ -105,6 +113,15 @@ def _apply_sqlite_schema_fixes() -> None:
 			with db.engine.begin() as connection:
 				connection.execute(text("ALTER TABLE chore_submissions ADD COLUMN awarded_point_amount INTEGER NOT NULL DEFAULT 0"))
 
+	if "coin_transactions" in table_names:
+		coin_tx_columns = {column["name"] for column in inspector.get_columns("coin_transactions")}
+		if "approved_at" not in coin_tx_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE coin_transactions ADD COLUMN approved_at DATETIME"))
+		if "seen_by_kid" not in coin_tx_columns:
+			with db.engine.begin() as connection:
+				connection.execute(text("ALTER TABLE coin_transactions ADD COLUMN seen_by_kid BOOLEAN NOT NULL DEFAULT 0"))
+
 	if "store_items" in table_names:
 		si_columns = {column["name"] for column in inspector.get_columns("store_items")}
 		_si_patches = [
@@ -151,10 +168,13 @@ def _apply_sqlite_schema_fixes() -> None:
 def create_app() -> Flask:
 	app = Flask(__name__)
 	app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
-	app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL") or "sqlite:///stewardwell.db"
+	app.config["SQLALCHEMY_DATABASE_URI"] = _normalized_database_url()
 	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 	app.config["WTF_CSRF_ENABLED"] = True
 	app.config["WTF_CSRF_TIME_LIMIT"] = 3600
+	app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+		"pool_pre_ping": True,
+	}
 
 	# ── Security headers / session cookies in production ─────────────────────
 	if os.environ.get("FLASK_ENV") == "production":
@@ -194,7 +214,8 @@ def create_app() -> Flask:
 
 	with app.app_context():
 		db.create_all()
-		_apply_sqlite_schema_fixes()
+		if db.engine.dialect.name == "sqlite":
+			_apply_sqlite_schema_fixes()
 		_seed_dev_admin()
 		# Load admin-managed env-var overrides from DB into os.environ
 		from src.utils.settings import load_app_settings
