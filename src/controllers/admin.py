@@ -262,6 +262,32 @@ def admin_trigger_password_reset(parent_id: int):
     return redirect(url_for("admin.admin_parents"))
 
 
+@admin_bp.post("/parents/<int:parent_id>/toggle-superuser")
+@admin_required
+def admin_toggle_parent_superuser(parent_id: int):
+    acting_admin = Parent.query.get_or_404(session.get("parent_id"))
+    parent = Parent.query.get_or_404(parent_id)
+    next_path = (request.form.get("next") or "").strip()
+
+    if parent.is_superuser:
+        total_superusers = Parent.query.filter_by(is_superuser=True).count()
+        if total_superusers <= 1:
+            flash("You must keep at least one superuser account.", "error")
+            return redirect(next_path or url_for("admin.admin_family_detail", family_id=parent.family_id))
+        if parent.id == acting_admin.id:
+            flash("You cannot remove your own superuser access while logged in.", "error")
+            return redirect(next_path or url_for("admin.admin_family_detail", family_id=parent.family_id))
+        parent.is_superuser = False
+        db.session.commit()
+        flash(f"Removed admin access from {parent.email}.", "success")
+    else:
+        parent.is_superuser = True
+        db.session.commit()
+        flash(f"Granted admin access to {parent.email}.", "success")
+
+    return redirect(next_path or url_for("admin.admin_family_detail", family_id=parent.family_id))
+
+
 # ── Promo Codes ───────────────────────────────────────────────────────────────
 
 @admin_bp.get("/promo-codes")

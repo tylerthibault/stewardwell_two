@@ -56,6 +56,8 @@
 	<!-- Impersonate -->
 	<form method="post" action="{{ url_for('admin.admin_impersonate', family_id=family.id) }}" onsubmit="return confirm('Impersonate this family?');">
 		<button type="submit" class="btn btn-sm" style="background:#f59e0b;color:#fff;">Impersonate</button>
+	</form>
+
 	<!-- Deactivate -->
 	{% if family.is_active %}
 	<form method="post" action="{{ url_for('admin.admin_deactivate_family', family_id=family.id) }}" onsubmit="return confirm('Deactivate this family? This cannot be undone easily.');">
@@ -77,6 +79,10 @@
 				<td>{% if p.is_superuser %}<span class="badge badge-admin">Admin</span>{% else %}<span style="color:#94a3b8;">—</span>{% endif %}</td>
 			<td>{{ p.last_login_at.strftime('%b %d, %Y') if p.last_login_at else 'Never' }}</td>
 			<td>
+				<form method="post" action="{{ url_for('admin.admin_toggle_parent_superuser', parent_id=p.id) }}" onsubmit="return confirm('{% if p.is_superuser %}Remove admin access?{% else %}Grant admin access?{% endif %}');" style="display:inline; margin-right:6px;">
+					<input type="hidden" name="next" value="{{ url_for('admin.admin_family_detail', family_id=family.id) }}" />
+					<button type="submit" class="btn btn-sm {% if p.is_superuser %}btn-danger{% else %}btn-outline{% endif %}">{% if p.is_superuser %}Remove Admin{% else %}Make Admin{% endif %}</button>
+				</form>
 				<form method="post" action="{{ url_for('admin.admin_trigger_password_reset', parent_id=p.id) }}" onsubmit="return confirm('Send password reset email?');" style="display:inline;">
 					<button type="submit" class="btn btn-sm btn-outline">Reset PW</button>
 				</form>
