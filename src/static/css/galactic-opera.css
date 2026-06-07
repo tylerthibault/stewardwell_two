@@ -1152,6 +1152,86 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
   .steps-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
+.parent-register-grid {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  padding-top: 56px;
+  grid-template-columns: 1fr;
+}
+
+.parent-register-grid > .panel {
+  min-width: 0;
+}
+
+.parent-register-title {
+  font-size: clamp(2rem, 10vw, 3.4rem);
+  line-height: 1.04;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+
+.parent-register-copy {
+  margin-top: 10px;
+}
+
+.parent-register-form {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.parent-register-field-grid {
+  grid-template-columns: 1fr;
+}
+
+.parent-register-note {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.parent-register-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.parent-register-back-link {
+  margin-top: 14px;
+  display: inline-block;
+  color: #c8d7f7;
+  font-weight: 600;
+}
+
+.parent-register-aside-title {
+  font-size: 20px;
+}
+
+.parent-register-next-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--duo-muted);
+  font-size: 14px;
+}
+
+.parent-register-checkpoint {
+  margin-top: 12px;
+}
+
+.parent-register-checkpoint-value {
+  font-size: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .parent-register-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .parent-register-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, .9fr);
+  }
+}
+
 .chore-create-basics-grid {
   display: grid;
   grid-template-columns: 1fr;
