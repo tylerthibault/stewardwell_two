@@ -1152,6 +1152,34 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
   .steps-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
+.chore-create-basics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: end;
+}
+
+.chore-schedule-week-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: end;
+}
+
+@media (min-width: 700px) {
+  .chore-create-basics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chore-schedule-week-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .chore-create-basics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 930px) {
   .page-wrap { padding: 14px; }
   .text-md-end { text-align: center; }

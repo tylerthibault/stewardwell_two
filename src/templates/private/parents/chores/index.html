@@ -232,7 +232,7 @@
             <form method="post" action="{{ url_for('public.parent_create_chore') }}" class="d-flex flex-column gap-3">
                     <input type="hidden" id="schedule_kind_fallback" name="schedule_kind" value="unscheduled" />
 
-                    <div class="row g-3" style="grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end;">
+                    <div class="row g-3 chore-create-basics-grid">
                         <div class="col-12">
                             <label for="name">Chore name</label>
                             <input id="name" name="name" type="text" placeholder="Clean room" required />
@@ -311,7 +311,7 @@
                             </div>
                         </div>
 
-                        <div class="row g-3" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                        <div class="row g-3 chore-schedule-week-grid">
                             <div class="col-12">
                                 <article class="metric-card">
                                     <div class="metric-label">Week A</div>
