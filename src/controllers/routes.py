@@ -623,11 +623,10 @@ def _submission_day_key(submission: ChoreSubmission) -> str:
 
 
 def _claimed_slots_for_today(chore: Chore) -> int:
-	today_iso = date.today().isoformat()
 	return ChoreSubmission.query.filter(
 		ChoreSubmission.chore_id == chore.id,
 		ChoreSubmission.reset_version == chore.daily_reset_version,
-		db.func.date(ChoreSubmission.claimed_at) == today_iso,
+		db.func.date(ChoreSubmission.claimed_at) == db.cast(date.today(), db.Date),
 		ChoreSubmission.status.in_(["claimed", "submitted", "approved"]),
 	).count()
 
@@ -3313,7 +3312,7 @@ def kid_claim_chore(chore_id: int):
 		ChoreSubmission.chore_id == chore.id,
 		ChoreSubmission.kid_id == kid.id,
 		ChoreSubmission.reset_version == chore.daily_reset_version,
-		db.func.date(ChoreSubmission.claimed_at) == date.today().isoformat(),
+		db.func.date(ChoreSubmission.claimed_at) == db.cast(date.today(), db.Date),
 		ChoreSubmission.status.in_(["claimed", "submitted", "approved"]),
 	).first()
 	if existing_kid_submission_today:
