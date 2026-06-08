@@ -165,6 +165,61 @@ def _apply_sqlite_schema_fixes() -> None:
 				connection.execute(text("ALTER TABLE tasks ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"))
 
 
+def _apply_postgres_schema_fixes() -> None:
+	"""Repair sequences missing on tables migrated from SQLite via pgloader.
+
+	pgloader creates id columns as plain INTEGER without a SERIAL sequence.
+	SQLAlchemy expects nextval() as the column default, so inserts fail with
+	'null value in column id'.  This function is idempotent and safe to run
+	on every startup.
+	"""
+	inspector = inspect(db.engine)
+	table_names = set(inspector.get_table_names())
+
+	# Only process tables that actually have a single integer 'id' primary key
+	tables_with_id = set()
+	for table in table_names:
+		cols = {c["name"]: c for c in inspector.get_columns(table)}
+		if "id" in cols:
+			pk_cols = list(inspector.get_pk_constraint(table).get("constrained_columns", []))
+			if pk_cols == ["id"]:
+				tables_with_id.add(table)
+
+	for table in tables_with_id:
+		seq_name = f"{table}_id_seq"
+		# Each table gets its own connection/transaction so one failure is isolated
+		try:
+			with db.engine.begin() as conn:
+				conn.execute(text(f"CREATE SEQUENCE IF NOT EXISTS {seq_name}"))
+				row = conn.execute(text(f'SELECT COALESCE(MAX(id), 0) FROM "{table}"')).fetchone()
+				max_id = row[0] if row else 0
+				if max_id > 0:
+					conn.execute(text(f"SELECT setval('{seq_name}', :v, true)"), {"v": max_id})
+				# Attach sequence as default only if column has no default yet
+				conn.execute(text(f"""
+					DO $$
+					BEGIN
+						IF (
+							SELECT column_default IS NULL
+							FROM information_schema.columns
+							WHERE table_schema = 'public'
+							  AND table_name   = '{table}'
+							  AND column_name  = 'id'
+						) THEN
+							ALTER TABLE "{table}"
+								ALTER COLUMN id SET DEFAULT nextval('{seq_name}');
+						END IF;
+					END
+					$$;
+				"""))
+		except Exception as exc:
+			# Log but do not abort startup for non-critical tables
+			import logging
+			logging.getLogger(__name__).warning(
+				"_apply_postgres_schema_fixes: skipped table %r: %s", table, exc
+			)
+
+
 def create_app() -> Flask:
 	app = Flask(__name__)
 	app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
@@ -216,6 +271,8 @@ def create_app() -> Flask:
 		db.create_all()
 		if db.engine.dialect.name == "sqlite":
 			_apply_sqlite_schema_fixes()
+		elif db.engine.dialect.name == "postgresql":
+			_apply_postgres_schema_fixes()
 		_seed_dev_admin()
 		# Load admin-managed env-var overrides from DB into os.environ
 		from src.utils.settings import load_app_settings

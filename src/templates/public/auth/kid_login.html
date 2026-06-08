@@ -108,7 +108,13 @@
 		if (refreshBtn) refreshBtn.style.display = 'none';
 		if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 
-		fetch('{{ url_for("public.device_qr_init") }}', { method: 'POST' })
+		var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+		var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+		fetch('{{ url_for("public.device_qr_init") }}', {
+			method: 'POST',
+			headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: 'csrf_token=' + encodeURIComponent(csrfToken),
+		})
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				currentToken = data.token;
