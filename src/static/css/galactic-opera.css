@@ -826,6 +826,67 @@ thead th { font-size: .8rem; text-transform: uppercase; color: var(--duo-muted);
   gap: 8px;
 }
 
+.parent-dashboard-modal {
+  width: min(420px, 92vw);
+}
+
+.parent-dashboard-modal-body {
+  padding: 24px;
+}
+
+.parent-dashboard-modal-title {
+  margin: 0 0 18px;
+  font-size: 1.1rem;
+}
+
+.parent-dashboard-modal-title-accent {
+  color: var(--duo-green, #58cc02);
+}
+
+.parent-dashboard-modal-title-accent--blue {
+  color: var(--duo-blue);
+}
+
+.parent-dashboard-field {
+  margin-bottom: 16px;
+}
+
+.parent-dashboard-field--lg {
+  margin-bottom: 20px;
+}
+
+.parent-dashboard-label {
+  display: block;
+  font-size: .82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--duo-muted);
+  margin-bottom: 6px;
+}
+
+.parent-dashboard-required {
+  color: var(--duo-red);
+}
+
+.parent-dashboard-error {
+  color: var(--duo-red);
+  margin-bottom: .75rem;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.parent-dashboard-modal-footer {
+  padding: 0 24px 20px;
+  border-top: 0;
+}
+
+.parent-dashboard-reward-btn {
+  background: var(--duo-green, #58cc02);
+  color: #fff;
+  border-color: var(--duo-green, #58cc02);
+}
+
 .close { cursor: pointer; font-size: 1.4rem; font-weight: 900; color: #63708a; }
 
 /* ── App Top Navigation ─────────────────────────────────────────────────── */
@@ -1479,7 +1540,8 @@ h3 { font-size: clamp(1rem, 2.2vw, 1.25rem); }
     padding: 0;
   }
 
-  .modal-content {
+  .modal-content,
+  .modal-content.parent-dashboard-modal {
     width: 100%;
     max-height: 88dvh;
     border-radius: var(--radius) var(--radius) 0 0;

@@ -253,41 +253,45 @@
 </div>
 
 <!-- Reward Coins Modal -->
-<div id="rewardCoinsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
-	<div style="background:var(--duo-panel);border-radius:16px;padding:1.5rem;width:min(420px,92vw);border:2px solid var(--duo-border);box-shadow:0 8px 32px rgba(0,0,0,.35);">
-		<h3 style="margin:0 0 1.2rem;font-size:1.1rem;">Reward Coins for <span id="rewardCoinsKidName" style="color:var(--duo-green,#58cc02);"></span></h3>
-		<div style="margin-bottom:1rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Coin amount</label>
-			<input id="rewardCoinsAmount" type="number" min="1" step="1" class="form-control" placeholder="e.g. 25" style="font-size:1rem;">
+<div id="rewardCoinsModal" class="modal" aria-hidden="true">
+	<div class="modal-content parent-dashboard-modal">
+		<div class="modal-body parent-dashboard-modal-body">
+			<h3 class="parent-dashboard-modal-title">Reward Coins for <span id="rewardCoinsKidName" class="parent-dashboard-modal-title-accent"></span></h3>
+			<div class="parent-dashboard-field">
+				<label class="parent-dashboard-label" for="rewardCoinsAmount">Coin amount</label>
+				<input id="rewardCoinsAmount" type="number" min="1" step="1" class="form-control" placeholder="e.g. 25">
+			</div>
+			<div class="parent-dashboard-field">
+				<label class="parent-dashboard-label" for="rewardCoinsReason">Reason (optional)</label>
+				<input id="rewardCoinsReason" type="text" class="form-control" placeholder="Great attitude helping your sibling">
+			</div>
+			<div id="rewardCoinsError" class="parent-dashboard-error" style="display:none;"></div>
 		</div>
-		<div style="margin-bottom:1rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;">Reason (optional)</label>
-			<input id="rewardCoinsReason" type="text" class="form-control" placeholder="Great attitude helping your sibling" style="font-size:.95rem;">
-		</div>
-		<div id="rewardCoinsError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
-		<div style="display:flex;justify-content:flex-end;gap:10px;">
-			<button type="button" class="btn" onclick="closeRewardCoinsModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
-			<button type="button" class="btn" id="rewardCoinsSubmitBtn" onclick="submitRewardCoins()" style="font-size:.88rem;padding:8px 18px;background:var(--duo-green,#58cc02);color:#fff;border-color:var(--duo-green,#58cc02);">Reward Coins</button>
+		<div class="modal-footer parent-dashboard-modal-footer">
+			<button type="button" class="btn" onclick="closeRewardCoinsModal()">Cancel</button>
+			<button type="button" class="btn parent-dashboard-reward-btn" id="rewardCoinsSubmitBtn" onclick="submitRewardCoins()">Reward Coins</button>
 		</div>
 	</div>
 </div>
 
 <!-- Fine Modal -->
-<div id="fineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
-	<div style="background:var(--duo-panel);border:2px solid var(--duo-border);border-radius:18px;max-width:440px;width:90%;padding:2rem;box-shadow:0 12px 40px rgba(0,0,0,.25);">
-		<h3 style="margin:0 0 1.2rem;font-size:1.1rem;">Fine <span id="fineKidName" style="color:var(--duo-blue);"></span></h3>
-		<div style="margin-bottom:1rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="fineAmount">Coin amount to deduct</label>
-			<input id="fineAmount" type="number" min="1" class="form-control" placeholder="e.g. 10" style="font-size:1rem;">
+<div id="fineModal" class="modal" aria-hidden="true">
+	<div class="modal-content parent-dashboard-modal">
+		<div class="modal-body parent-dashboard-modal-body">
+			<h3 class="parent-dashboard-modal-title">Fine <span id="fineKidName" class="parent-dashboard-modal-title-accent parent-dashboard-modal-title-accent--blue"></span></h3>
+			<div class="parent-dashboard-field">
+				<label class="parent-dashboard-label" for="fineAmount">Coin amount to deduct</label>
+				<input id="fineAmount" type="number" min="1" class="form-control" placeholder="e.g. 10">
+			</div>
+			<div class="parent-dashboard-field parent-dashboard-field--lg">
+				<label class="parent-dashboard-label" for="fineReason">Reason <span class="parent-dashboard-required">*</span></label>
+				<textarea id="fineReason" class="form-control" rows="3" placeholder="Describe what the child did…"></textarea>
+			</div>
+			<div id="fineError" class="parent-dashboard-error" style="display:none;"></div>
 		</div>
-		<div style="margin-bottom:1.25rem;">
-			<label style="display:block;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--duo-muted);margin-bottom:6px;" for="fineReason">Reason <span style="color:var(--duo-red);">*</span></label>
-			<textarea id="fineReason" class="form-control" rows="3" placeholder="Describe what the child did…"></textarea>
-		</div>
-		<div id="fineError" style="display:none;color:var(--duo-red);margin-bottom:.75rem;font-size:.85rem;font-weight:700;"></div>
-		<div style="display:flex;gap:8px;justify-content:flex-end;">
-			<button type="button" class="btn" onclick="closeFineModal()" style="font-size:.88rem;padding:8px 18px;">Cancel</button>
-			<button type="button" class="btn btn-danger" id="fineSubmitBtn" onclick="submitFine()" style="font-size:.88rem;padding:8px 18px;">Issue Fine</button>
+		<div class="modal-footer parent-dashboard-modal-footer">
+			<button type="button" class="btn" onclick="closeFineModal()">Cancel</button>
+			<button type="button" class="btn btn-danger" id="fineSubmitBtn" onclick="submitFine()">Issue Fine</button>
 		</div>
 	</div>
 </div>
@@ -300,16 +304,24 @@
 
 	function openRewardCoinsModal(kidId, kidName) {
 		_rewardCoinsKidId = kidId;
+		const modal = document.getElementById('rewardCoinsModal');
 		document.getElementById('rewardCoinsKidName').textContent = kidName;
 		document.getElementById('rewardCoinsAmount').value = '';
 		document.getElementById('rewardCoinsReason').value = '';
 		document.getElementById('rewardCoinsError').style.display = 'none';
-		document.getElementById('rewardCoinsModal').style.display = 'flex';
+		if (modal) {
+			modal.classList.add('open');
+			modal.setAttribute('aria-hidden', 'false');
+		}
 		document.getElementById('rewardCoinsAmount').focus();
 	}
 
 	function closeRewardCoinsModal() {
-		document.getElementById('rewardCoinsModal').style.display = 'none';
+		const modal = document.getElementById('rewardCoinsModal');
+		if (modal) {
+			modal.classList.remove('open');
+			modal.setAttribute('aria-hidden', 'true');
+		}
 		_rewardCoinsKidId = null;
 	}
 
@@ -354,16 +366,23 @@
 
 	function openFineModal(kidId, kidName) {
 		_fineKidId = kidId;
+		const modal = document.getElementById('fineModal');
 		document.getElementById('fineKidName').textContent = kidName;
 		document.getElementById('fineAmount').value = '';
 		document.getElementById('fineReason').value = '';
 		document.getElementById('fineError').style.display = 'none';
-		const modal = document.getElementById('fineModal');
-		modal.style.display = 'flex';
+		if (modal) {
+			modal.classList.add('open');
+			modal.setAttribute('aria-hidden', 'false');
+		}
 	}
 
 	function closeFineModal() {
-		document.getElementById('fineModal').style.display = 'none';
+		const modal = document.getElementById('fineModal');
+		if (modal) {
+			modal.classList.remove('open');
+			modal.setAttribute('aria-hidden', 'true');
+		}
 		_fineKidId = null;
 	}
 

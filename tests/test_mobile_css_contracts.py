@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CSS = (ROOT / "src/static/css/galactic-opera.css").read_text()
 PARENT_CHORES = (ROOT / "src/templates/private/parents/chores/index.html").read_text()
 PARENT_REGISTER = (ROOT / "src/templates/public/auth/register.html").read_text()
+PARENT_DASHBOARD = (ROOT / "src/templates/private/parents/dashboard.html").read_text()
 
 
 def css_rule(selector: str) -> str:
@@ -85,6 +86,25 @@ class MobileCssContractsTest(unittest.TestCase):
         self.assertIn("parent-register-title", PARENT_REGISTER)
         self.assertIn("font-size: clamp(2rem, 10vw, 3.4rem)", css_rule(".parent-register-title"))
         self.assertIn("overflow-wrap: anywhere", css_rule(".parent-register-title"))
+
+    def test_parent_dashboard_reward_and_fine_modals_use_shared_modal_classes(self):
+        self.assertNotIn('id="rewardCoinsModal" style="display:none;position:fixed;inset:0;', PARENT_DASHBOARD)
+        self.assertNotIn('id="fineModal" style="display:none;position:fixed;inset:0;', PARENT_DASHBOARD)
+        self.assertIn('id="rewardCoinsModal" class="modal"', PARENT_DASHBOARD)
+        self.assertIn('id="fineModal" class="modal"', PARENT_DASHBOARD)
+        self.assertIn('class="modal-content parent-dashboard-modal"', PARENT_DASHBOARD)
+        self.assertIn('class="modal-body parent-dashboard-modal-body"', PARENT_DASHBOARD)
+        self.assertIn('class="modal-footer parent-dashboard-modal-footer"', PARENT_DASHBOARD)
+
+    def test_mobile_modal_bottom_sheet_styles_cover_parent_dashboard_modals(self):
+        self.assertIn(
+            "width: 100%",
+            media_rule("max-width: 560px", ".modal-content.parent-dashboard-modal"),
+        )
+        self.assertIn(
+            "max-height: 88dvh",
+            media_rule("max-width: 560px", ".modal-content.parent-dashboard-modal"),
+        )
 
 
 if __name__ == "__main__":
